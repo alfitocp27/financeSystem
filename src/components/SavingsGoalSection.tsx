@@ -61,13 +61,14 @@ export const SavingsGoalSection: React.FC<SavingsGoalSectionProps> = ({ onShowTo
       return;
     }
 
-    const sourceWallet = wallets.find((w) => w.id === allocateWalletId);
+    const effectiveWalletId = allocateWalletId || wallets[0]?.id || '';
+    const sourceWallet = wallets.find((w) => w.id === effectiveWalletId);
     if (sourceWallet && sourceWallet.balance < amount) {
       setAllocateError('Saldo dompet tidak mencukupi');
       return;
     }
 
-    const { error } = await allocateToGoal(selectedGoal.id, allocateWalletId, amount);
+    const { error } = await allocateToGoal(selectedGoal.id, effectiveWalletId, amount);
     if (error) {
       setAllocateError(error.message);
     } else {
@@ -93,7 +94,8 @@ export const SavingsGoalSection: React.FC<SavingsGoalSectionProps> = ({ onShowTo
       return;
     }
 
-    const { error } = await withdrawFromGoal(withdrawGoal.id, withdrawWalletId, amount);
+    const effectiveWithdrawId = withdrawWalletId || wallets[0]?.id || '';
+    const { error } = await withdrawFromGoal(withdrawGoal.id, effectiveWithdrawId, amount);
     if (error) {
       setWithdrawError(error.message);
     } else {

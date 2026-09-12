@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, ArrowDownRight, ArrowUpRight, ArrowRightLeft, Check, Plus } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import type { TransactionType } from '../types/database.types';
@@ -19,27 +19,53 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
   const { wallets, categories, addTransaction } = useFinance();
 
   const [type, setType] = useState<TransactionType>('expense');
-  const [amountStr, setAmountStr] = useState<string>(initialAmount ? initialAmount.toString() : '');
-  const [walletId, setWalletId] = useState<string>(wallets[0]?.id || '');
-  const [destinationWalletId, setDestinationWalletId] = useState<string>(wallets[1]?.id || '');
+  const [amountStr, setAmountStr] = useState<string>('');
+  const [walletId, setWalletId] = useState<string>('');
+  const [destinationWalletId, setDestinationWalletId] = useState<string>('');
   const [categoryId, setCategoryId] = useState<string>('');
   const [note, setNote] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  // Sync state whenever modal opens or wallet/categories are loaded
+  useEffect(() => {
+    if (isOpen) {
+      if (initialAmount) {
+        setAmountStr(initialAmount.toString());
+      } else {
+        setAmountStr('');
+      }
+      if (wallets.length > 0) {
+        setWalletId(wallets[0].id);
+        if (wallets.length > 1) {
+          setDestinationWalletId(wallets[1].id);
+        }
+      }
+      const initialCats = categories.filter((c) => c.type === type);
+      if (initialCats.length > 0) {
+        setCategoryId(initialCats[0].id);
+      }
+      setErrorMsg(null);
+    }
+  }, [isOpen, initialAmount, wallets, categories, type]);
+
   if (!isOpen) return null;
 
-  // Filter categories by type
   const filteredCategories = categories.filter((c) => c.type === type);
-
-  // Set default category if not set
-  if (!categoryId && filteredCategories.length > 0 && type !== 'transfer') {
-    setCategoryId(filteredCategories[0].id);
-  }
 
   const handleQuickAddAmount = (addValue: number) => {
     const current = parseInt(amountStr || '0', 10) || 0;
     setAmountStr((current + addValue).toString());
+  };
+
+  const handleTypeChange = (newType: TransactionType) => {
+    setType(newType);
+    const newCats = categories.filter((c) => c.type === newType);
+    if (newCats.length > 0) {
+      setCategoryId(newCats[0].id);
+    } else {
+      setCategoryId('');
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -52,13 +78,15 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
       return;
     }
 
-    if (!walletId) {
+    const effectiveWalletId = walletId || wallets[0]?.id;
+    if (!effectiveWalletId) {
       setErrorMsg('Pilih dompet sumber');
       return;
     }
 
     if (type === 'transfer') {
-      if (!destinationWalletId || destinationWalletId === walletId) {
+      const effectiveDestId = destinationWalletId || wallets.find(w => w.id !== effectiveWalletId)?.id;
+      if (!effectiveDestId || effectiveDestId === effectiveWalletId) {
         setErrorMsg('Pilih dompet tujuan yang berbeda dari dompet sumber');
         return;
       }
@@ -68,8 +96,8 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
     const { error } = await addTransaction({
       type,
       amount: numericAmount,
-      walletId,
-      categoryId: type !== 'transfer' ? categoryId : undefined,
+      walletId: effectiveWalletId,
+      categoryId: type !== 'transfer' ? (categoryId || filteredCategories[0]?.id) : undefined,
       destinationWalletId: type === 'transfer' ? destinationWalletId : undefined,
       note: note.trim() || undefined,
     });
@@ -79,7 +107,6 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
     if (error) {
       setErrorMsg(error.message || 'Gagal mencatat transaksi');
     } else {
-      // Reset form & close
       setAmountStr('');
       setNote('');
       onClose();
@@ -113,10 +140,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
         <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-100 rounded-2xl mb-5">
           <button
             type="button"
-            onClick={() => {
-              setType('expense');
-              setCategoryId('');
-            }}
+            onClick={() => handleTypeChange('expense')}
             className={`py-2 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all ${
               type === 'expense'
                 ? 'bg-rose-500 text-white shadow-sm'
@@ -127,10 +151,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
           </button>
           <button
             type="button"
-            onClick={() => {
-              setType('income');
-              setCategoryId('');
-            }}
+            onClick={() => handleTypeChange('income')}
             className={`py-2 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all ${
               type === 'income'
                 ? 'bg-emerald-600 text-white shadow-sm'
@@ -141,7 +162,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
           </button>
           <button
             type="button"
-            onClick={() => setType('transfer')}
+            onClick={() => handleTypeChange('transfer')}
             className={`py-2 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all ${
               type === 'transfer'
                 ? 'bg-indigo-600 text-white shadow-sm'
@@ -202,7 +223,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
                 {type === 'transfer' ? 'Dari Dompet' : 'Dompet / Akun'}
               </label>
               <select
-                value={walletId}
+                value={walletId || wallets[0]?.id || ''}
                 onChange={(e) => setWalletId(e.target.value)}
                 className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
@@ -220,12 +241,12 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
                   Ke Dompet Tujuan
                 </label>
                 <select
-                  value={destinationWalletId}
+                  value={destinationWalletId || wallets.find(w => w.id !== (walletId || wallets[0]?.id))?.id || ''}
                   onChange={(e) => setDestinationWalletId(e.target.value)}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
                   {wallets
-                    .filter((w) => w.id !== walletId)
+                    .filter((w) => w.id !== (walletId || wallets[0]?.id))
                     .map((w) => (
                       <option key={w.id} value={w.id}>
                         {w.name} (Rp {w.balance.toLocaleString('id-ID')})
@@ -244,7 +265,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
               </label>
               <div className="flex flex-wrap gap-2 max-h-36 overflow-y-auto p-1">
                 {filteredCategories.map((cat) => {
-                  const isSelected = categoryId === cat.id;
+                  const isSelected = (categoryId || filteredCategories[0]?.id) === cat.id;
                   return (
                     <button
                       key={cat.id}

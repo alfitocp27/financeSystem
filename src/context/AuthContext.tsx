@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import type { Profile } from '../types/database.types';
@@ -35,7 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isDemoUser, setIsDemoUser] = useState(false);
 
-  // Load profile from Supabase
+  // Stable loadProfile that never triggers infinite loops
   const loadProfile = useCallback(async (userId: string) => {
     if (!isSupabaseConfigured) return;
 
@@ -44,19 +44,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching profile:', error);
+        console.warn('Profile fetch warning:', error.message);
       }
 
       if (data) {
         setProfile(data as Profile);
       } else {
-        // Fallback or self-heal profile if trigger was delayed
+        const { data: userData } = await supabase.auth.getUser();
         const fallbackProfile: Profile = {
           id: userId,
-          full_name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Mahasiswa',
+          full_name: userData.user?.user_metadata?.full_name || userData.user?.email?.split('@')[0] || 'Mahasiswa',
           currency: 'IDR',
           cycle_start_day: 25,
           created_at: new Date().toISOString(),
@@ -68,31 +68,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       console.error('Failed to load profile:', err);
     }
-  }, [user]);
+  }, []);
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
-      // Default to demo mode if Supabase credentials are not yet configured
-      const savedDemo = localStorage.getItem('demo_mode');
-      if (savedDemo !== 'false') {
-        setIsDemoUser(true);
-        const savedCycle = localStorage.getItem('demo_cycle_start_day');
-        setProfile({
-          ...DEMO_PROFILE,
-          cycle_start_day: savedCycle ? parseInt(savedCycle, 10) : 25,
-        });
-      }
+      setIsDemoUser(true);
+      const savedCycle = localStorage.getItem('demo_cycle_start_day');
+      setProfile({
+        ...DEMO_PROFILE,
+        cycle_start_day: savedCycle ? parseInt(savedCycle, 10) : 25,
+      });
       setIsLoading(false);
       return;
     }
 
-    // Supabase Auth listener
+    let isMounted = true;
+
+    // Supabase Auth listener (run once on mount)
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!isMounted) return;
       if (session?.user) {
         setUser(session.user);
+        setIsDemoUser(false);
         loadProfile(session.user.id);
       } else {
-        // check if user chose demo
         const demoActive = localStorage.getItem('demo_mode') === 'true';
         if (demoActive) {
           setIsDemoUser(true);
@@ -100,11 +99,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
       setIsLoading(false);
+    }).catch(() => {
+      if (isMounted) setIsLoading(false);
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!isMounted) return;
       if (session?.user) {
         setUser(session.user);
         setIsDemoUser(false);
@@ -119,11 +121,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => {
+      isMounted = false;
       subscription.unsubscribe();
     };
   }, [loadProfile]);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = useCallback(async (email: string, password: string) => {
     if (!isSupabaseConfigured) {
       return { error: new Error('Supabase belum dikonfigurasi di .env') };
     }
@@ -133,9 +136,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem('demo_mode');
     }
     return { error };
-  };
+  }, []);
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const signUp = useCallback(async (email: string, password: string, fullName: string) => {
     if (!isSupabaseConfigured) {
       return { error: new Error('Supabase belum dikonfigurasi di .env') };
     }
@@ -151,19 +154,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem('demo_mode');
     }
     return { error };
-  };
+  }, []);
 
-  const signOut = async () => {
-    if (isSupabaseConfigured && user) {
+  const signOut = useCallback(async () => {
+    if (isSupabaseConfigured) {
       await supabase.auth.signOut();
     }
     setUser(null);
     setIsDemoUser(false);
     localStorage.removeItem('demo_mode');
     setProfile(null);
-  };
+  }, []);
 
-  const updateCycleStartDay = async (day: number) => {
+  const updateCycleStartDay = useCallback(async (day: number) => {
     if (day < 1 || day > 31) {
       return { error: new Error('Tanggal siklus harus antara 1 dan 31') };
     }
@@ -186,30 +189,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     return { error };
-  };
+  }, [user, isDemoUser]);
 
-  const setDemoMode = () => {
+  const setDemoMode = useCallback(() => {
     setIsDemoUser(true);
     localStorage.setItem('demo_mode', 'true');
     setProfile(DEMO_PROFILE);
     setUser(null);
-  };
+  }, []);
+
+  const contextValue = useMemo(
+    () => ({
+      user,
+      profile,
+      isLoading,
+      isConfigured: isSupabaseConfigured,
+      isDemoUser,
+      signIn,
+      signUp,
+      signOut,
+      updateCycleStartDay,
+      setDemoMode,
+    }),
+    [user, profile, isLoading, isDemoUser, signIn, signUp, signOut, updateCycleStartDay, setDemoMode]
+  );
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        profile,
-        isLoading,
-        isConfigured: isSupabaseConfigured,
-        isDemoUser,
-        signIn,
-        signUp,
-        signOut,
-        updateCycleStartDay,
-        setDemoMode,
-      }}
-    >
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );

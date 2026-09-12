@@ -160,8 +160,8 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
     try {
       // Fetch from Supabase
       const [
-        { data: wData },
-        { data: cData },
+        { data: wData, error: wErr },
+        { data: cData, error: cErr },
         { data: tData },
         { data: bData },
         { data: gData },
@@ -175,14 +175,58 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
         supabase.from('recurring_commitments').select('*').order('due_day', { ascending: true }),
       ]);
 
-      setWallets((wData as Wallet[]) || []);
-      setCategories((cData as Category[]) || []);
+      if (wErr || cErr) {
+        console.warn('Supabase query error (tables may need migration):', wErr || cErr);
+      }
+
+      // Auto-seed for authenticated users if wallets are empty
+      if (user && (!wData || wData.length === 0)) {
+        try {
+          const seedWallets = [
+            { user_id: user.id, name: 'Uang Tunai (Cash)', wallet_type: 'cash', balance: 250000, icon: 'banknote', color: '#10b981' },
+            { user_id: user.id, name: 'Rekening Bank', wallet_type: 'bank', balance: 1500000, icon: 'landmark', color: '#3b82f6' },
+            { user_id: user.id, name: 'E-Wallet (GoPay/ShopeePay)', wallet_type: 'ewallet', balance: 100000, icon: 'smartphone', color: '#8b5cf6' },
+          ];
+          await supabase.from('wallets').insert(seedWallets as any);
+
+          if (!cData || cData.length === 0) {
+            const seedCats = [
+              { user_id: user.id, name: 'Makanan & Minuman', type: 'expense', icon: 'utensils', color: '#f59e0b' },
+              { user_id: user.id, name: 'Kost & Utilitas', type: 'expense', icon: 'home', color: '#ef4444' },
+              { user_id: user.id, name: 'Transportasi', type: 'expense', icon: 'bus', color: '#3b82f6' },
+              { user_id: user.id, name: 'Kuliah & Tugas', type: 'expense', icon: 'book-open', color: '#8b5cf6' },
+              { user_id: user.id, name: 'Hiburan & Nongkrong', type: 'expense', icon: 'coffee', color: '#ec4899' },
+              { user_id: user.id, name: 'Belanja Harian', type: 'expense', icon: 'shopping-bag', color: '#14b8a6' },
+              { user_id: user.id, name: 'Uang Bulanan Ortu', type: 'income', icon: 'wallet', color: '#10b981' },
+              { user_id: user.id, name: 'Gaji / Freelance', type: 'income', icon: 'briefcase', color: '#3b82f6' },
+            ];
+            await supabase.from('categories').insert(seedCats as any);
+          }
+
+          const [{ data: newW }, { data: newC }] = await Promise.all([
+            supabase.from('wallets').select('*').order('created_at', { ascending: true }),
+            supabase.from('categories').select('*').order('name', { ascending: true }),
+          ]);
+          setWallets((newW as Wallet[]) || DEFAULT_WALLETS);
+          setCategories((newC as Category[]) || DEFAULT_CATEGORIES);
+        } catch {
+          setWallets(DEFAULT_WALLETS);
+          setCategories(DEFAULT_CATEGORIES);
+        }
+      } else {
+        setWallets(wData && wData.length > 0 ? (wData as Wallet[]) : DEFAULT_WALLETS);
+        setCategories(cData && cData.length > 0 ? (cData as Category[]) : DEFAULT_CATEGORIES);
+      }
+
       setTransactions((tData as Transaction[]) || []);
       setBudgets((bData as Budget[]) || []);
       setSavingsGoals((gData as SavingsGoal[]) || []);
       setCommitments((rData as RecurringCommitment[]) || []);
     } catch (err) {
-      console.error('Failed to load finance data from Supabase:', err);
+      console.error('Failed to load finance data from Supabase, falling back to defaults:', err);
+      setWallets(DEFAULT_WALLETS);
+      setCategories(DEFAULT_CATEGORIES);
+      setTransactions([]);
     } finally {
       setIsLoading(false);
     }
@@ -732,40 +776,58 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('demo_goals', JSON.stringify(presetGoals));
   };
 
+  const contextValue = useMemo(
+    () => ({
+      wallets,
+      categories,
+      transactions,
+      budgets,
+      savingsGoals,
+      commitments,
+      isLoading,
+      cycleInfo,
+      safeToSpend,
+      totalBalance,
+      totalIncomeInCycle,
+      totalExpenseInCycle,
+      totalUnpaidCommitments,
+      addTransaction,
+      deleteTransaction,
+      addWallet,
+      updateWallet,
+      deleteWallet,
+      addCategory,
+      deleteCategory,
+      setCategoryBudget,
+      addSavingsGoal,
+      allocateToGoal,
+      withdrawFromGoal,
+      addCommitment,
+      deleteCommitment,
+      payCommitment,
+      applyPresetTemplate,
+      refreshData,
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      wallets,
+      categories,
+      transactions,
+      budgets,
+      savingsGoals,
+      commitments,
+      isLoading,
+      cycleInfo,
+      safeToSpend,
+      totalBalance,
+      totalIncomeInCycle,
+      totalExpenseInCycle,
+      totalUnpaidCommitments,
+    ]
+  );
+
   return (
-    <FinanceContext.Provider
-      value={{
-        wallets,
-        categories,
-        transactions,
-        budgets,
-        savingsGoals,
-        commitments,
-        isLoading,
-        cycleInfo,
-        safeToSpend,
-        totalBalance,
-        totalIncomeInCycle,
-        totalExpenseInCycle,
-        totalUnpaidCommitments,
-        addTransaction,
-        deleteTransaction,
-        addWallet,
-        updateWallet,
-        deleteWallet,
-        addCategory,
-        deleteCategory,
-        setCategoryBudget,
-        addSavingsGoal,
-        allocateToGoal,
-        withdrawFromGoal,
-        addCommitment,
-        deleteCommitment,
-        payCommitment,
-        applyPresetTemplate,
-        refreshData,
-      }}
-    >
+    <FinanceContext.Provider value={contextValue}>
       {children}
     </FinanceContext.Provider>
   );

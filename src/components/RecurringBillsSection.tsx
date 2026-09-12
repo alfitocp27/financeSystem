@@ -46,15 +46,16 @@ export const RecurringBillsSection: React.FC<RecurringBillsSectionProps> = ({ on
 
   const handlePay = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!payingBill || !payWalletId) return;
+    if (!payingBill) return;
 
-    const sourceWallet = wallets.find((w) => w.id === payWalletId);
+    const effectiveWalletId = payWalletId || wallets[0]?.id || '';
+    const sourceWallet = wallets.find((w) => w.id === effectiveWalletId);
     if (sourceWallet && sourceWallet.balance < payingBill.amount) {
       alert('Saldo dompet tidak mencukupi untuk membayar tagihan ini.');
       return;
     }
 
-    const { error } = await payCommitment(payingBill.id, payWalletId);
+    const { error } = await payCommitment(payingBill.id, effectiveWalletId);
     if (error) {
       alert(error.message);
     } else {

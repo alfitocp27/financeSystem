@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, ArrowRightLeft } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import { formatCurrency } from '../lib/formatters';
@@ -12,16 +12,32 @@ interface TransferModalProps {
 export const TransferModal: React.FC<TransferModalProps> = ({ isOpen, onClose, onShowToast }) => {
   const { wallets, addTransaction } = useFinance();
 
-  const [fromWalletId, setFromWalletId] = useState<string>(wallets[0]?.id || '');
-  const [toWalletId, setToWalletId] = useState<string>(wallets[1]?.id || '');
+  const [fromWalletId, setFromWalletId] = useState<string>('');
+  const [toWalletId, setToWalletId] = useState<string>('');
   const [amountStr, setAmountStr] = useState<string>('');
   const [note, setNote] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (isOpen && wallets.length > 0) {
+      setFromWalletId(wallets[0].id);
+      if (wallets.length > 1) {
+        setToWalletId(wallets[1].id);
+      } else {
+        setToWalletId('');
+      }
+      setAmountStr('');
+      setNote('');
+      setErrorMsg(null);
+    }
+  }, [isOpen, wallets]);
+
   if (!isOpen) return null;
 
-  const sourceWallet = wallets.find((w) => w.id === fromWalletId);
+  const effectiveFromId = fromWalletId || wallets[0]?.id || '';
+  const effectiveToId = toWalletId || wallets.find(w => w.id !== effectiveFromId)?.id || '';
+  const sourceWallet = wallets.find((w) => w.id === effectiveFromId);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,7 +49,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({ isOpen, onClose, o
       return;
     }
 
-    if (!fromWalletId || !toWalletId || fromWalletId === toWalletId) {
+    if (!effectiveFromId || !effectiveToId || effectiveFromId === effectiveToId) {
       setErrorMsg('Pilih dompet asal dan dompet tujuan yang berbeda');
       return;
     }
@@ -47,8 +63,8 @@ export const TransferModal: React.FC<TransferModalProps> = ({ isOpen, onClose, o
     const { error } = await addTransaction({
       type: 'transfer',
       amount,
-      walletId: fromWalletId,
-      destinationWalletId: toWalletId,
+      walletId: effectiveFromId,
+      destinationWalletId: effectiveToId,
       note: note.trim() || 'Transfer Antar Dompet',
     });
     setIsSubmitting(false);
@@ -85,7 +101,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({ isOpen, onClose, o
           <div>
             <label className="text-xs font-semibold text-slate-500 block mb-1">Dari Dompet</label>
             <select
-              value={fromWalletId}
+              value={effectiveFromId}
               onChange={(e) => setFromWalletId(e.target.value)}
               className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
@@ -100,12 +116,12 @@ export const TransferModal: React.FC<TransferModalProps> = ({ isOpen, onClose, o
           <div>
             <label className="text-xs font-semibold text-slate-500 block mb-1">Ke Dompet Tujuan</label>
             <select
-              value={toWalletId}
+              value={effectiveToId}
               onChange={(e) => setToWalletId(e.target.value)}
               className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
               {wallets
-                .filter((w) => w.id !== fromWalletId)
+                .filter((w) => w.id !== effectiveFromId)
                 .map((w) => (
                   <option key={w.id} value={w.id}>
                     {w.name} ({formatCurrency(w.balance)})

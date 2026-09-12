@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
-import type { Wallet, Category, Transaction, Budget, SavingsGoal, TransactionType, WalletType } from '../types/database.types';
+import type { Wallet, Category, Transaction, Budget, SavingsGoal, TransactionType, WalletType, CategoryType } from '../types/database.types';
 import { getCycleInfo, calculateSafeToSpend, type SafeToSpendCalculation, type CycleInfo } from '../lib/budget-cycle';
 
 interface FinanceContextType {
@@ -31,6 +31,8 @@ interface FinanceContextType {
   addWallet: (params: { name: string; wallet_type: WalletType; balance: number; color?: string; icon?: string }) => Promise<{ error: Error | null }>;
   updateWallet: (id: string, updates: Partial<Wallet>) => Promise<{ error: Error | null }>;
   deleteWallet: (id: string) => Promise<{ error: Error | null }>;
+  addCategory: (params: { name: string; type: CategoryType; color?: string; icon?: string }) => Promise<{ error: Error | null }>;
+  deleteCategory: (id: string) => Promise<{ error: Error | null }>;
   setCategoryBudget: (categoryId: string, amount: number) => Promise<{ error: Error | null }>;
   addSavingsGoal: (params: { name: string; target_amount: number; target_date?: string; color?: string }) => Promise<{ error: Error | null }>;
   allocateToGoal: (goalId: string, walletId: string, amount: number) => Promise<{ error: Error | null }>;
@@ -415,6 +417,57 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const addCategory = async (params: { name: string; type: CategoryType; color?: string; icon?: string }) => {
+    if (isDemoUser || !isConfigured || !user) {
+      const newCat: Category = {
+        id: 'cat-' + Date.now(),
+        user_id: 'demo',
+        name: params.name,
+        type: params.type,
+        color: params.color || '#6366f1',
+        icon: params.icon || 'tag',
+        created_at: new Date().toISOString(),
+      };
+      const updated = [...categories, newCat];
+      setCategories(updated);
+      localStorage.setItem('demo_categories', JSON.stringify(updated));
+      return { error: null };
+    }
+
+    try {
+      const { error } = await supabase.from('categories').insert({
+        user_id: user.id,
+        name: params.name,
+        type: params.type,
+        color: params.color || '#6366f1',
+        icon: params.icon || 'tag',
+      });
+      if (error) throw error;
+      await refreshData();
+      return { error: null };
+    } catch (err: any) {
+      return { error: err };
+    }
+  };
+
+  const deleteCategory = async (id: string) => {
+    if (isDemoUser || !isConfigured || !user) {
+      const updated = categories.filter((c) => c.id !== id);
+      setCategories(updated);
+      localStorage.setItem('demo_categories', JSON.stringify(updated));
+      return { error: null };
+    }
+
+    try {
+      const { error } = await supabase.from('categories').delete().eq('id', id);
+      if (error) throw error;
+      await refreshData();
+      return { error: null };
+    } catch (err: any) {
+      return { error: err };
+    }
+  };
+
   const setCategoryBudget = async (categoryId: string, amount: number) => {
     const currentMonth = new Date().getMonth() + 1;
     const currentYear = new Date().getFullYear();
@@ -535,6 +588,8 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
         addWallet,
         updateWallet,
         deleteWallet,
+        addCategory,
+        deleteCategory,
         setCategoryBudget,
         addSavingsGoal,
         allocateToGoal,

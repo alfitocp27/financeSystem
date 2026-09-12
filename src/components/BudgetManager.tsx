@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { Sliders, Edit3, Check, AlertCircle } from 'lucide-react';
+import { Sliders, Edit3, Check, AlertCircle, Plus } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import { formatCurrency } from '../lib/formatters';
 
 interface BudgetManagerProps {
   onShowToast?: (msg: string) => void;
+  onOpenAddCategory?: () => void;
 }
 
-export const BudgetManager: React.FC<BudgetManagerProps> = ({ onShowToast }) => {
+export const BudgetManager: React.FC<BudgetManagerProps> = ({ onShowToast, onOpenAddCategory }) => {
   const { categories, budgets, transactions, cycleInfo, setCategoryBudget } = useFinance();
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [editAmountStr, setEditAmountStr] = useState<string>('');
@@ -42,6 +43,15 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({ onShowToast }) => 
             Anggaran per Kategori
           </h2>
         </div>
+        {onOpenAddCategory && (
+          <button
+            onClick={onOpenAddCategory}
+            className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-xl transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Kategori Baru
+          </button>
+        )}
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm divide-y divide-slate-100 overflow-hidden">

@@ -1,13 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import { FinanceProvider } from './context/FinanceContext';
 import { Navbar } from './components/Navbar';
 import { SafeToSpendCard } from './components/SafeToSpendCard';
+import { FinancialForecastCard } from './components/FinancialForecastCard';
 import { WalletCarousel } from './components/WalletCarousel';
 import { QuickAddModal } from './components/QuickAddModal';
 import { TransferModal } from './components/TransferModal';
 import { AddWalletModal } from './components/AddWalletModal';
 import { EditWalletModal } from './components/EditWalletModal';
+import { AddCategoryModal } from './components/AddCategoryModal';
 import { SavingsGoalSection } from './components/SavingsGoalSection';
 import { BudgetManager } from './components/BudgetManager';
 import { TransactionList } from './components/TransactionList';
@@ -27,12 +29,49 @@ function DashboardContent() {
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [isAddWalletOpen, setIsAddWalletOpen] = useState(false);
   const [editingWallet, setEditingWallet] = useState<Wallet | null>(null);
+  const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
 
   // Toast Notification State
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const showToast = (msg: string) => setToastMessage(msg);
+
+  // Global Keyboard Shortcuts (N / + for quick add, Escape to close)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input or textarea
+      const target = e.target as HTMLElement;
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) {
+        if (e.key === 'Escape') {
+          setIsQuickAddOpen(false);
+          setIsTransferOpen(false);
+          setIsAddWalletOpen(false);
+          setEditingWallet(null);
+          setIsAddCategoryOpen(false);
+          setIsSettingsOpen(false);
+          setIsAuthOpen(false);
+        }
+        return;
+      }
+
+      if (e.key === 'n' || e.key === 'N' || e.key === '+') {
+        e.preventDefault();
+        setIsQuickAddOpen(true);
+      } else if (e.key === 'Escape') {
+        setIsQuickAddOpen(false);
+        setIsTransferOpen(false);
+        setIsAddWalletOpen(false);
+        setEditingWallet(null);
+        setIsAddCategoryOpen(false);
+        setIsSettingsOpen(false);
+        setIsAuthOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-slate-900 pb-24 sm:pb-12">
@@ -60,9 +99,11 @@ function DashboardContent() {
           <button
             onClick={() => setIsQuickAddOpen(true)}
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold text-xs shadow-md shadow-indigo-200 transition-all hover:scale-[1.02] active:scale-95"
+            title="Tekan 'N' atau '+' di keyboard"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
             Catat Transaksi Cepat
+            <span className="ml-1 px-1.5 py-0.5 bg-indigo-500/60 rounded text-[10px] font-mono">N</span>
           </button>
         </div>
 
@@ -95,6 +136,9 @@ function DashboardContent() {
             {/* Safe to Spend Hero Card */}
             <SafeToSpendCard />
 
+            {/* Financial Forecast & Burn Rate */}
+            <FinancialForecastCard />
+
             {/* Dompet & Rekening Carousel */}
             <WalletCarousel
               onOpenTransfer={() => setIsTransferOpen(true)}
@@ -103,7 +147,10 @@ function DashboardContent() {
             />
 
             {/* Anggaran per Kategori */}
-            <BudgetManager onShowToast={showToast} />
+            <BudgetManager
+              onShowToast={showToast}
+              onOpenAddCategory={() => setIsAddCategoryOpen(true)}
+            />
 
             {/* Target Tabungan Section */}
             <SavingsGoalSection onShowToast={showToast} />
@@ -130,7 +177,11 @@ function DashboardContent() {
         {activeTab === 'budget' && (
           <div className="space-y-6">
             <SafeToSpendCard />
-            <BudgetManager onShowToast={showToast} />
+            <FinancialForecastCard />
+            <BudgetManager
+              onShowToast={showToast}
+              onOpenAddCategory={() => setIsAddCategoryOpen(true)}
+            />
           </div>
         )}
 
@@ -143,6 +194,7 @@ function DashboardContent() {
         {activeTab === 'analytics' && (
           <div className="space-y-6">
             <SafeToSpendCard />
+            <FinancialForecastCard />
             <AnalyticsSection />
           </div>
         )}
@@ -178,6 +230,12 @@ function DashboardContent() {
         wallet={editingWallet}
         isOpen={Boolean(editingWallet)}
         onClose={() => setEditingWallet(null)}
+        onShowToast={showToast}
+      />
+
+      <AddCategoryModal
+        isOpen={isAddCategoryOpen}
+        onClose={() => setIsAddCategoryOpen(false)}
         onShowToast={showToast}
       />
 

@@ -1,0 +1,17 @@
+{
+  "name": "Finance Mahasiswa - Safe to Spend",
+  "short_name": "SakuMahasiswa",
+  "description": "Aplikasi pengelolaan keuangan mahasiswa, Safe to Spend harian, dan budget bulanan",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4f46e5",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

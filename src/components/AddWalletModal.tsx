@@ -6,9 +6,10 @@ import type { WalletType } from '../types/database.types';
 interface AddWalletModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onShowToast?: (msg: string) => void;
 }
 
-export const AddWalletModal: React.FC<AddWalletModalProps> = ({ isOpen, onClose }) => {
+export const AddWalletModal: React.FC<AddWalletModalProps> = ({ isOpen, onClose, onShowToast }) => {
   const { addWallet } = useFinance();
 
   const [name, setName] = useState('');
@@ -34,6 +35,7 @@ export const AddWalletModal: React.FC<AddWalletModalProps> = ({ isOpen, onClose 
     setName('');
     setBalanceStr('0');
     onClose();
+    if (onShowToast) onShowToast('Dompet baru berhasil ditambahkan');
   };
 
   const colors = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ec4899', '#06b6d4'];

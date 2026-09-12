@@ -6,9 +6,10 @@ import type { TransactionType } from '../types/database.types';
 interface QuickAddModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onShowToast?: (msg: string) => void;
 }
 
-export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose }) => {
+export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, onShowToast }) => {
   const { wallets, categories, addTransaction } = useFinance();
 
   const [type, setType] = useState<TransactionType>('expense');
@@ -76,6 +77,15 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose })
       setAmountStr('');
       setNote('');
       onClose();
+      if (onShowToast) {
+        onShowToast(
+          type === 'expense'
+            ? 'Pengeluaran berhasil dicatat'
+            : type === 'income'
+            ? 'Pemasukan berhasil ditambahkan'
+            : 'Transfer saldo berhasil'
+        );
+      }
     }
   };
 

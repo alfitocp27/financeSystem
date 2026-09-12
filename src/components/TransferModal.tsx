@@ -6,9 +6,10 @@ import { formatCurrency } from '../lib/formatters';
 interface TransferModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onShowToast?: (msg: string) => void;
 }
 
-export const TransferModal: React.FC<TransferModalProps> = ({ isOpen, onClose }) => {
+export const TransferModal: React.FC<TransferModalProps> = ({ isOpen, onClose, onShowToast }) => {
   const { wallets, addTransaction } = useFinance();
 
   const [fromWalletId, setFromWalletId] = useState<string>(wallets[0]?.id || '');
@@ -58,6 +59,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({ isOpen, onClose })
       setAmountStr('');
       setNote('');
       onClose();
+      if (onShowToast) onShowToast('Transfer antar dompet berhasil diproses');
     }
   };
 

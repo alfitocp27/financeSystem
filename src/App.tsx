@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import { FinanceProvider } from './context/FinanceContext';
 import { Navbar } from './components/Navbar';
+import { OnboardingGuide } from './components/OnboardingGuide';
 import { SafeToSpendCard } from './components/SafeToSpendCard';
 import { FinancialForecastCard } from './components/FinancialForecastCard';
 import { WalletCarousel } from './components/WalletCarousel';
@@ -134,6 +135,13 @@ function DashboardContent() {
         {/* View switching */}
         {activeTab === 'dashboard' && (
           <>
+            {/* Onboarding Guide */}
+            <OnboardingGuide
+              onOpenSettings={() => setIsSettingsOpen(true)}
+              onOpenAddWallet={() => setIsAddWalletOpen(true)}
+              onOpenQuickAdd={() => setIsQuickAddOpen(true)}
+            />
+
             {/* Safe to Spend Hero Card */}
             <SafeToSpendCard />
 

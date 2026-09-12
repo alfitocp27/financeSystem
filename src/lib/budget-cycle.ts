@@ -45,8 +45,8 @@ export function getCycleInfo(cycleStartDay: number = 25, referenceDate: Date = n
   today.setHours(0, 0, 0, 0);
 
   const msPerDay = 1000 * 60 * 60 * 24;
-  const totalDays = Math.round((endDate.getTime() - startDate.getTime()) / msPerDay) + 1;
-  const daysPassed = Math.max(1, Math.round((today.getTime() - startDate.getTime()) / msPerDay) + 1);
+  const totalDays = Math.round((endDate.getTime() - startDate.getTime()) / msPerDay);
+  const daysPassed = Math.max(1, Math.floor((today.getTime() - startDate.getTime()) / msPerDay) + 1);
   const daysRemaining = Math.max(1, totalDays - daysPassed + 1);
   const progressPercentage = Math.min(100, Math.max(0, Math.round((daysPassed / totalDays) * 100)));
 

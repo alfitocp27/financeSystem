@@ -15,10 +15,10 @@ export function formatCurrency(amount: number): string {
  */
 export function formatCompactCurrency(amount: number): string {
   if (Math.abs(amount) >= 1_000_000_000) {
-    return `Rp ${(amount / 1_000_000_000).toFixed(1).replace('.0', '')} M`;
+    return `Rp ${(amount / 1_000_000_000).toFixed(1).replace('.0', '').replace('.', ',')} M`;
   }
   if (Math.abs(amount) >= 1_000_000) {
-    return `Rp ${(amount / 1_000_000).toFixed(1).replace('.0', '')} jt`;
+    return `Rp ${(amount / 1_000_000).toFixed(1).replace('.0', '').replace('.', ',')} jt`;
   }
   if (Math.abs(amount) >= 1_000) {
     return `Rp ${(amount / 1_000).toFixed(0)} rb`;

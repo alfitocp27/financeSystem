@@ -1,15 +1,20 @@
 import React from 'react';
-import { Landmark, Smartphone, Banknote, ArrowRightLeft, Plus, Wallet as WalletIcon } from 'lucide-react';
+import { Landmark, Smartphone, Banknote, ArrowRightLeft, Plus, Wallet as WalletIcon, MoreVertical } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import { formatCurrency } from '../lib/formatters';
-import type { WalletType } from '../types/database.types';
+import type { Wallet, WalletType } from '../types/database.types';
 
 interface WalletCarouselProps {
   onOpenTransfer: () => void;
   onOpenAddWallet: () => void;
+  onEditWallet: (wallet: Wallet) => void;
 }
 
-export const WalletCarousel: React.FC<WalletCarouselProps> = ({ onOpenTransfer, onOpenAddWallet }) => {
+export const WalletCarousel: React.FC<WalletCarouselProps> = ({
+  onOpenTransfer,
+  onOpenAddWallet,
+  onEditWallet,
+}) => {
   const { wallets } = useFinance();
 
   const getWalletIcon = (type: WalletType) => {
@@ -54,18 +59,25 @@ export const WalletCarousel: React.FC<WalletCarouselProps> = ({ onOpenTransfer, 
         {wallets.map((wallet) => (
           <div
             key={wallet.id}
-            className="snap-start flex-shrink-0 w-52 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden"
+            className="snap-start flex-shrink-0 w-52 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group"
           >
-            {/* Top row: Icon & Type */}
+            {/* Top row: Icon, Type & Edit Action */}
             <div className="flex items-center justify-between mb-3">
-              <div
-                className="w-8 h-8 rounded-xl flex items-center justify-center bg-slate-50 border border-slate-100"
-              >
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-slate-50 border border-slate-100">
                 {getWalletIcon(wallet.wallet_type)}
               </div>
-              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                {wallet.wallet_type === 'cash' ? 'Tunai' : wallet.wallet_type}
-              </span>
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                  {wallet.wallet_type === 'cash' ? 'Tunai' : wallet.wallet_type}
+                </span>
+                <button
+                  onClick={() => onEditWallet(wallet)}
+                  className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-slate-700 rounded-md transition-opacity"
+                  title="Edit Dompet"
+                >
+                  <MoreVertical className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
 
             {/* Wallet Name */}

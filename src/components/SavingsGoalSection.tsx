@@ -1,14 +1,19 @@
 import React, { useState } from 'react';
-import { Target, Plus, PiggyBank, X, CheckCircle2 } from 'lucide-react';
+import { Target, Plus, PiggyBank, X, CheckCircle2, ArrowDownLeft } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import { formatCurrency } from '../lib/formatters';
 import type { SavingsGoal } from '../types/database.types';
 
-export const SavingsGoalSection: React.FC = () => {
-  const { savingsGoals, wallets, addSavingsGoal, allocateToGoal } = useFinance();
+interface SavingsGoalSectionProps {
+  onShowToast?: (msg: string) => void;
+}
+
+export const SavingsGoalSection: React.FC<SavingsGoalSectionProps> = ({ onShowToast }) => {
+  const { savingsGoals, wallets, addSavingsGoal, allocateToGoal, withdrawFromGoal } = useFinance();
 
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState<SavingsGoal | null>(null);
+  const [withdrawGoal, setWithdrawGoal] = useState<SavingsGoal | null>(null);
 
   // Add Goal Form state
   const [goalName, setGoalName] = useState('');
@@ -20,6 +25,11 @@ export const SavingsGoalSection: React.FC = () => {
   const [allocateWalletId, setAllocateWalletId] = useState(wallets[0]?.id || '');
   const [allocateAmountStr, setAllocateAmountStr] = useState('');
   const [allocateError, setAllocateError] = useState<string | null>(null);
+
+  // Withdraw Form state
+  const [withdrawWalletId, setWithdrawWalletId] = useState(wallets[0]?.id || '');
+  const [withdrawAmountStr, setWithdrawAmountStr] = useState('');
+  const [withdrawError, setWithdrawError] = useState<string | null>(null);
 
   const handleAddGoal = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,6 +47,7 @@ export const SavingsGoalSection: React.FC = () => {
     setTargetAmountStr('');
     setTargetDate('');
     setIsAddOpen(false);
+    if (onShowToast) onShowToast('Target tabungan baru berhasil dibuat');
   };
 
   const handleAllocate = async (e: React.FormEvent) => {
@@ -62,6 +73,33 @@ export const SavingsGoalSection: React.FC = () => {
     } else {
       setSelectedGoal(null);
       setAllocateAmountStr('');
+      if (onShowToast) onShowToast(`Berhasil menabung Rp ${amount.toLocaleString('id-ID')}`);
+    }
+  };
+
+  const handleWithdraw = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setWithdrawError(null);
+    if (!withdrawGoal) return;
+
+    const amount = parseInt(withdrawAmountStr, 10);
+    if (!amount || amount <= 0) {
+      setWithdrawError('Masukkan nominal penarikan');
+      return;
+    }
+
+    if (amount > withdrawGoal.current_amount) {
+      setWithdrawError(`Maksimal penarikan: ${formatCurrency(withdrawGoal.current_amount)}`);
+      return;
+    }
+
+    const { error } = await withdrawFromGoal(withdrawGoal.id, withdrawWalletId, amount);
+    if (error) {
+      setWithdrawError(error.message);
+    } else {
+      setWithdrawGoal(null);
+      setWithdrawAmountStr('');
+      if (onShowToast) onShowToast(`Berhasil mencairkan Rp ${amount.toLocaleString('id-ID')} ke dompet`);
     }
   };
 
@@ -143,14 +181,27 @@ export const SavingsGoalSection: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Tabung Action */}
-                <button
-                  onClick={() => setSelectedGoal(goal)}
-                  className="w-full py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-xl border border-slate-100 transition-colors flex items-center justify-center gap-1.5"
-                >
-                  <Plus className="w-3.5 h-3.5 text-emerald-600" />
-                  Alokasikan Tabungan
-                </button>
+                {/* Actions: Tabung & Tarik */}
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    onClick={() => setSelectedGoal(goal)}
+                    className="flex-1 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-xl border border-slate-100 transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    <Plus className="w-3.5 h-3.5 text-emerald-600" />
+                    Nabung
+                  </button>
+
+                  {goal.current_amount > 0 && (
+                    <button
+                      onClick={() => setWithdrawGoal(goal)}
+                      className="py-2 px-3 bg-slate-50 hover:bg-slate-100 text-slate-600 text-xs font-bold rounded-xl border border-slate-100 transition-colors flex items-center justify-center gap-1"
+                      title="Cairkan dana ke dompet"
+                    >
+                      <ArrowDownLeft className="w-3.5 h-3.5 text-indigo-600" />
+                      Tarik
+                    </button>
+                  )}
+                </div>
               </div>
             );
           })}
@@ -285,6 +336,67 @@ export const SavingsGoalSection: React.FC = () => {
                 className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-md shadow-emerald-200 transition-all"
               >
                 Konfirmasi Simpan
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Withdraw from Goal */}
+      {withdrawGoal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+          <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+              <div>
+                <h2 className="text-base font-bold text-slate-800">Cairkan: {withdrawGoal.name}</h2>
+                <span className="text-xs text-slate-500">Tersedia: {formatCurrency(withdrawGoal.current_amount)}</span>
+              </div>
+              <button
+                onClick={() => setWithdrawGoal(null)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleWithdraw} className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-slate-500 block mb-1">Transfer ke Dompet</label>
+                <select
+                  value={withdrawWalletId}
+                  onChange={(e) => setWithdrawWalletId(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  {wallets.map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.name} ({formatCurrency(w.balance)})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-500 block mb-1">Nominal yang Ditarik (Rp)</label>
+                <input
+                  type="number"
+                  placeholder="0"
+                  value={withdrawAmountStr}
+                  onChange={(e) => setWithdrawAmountStr(e.target.value)}
+                  required
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-lg font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              {withdrawError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 font-medium">
+                  {withdrawError}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md shadow-indigo-200 transition-all"
+              >
+                Konfirmasi Tarik Dana
               </button>
             </form>
           </div>

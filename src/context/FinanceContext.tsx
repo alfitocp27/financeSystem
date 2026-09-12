@@ -34,6 +34,7 @@ interface FinanceContextType {
   setCategoryBudget: (categoryId: string, amount: number) => Promise<{ error: Error | null }>;
   addSavingsGoal: (params: { name: string; target_amount: number; target_date?: string; color?: string }) => Promise<{ error: Error | null }>;
   allocateToGoal: (goalId: string, walletId: string, amount: number) => Promise<{ error: Error | null }>;
+  withdrawFromGoal: (goalId: string, walletId: string, amount: number) => Promise<{ error: Error | null }>;
   refreshData: () => Promise<void>;
 }
 
@@ -268,10 +269,16 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       );
 
       // update goal if applicable
-      if (params.goalId && params.type === 'expense') {
-        setSavingsGoals((prev) =>
-          prev.map((g) => (g.id === params.goalId ? { ...g, current_amount: g.current_amount + params.amount } : g))
-        );
+      if (params.goalId) {
+        if (params.type === 'expense') {
+          setSavingsGoals((prev) =>
+            prev.map((g) => (g.id === params.goalId ? { ...g, current_amount: g.current_amount + params.amount } : g))
+          );
+        } else if (params.type === 'income') {
+          setSavingsGoals((prev) =>
+            prev.map((g) => (g.id === params.goalId ? { ...g, current_amount: Math.max(0, g.current_amount - params.amount) } : g))
+          );
+        }
       }
 
       const updatedTx = [newTx, ...transactions];
@@ -499,6 +506,16 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  const withdrawFromGoal = async (goalId: string, walletId: string, amount: number) => {
+    return addTransaction({
+      type: 'income',
+      amount,
+      walletId,
+      goalId,
+      note: 'Tarik Dana Tabungan',
+    });
+  };
+
   return (
     <FinanceContext.Provider
       value={{
@@ -521,6 +538,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
         setCategoryBudget,
         addSavingsGoal,
         allocateToGoal,
+        withdrawFromGoal,
         refreshData,
       }}
     >

@@ -134,6 +134,9 @@ begin
   if tg_op = 'INSERT' then
     if new.type = 'income' then
       update public.wallets set balance = balance + new.amount where id = new.wallet_id;
+      if new.goal_id is not null then
+        update public.savings_goals set current_amount = greatest(0, current_amount - new.amount) where id = new.goal_id;
+      end if;
     elsif new.type = 'expense' then
       update public.wallets set balance = balance - new.amount where id = new.wallet_id;
       -- jika dialokasikan ke tabungan

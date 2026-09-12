@@ -7,6 +7,7 @@ import { WalletCarousel } from './components/WalletCarousel';
 import { QuickAddModal } from './components/QuickAddModal';
 import { TransferModal } from './components/TransferModal';
 import { AddWalletModal } from './components/AddWalletModal';
+import { EditWalletModal } from './components/EditWalletModal';
 import { SavingsGoalSection } from './components/SavingsGoalSection';
 import { BudgetManager } from './components/BudgetManager';
 import { TransactionList } from './components/TransactionList';
@@ -15,6 +16,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { AuthModal } from './components/AuthModal';
 import { BottomNav, type TabType } from './components/BottomNav';
 import { Toast } from './components/Toast';
+import type { Wallet } from './types/database.types';
 import { Plus } from 'lucide-react';
 
 function DashboardContent() {
@@ -24,6 +26,7 @@ function DashboardContent() {
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [isAddWalletOpen, setIsAddWalletOpen] = useState(false);
+  const [editingWallet, setEditingWallet] = useState<Wallet | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
 
@@ -96,15 +99,16 @@ function DashboardContent() {
             <WalletCarousel
               onOpenTransfer={() => setIsTransferOpen(true)}
               onOpenAddWallet={() => setIsAddWalletOpen(true)}
+              onEditWallet={(w) => setEditingWallet(w)}
             />
 
             {/* Anggaran per Kategori */}
             <BudgetManager onShowToast={showToast} />
 
             {/* Target Tabungan Section */}
-            <SavingsGoalSection />
+            <SavingsGoalSection onShowToast={showToast} />
 
-            {/* Analisis Pengeluaran */}
+            {/* Analisis Pengeluaran & Grafik Tren */}
             <AnalyticsSection />
 
             {/* Riwayat Transaksi with Search & Filters */}
@@ -117,6 +121,7 @@ function DashboardContent() {
             <WalletCarousel
               onOpenTransfer={() => setIsTransferOpen(true)}
               onOpenAddWallet={() => setIsAddWalletOpen(true)}
+              onEditWallet={(w) => setEditingWallet(w)}
             />
             <TransactionList onShowToast={showToast} />
           </div>
@@ -131,7 +136,7 @@ function DashboardContent() {
 
         {activeTab === 'savings' && (
           <div className="space-y-6">
-            <SavingsGoalSection />
+            <SavingsGoalSection onShowToast={showToast} />
           </div>
         )}
 
@@ -166,6 +171,13 @@ function DashboardContent() {
       <AddWalletModal
         isOpen={isAddWalletOpen}
         onClose={() => setIsAddWalletOpen(false)}
+        onShowToast={showToast}
+      />
+
+      <EditWalletModal
+        wallet={editingWallet}
+        isOpen={Boolean(editingWallet)}
+        onClose={() => setEditingWallet(null)}
         onShowToast={showToast}
       />
 

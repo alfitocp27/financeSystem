@@ -91,6 +91,18 @@ alter table public.transactions add constraint check_valid_transfer check (
   (type <> 'transfer')
 );
 
+-- 9. RECURRING COMMITMENTS (Tagihan Rutin Bulanan: Kost, Wifi, Langganan)
+create table if not exists public.recurring_commitments (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references public.profiles(id) on delete cascade not null,
+  category_id uuid references public.categories(id) on delete set null,
+  name text not null,
+  amount numeric(15,2) not null check (amount > 0),
+  due_day int not null check (due_day between 1 and 31),
+  is_paid boolean default false not null,
+  created_at timestamptz default now() not null
+);
+
 -- =========================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
 -- =========================================================
@@ -100,6 +112,10 @@ alter table public.categories enable row level security;
 alter table public.budgets enable row level security;
 alter table public.savings_goals enable row level security;
 alter table public.transactions enable row level security;
+alter table public.recurring_commitments enable row level security;
+
+create policy "Users manage own recurring commitments" on public.recurring_commitments
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 -- Profiles: pengguna hanya bisa CRUD datanya sendiri
 create policy "Users manage own profile" on public.profiles

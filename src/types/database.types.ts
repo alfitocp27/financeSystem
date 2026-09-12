@@ -84,6 +84,18 @@ export interface Transaction {
   goal?: SavingsGoal;
 }
 
+export interface RecurringCommitment {
+  id: string;
+  user_id: string;
+  category_id: string | null;
+  name: string;
+  amount: number;
+  due_day: number;
+  is_paid: boolean;
+  created_at: string;
+  category?: Category;
+}
+
 export type Database = {
   public: {
     Tables: {
@@ -121,6 +133,12 @@ export type Database = {
         Row: Transaction;
         Insert: Partial<Omit<Transaction, 'id' | 'created_at'>> & { user_id: string; wallet_id: string; type: TransactionType; amount: number; transaction_date: string };
         Update: Partial<Transaction>;
+        Relationships: [];
+      };
+      recurring_commitments: {
+        Row: RecurringCommitment;
+        Insert: Partial<Omit<RecurringCommitment, 'id' | 'created_at'>> & { user_id: string; name: string; amount: number; due_day: number };
+        Update: Partial<RecurringCommitment>;
         Relationships: [];
       };
     };

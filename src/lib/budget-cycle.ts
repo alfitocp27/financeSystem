@@ -66,6 +66,7 @@ export interface SafeToSpendCalculation {
   totalBudget: number;
   totalExpenses: number;
   totalSavingsAllocated: number;
+  totalUnpaidCommitments: number;
   remainingBudget: number;
   daysRemaining: number;
   dailySafeToSpend: number;
@@ -81,6 +82,7 @@ export function calculateSafeToSpend(params: {
   totalBudget: number;
   totalExpenses: number;
   totalSavingsAllocated?: number;
+  totalUnpaidCommitments?: number;
   todayExpenses: number;
   cycleStartDay?: number;
   referenceDate?: Date;
@@ -89,13 +91,14 @@ export function calculateSafeToSpend(params: {
     totalBudget,
     totalExpenses,
     totalSavingsAllocated = 0,
+    totalUnpaidCommitments = 0,
     todayExpenses,
     cycleStartDay = 25,
     referenceDate = new Date(),
   } = params;
 
   const cycle = getCycleInfo(cycleStartDay, referenceDate);
-  const remainingBudget = Math.max(0, totalBudget - totalExpenses - totalSavingsAllocated);
+  const remainingBudget = Math.max(0, totalBudget - totalExpenses - totalSavingsAllocated - totalUnpaidCommitments);
   const dailySafeToSpend = remainingBudget > 0 ? Math.floor(remainingBudget / cycle.daysRemaining) : 0;
   const remainingToday = dailySafeToSpend - todayExpenses;
 
@@ -114,6 +117,7 @@ export function calculateSafeToSpend(params: {
     totalBudget,
     totalExpenses,
     totalSavingsAllocated,
+    totalUnpaidCommitments,
     remainingBudget,
     daysRemaining: cycle.daysRemaining,
     dailySafeToSpend,

@@ -11,6 +11,7 @@ import { AddWalletModal } from './components/AddWalletModal';
 import { EditWalletModal } from './components/EditWalletModal';
 import { AddCategoryModal } from './components/AddCategoryModal';
 import { SavingsGoalSection } from './components/SavingsGoalSection';
+import { RecurringBillsSection } from './components/RecurringBillsSection';
 import { BudgetManager } from './components/BudgetManager';
 import { TransactionList } from './components/TransactionList';
 import { AnalyticsSection } from './components/AnalyticsSection';
@@ -152,6 +153,9 @@ function DashboardContent() {
               onOpenAddCategory={() => setIsAddCategoryOpen(true)}
             />
 
+            {/* Pengeluaran Tetap Bulanan (Kost, Wifi, Langganan) */}
+            <RecurringBillsSection onShowToast={showToast} />
+
             {/* Target Tabungan Section */}
             <SavingsGoalSection onShowToast={showToast} />
 
@@ -178,6 +182,7 @@ function DashboardContent() {
           <div className="space-y-6">
             <SafeToSpendCard />
             <FinancialForecastCard />
+            <RecurringBillsSection onShowToast={showToast} />
             <BudgetManager
               onShowToast={showToast}
               onOpenAddCategory={() => setIsAddCategoryOpen(true)}

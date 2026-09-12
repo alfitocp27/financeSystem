@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
-import type { Wallet, Category, Transaction, Budget, SavingsGoal, TransactionType, WalletType, CategoryType } from '../types/database.types';
+import type { Wallet, Category, Transaction, Budget, SavingsGoal, TransactionType, WalletType, CategoryType, RecurringCommitment } from '../types/database.types';
 import { getCycleInfo, calculateSafeToSpend, type SafeToSpendCalculation, type CycleInfo } from '../lib/budget-cycle';
 
 interface FinanceContextType {
@@ -10,12 +10,14 @@ interface FinanceContextType {
   transactions: Transaction[];
   budgets: Budget[];
   savingsGoals: SavingsGoal[];
+  commitments: RecurringCommitment[];
   isLoading: boolean;
   cycleInfo: CycleInfo;
   safeToSpend: SafeToSpendCalculation;
   totalBalance: number;
   totalIncomeInCycle: number;
   totalExpenseInCycle: number;
+  totalUnpaidCommitments: number;
   // Actions
   addTransaction: (params: {
     type: TransactionType;
@@ -37,6 +39,9 @@ interface FinanceContextType {
   addSavingsGoal: (params: { name: string; target_amount: number; target_date?: string; color?: string }) => Promise<{ error: Error | null }>;
   allocateToGoal: (goalId: string, walletId: string, amount: number) => Promise<{ error: Error | null }>;
   withdrawFromGoal: (goalId: string, walletId: string, amount: number) => Promise<{ error: Error | null }>;
+  addCommitment: (params: { name: string; amount: number; due_day: number; category_id?: string }) => Promise<{ error: Error | null }>;
+  deleteCommitment: (id: string) => Promise<{ error: Error | null }>;
+  payCommitment: (commitmentId: string, walletId: string) => Promise<{ error: Error | null }>;
   refreshData: () => Promise<void>;
 }
 
@@ -73,6 +78,12 @@ const DEFAULT_BUDGETS: Budget[] = [
   { id: 'b-4', user_id: 'demo', category_id: 'cat-5', amount: 250000, period_month: new Date().getMonth() + 1, period_year: new Date().getFullYear(), created_at: '' },
 ];
 
+const DEFAULT_COMMITMENTS: RecurringCommitment[] = [
+  { id: 'rec-1', user_id: 'demo', category_id: 'cat-2', name: 'Sewa Kost Bulanan', amount: 650000, due_day: 1, is_paid: false, created_at: '' },
+  { id: 'rec-2', user_id: 'demo', category_id: 'cat-2', name: 'Wifi & Kuota Kampus', amount: 75000, due_day: 10, is_paid: false, created_at: '' },
+  { id: 'rec-3', user_id: 'demo', category_id: 'cat-5', name: 'Spotify / YouTube Music', amount: 25000, due_day: 15, is_paid: true, created_at: '' },
+];
+
 export function FinanceProvider({ children }: { children: React.ReactNode }) {
   const { user, profile, isDemoUser, isConfigured } = useAuth();
 
@@ -81,6 +92,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [savingsGoals, setSavingsGoals] = useState<SavingsGoal[]>([]);
+  const [commitments, setCommitments] = useState<RecurringCommitment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const cycleStartDay = profile?.cycle_start_day ?? 25;
@@ -97,11 +109,13 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       const storedTransactions = localStorage.getItem('demo_transactions');
       const storedBudgets = localStorage.getItem('demo_budgets');
       const storedGoals = localStorage.getItem('demo_goals');
+      const storedCommitments = localStorage.getItem('demo_commitments');
 
       setWallets(storedWallets ? JSON.parse(storedWallets) : DEFAULT_WALLETS);
       setCategories(storedCategories ? JSON.parse(storedCategories) : DEFAULT_CATEGORIES);
       setBudgets(storedBudgets ? JSON.parse(storedBudgets) : DEFAULT_BUDGETS);
       setSavingsGoals(storedGoals ? JSON.parse(storedGoals) : DEFAULT_GOALS);
+      setCommitments(storedCommitments ? JSON.parse(storedCommitments) : DEFAULT_COMMITMENTS);
 
       if (storedTransactions) {
         setTransactions(JSON.parse(storedTransactions));
@@ -150,12 +164,14 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
         { data: tData },
         { data: bData },
         { data: gData },
+        { data: rData },
       ] = await Promise.all([
         supabase.from('wallets').select('*').order('created_at', { ascending: true }),
         supabase.from('categories').select('*').order('name', { ascending: true }),
         supabase.from('transactions').select('*, wallet:wallets(*), category:categories(*), destination_wallet:wallets!destination_wallet_id(*)').order('transaction_date', { ascending: false }).order('created_at', { ascending: false }),
         supabase.from('budgets').select('*'),
         supabase.from('savings_goals').select('*').order('created_at', { ascending: true }),
+        supabase.from('recurring_commitments').select('*').order('due_day', { ascending: true }),
       ]);
 
       setWallets((wData as Wallet[]) || []);
@@ -163,6 +179,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       setTransactions((tData as Transaction[]) || []);
       setBudgets((bData as Budget[]) || []);
       setSavingsGoals((gData as SavingsGoal[]) || []);
+      setCommitments((rData as RecurringCommitment[]) || []);
     } catch (err) {
       console.error('Failed to load finance data from Supabase:', err);
     } finally {
@@ -214,6 +231,11 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
     return wallets.filter((w) => w.is_active).reduce((acc, w) => acc + Number(w.balance), 0);
   }, [wallets]);
 
+  // Total unpaid recurring commitments (bills like Kost, Wifi)
+  const totalUnpaidCommitments = useMemo(() => {
+    return commitments.filter((c) => !c.is_paid).reduce((acc, c) => acc + Number(c.amount), 0);
+  }, [commitments]);
+
   // Safe to Spend calculation
   const safeToSpend = useMemo(() => {
     // If user has not set any budget categories, fall back to current balance as reference budget
@@ -222,10 +244,12 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
     return calculateSafeToSpend({
       totalBudget: effectiveBudget,
       totalExpenses: totalExpenseInCycle,
+      totalSavingsAllocated: 0,
+      totalUnpaidCommitments,
       todayExpenses,
       cycleStartDay,
     });
-  }, [totalBudget, totalBalance, totalExpenseInCycle, todayExpenses, cycleStartDay]);
+  }, [totalBudget, totalBalance, totalExpenseInCycle, totalUnpaidCommitments, todayExpenses, cycleStartDay]);
 
   // Actions
   const addTransaction = async (params: {
@@ -569,6 +593,90 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  const addCommitment = async (params: { name: string; amount: number; due_day: number; category_id?: string }) => {
+    if (isDemoUser || !isConfigured || !user) {
+      const newRec: RecurringCommitment = {
+        id: 'rec-' + Date.now(),
+        user_id: 'demo',
+        name: params.name,
+        amount: params.amount,
+        due_day: params.due_day,
+        category_id: params.category_id || null,
+        is_paid: false,
+        created_at: new Date().toISOString(),
+      };
+      const updated = [...commitments, newRec];
+      setCommitments(updated);
+      localStorage.setItem('demo_commitments', JSON.stringify(updated));
+      return { error: null };
+    }
+
+    try {
+      const { error } = await supabase.from('recurring_commitments').insert({
+        user_id: user.id,
+        name: params.name,
+        amount: params.amount,
+        due_day: params.due_day,
+        category_id: params.category_id || null,
+        is_paid: false,
+      });
+      if (error) throw error;
+      await refreshData();
+      return { error: null };
+    } catch (err: any) {
+      return { error: err };
+    }
+  };
+
+  const deleteCommitment = async (id: string) => {
+    if (isDemoUser || !isConfigured || !user) {
+      const updated = commitments.filter((c) => c.id !== id);
+      setCommitments(updated);
+      localStorage.setItem('demo_commitments', JSON.stringify(updated));
+      return { error: null };
+    }
+
+    try {
+      const { error } = await supabase.from('recurring_commitments').delete().eq('id', id);
+      if (error) throw error;
+      await refreshData();
+      return { error: null };
+    } catch (err: any) {
+      return { error: err };
+    }
+  };
+
+  const payCommitment = async (commitmentId: string, walletId: string) => {
+    const commitment = commitments.find((c) => c.id === commitmentId);
+    if (!commitment) return { error: new Error('Tagihan tidak ditemukan') };
+
+    const { error: txError } = await addTransaction({
+      type: 'expense',
+      amount: commitment.amount,
+      walletId,
+      categoryId: commitment.category_id || undefined,
+      note: `Bayar ${commitment.name}`,
+    });
+
+    if (txError) return { error: txError };
+
+    if (isDemoUser || !isConfigured || !user) {
+      const updated = commitments.map((c) => (c.id === commitmentId ? { ...c, is_paid: true } : c));
+      setCommitments(updated);
+      localStorage.setItem('demo_commitments', JSON.stringify(updated));
+      return { error: null };
+    }
+
+    try {
+      const { error } = await supabase.from('recurring_commitments').update({ is_paid: true }).eq('id', commitmentId);
+      if (error) throw error;
+      await refreshData();
+      return { error: null };
+    } catch (err: any) {
+      return { error: err };
+    }
+  };
+
   return (
     <FinanceContext.Provider
       value={{
@@ -577,12 +685,14 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
         transactions,
         budgets,
         savingsGoals,
+        commitments,
         isLoading,
         cycleInfo,
         safeToSpend,
         totalBalance,
         totalIncomeInCycle,
         totalExpenseInCycle,
+        totalUnpaidCommitments,
         addTransaction,
         deleteTransaction,
         addWallet,
@@ -594,6 +704,9 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
         addSavingsGoal,
         allocateToGoal,
         withdrawFromGoal,
+        addCommitment,
+        deleteCommitment,
+        payCommitment,
         refreshData,
       }}
     >

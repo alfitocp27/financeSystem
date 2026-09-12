@@ -1,0 +1,538 @@
+import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
+import { supabase } from '../lib/supabase';
+import { useAuth } from './AuthContext';
+import type { Wallet, Category, Transaction, Budget, SavingsGoal, TransactionType, WalletType } from '../types/database.types';
+import { getCycleInfo, calculateSafeToSpend, type SafeToSpendCalculation, type CycleInfo } from '../lib/budget-cycle';
+
+interface FinanceContextType {
+  wallets: Wallet[];
+  categories: Category[];
+  transactions: Transaction[];
+  budgets: Budget[];
+  savingsGoals: SavingsGoal[];
+  isLoading: boolean;
+  cycleInfo: CycleInfo;
+  safeToSpend: SafeToSpendCalculation;
+  totalBalance: number;
+  totalIncomeInCycle: number;
+  totalExpenseInCycle: number;
+  // Actions
+  addTransaction: (params: {
+    type: TransactionType;
+    amount: number;
+    walletId: string;
+    categoryId?: string;
+    destinationWalletId?: string;
+    goalId?: string;
+    note?: string;
+    transactionDate?: string;
+  }) => Promise<{ error: Error | null }>;
+  deleteTransaction: (id: string) => Promise<{ error: Error | null }>;
+  addWallet: (params: { name: string; wallet_type: WalletType; balance: number; color?: string; icon?: string }) => Promise<{ error: Error | null }>;
+  updateWallet: (id: string, updates: Partial<Wallet>) => Promise<{ error: Error | null }>;
+  deleteWallet: (id: string) => Promise<{ error: Error | null }>;
+  setCategoryBudget: (categoryId: string, amount: number) => Promise<{ error: Error | null }>;
+  addSavingsGoal: (params: { name: string; target_amount: number; target_date?: string; color?: string }) => Promise<{ error: Error | null }>;
+  allocateToGoal: (goalId: string, walletId: string, amount: number) => Promise<{ error: Error | null }>;
+  refreshData: () => Promise<void>;
+}
+
+const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
+
+// Initial Mock/Starter Data for Instant Play and Demo Mode
+const DEFAULT_CATEGORIES: Category[] = [
+  { id: 'cat-1', user_id: 'demo', name: 'Makanan & Minuman', type: 'expense', icon: 'utensils', color: '#f59e0b', created_at: '' },
+  { id: 'cat-2', user_id: 'demo', name: 'Kost & Utilitas', type: 'expense', icon: 'home', color: '#ef4444', created_at: '' },
+  { id: 'cat-3', user_id: 'demo', name: 'Transportasi', type: 'expense', icon: 'bus', color: '#3b82f6', created_at: '' },
+  { id: 'cat-4', user_id: 'demo', name: 'Kuliah & Tugas', type: 'expense', icon: 'book-open', color: '#8b5cf6', created_at: '' },
+  { id: 'cat-5', user_id: 'demo', name: 'Hiburan & Nongkrong', type: 'expense', icon: 'coffee', color: '#ec4899', created_at: '' },
+  { id: 'cat-6', user_id: 'demo', name: 'Belanja Harian', type: 'expense', icon: 'shopping-bag', color: '#14b8a6', created_at: '' },
+  { id: 'cat-7', user_id: 'demo', name: 'Uang Bulanan Ortu', type: 'income', icon: 'wallet', color: '#10b981', created_at: '' },
+  { id: 'cat-8', user_id: 'demo', name: 'Gaji / Freelance', type: 'income', icon: 'briefcase', color: '#3b82f6', created_at: '' },
+  { id: 'cat-9', user_id: 'demo', name: 'Beasiswa & Lomba', type: 'income', icon: 'award', color: '#f59e0b', created_at: '' },
+];
+
+const DEFAULT_WALLETS: Wallet[] = [
+  { id: 'w-1', user_id: 'demo', name: 'Uang Tunai (Cash)', wallet_type: 'cash', balance: 250000, icon: 'banknote', color: '#10b981', is_active: true, created_at: '', updated_at: '' },
+  { id: 'w-2', user_id: 'demo', name: 'BCA / Bank Utama', wallet_type: 'bank', balance: 1850000, icon: 'landmark', color: '#3b82f6', is_active: true, created_at: '', updated_at: '' },
+  { id: 'w-3', user_id: 'demo', name: 'GoPay / E-Wallet', wallet_type: 'ewallet', balance: 120000, icon: 'smartphone', color: '#8b5cf6', is_active: true, created_at: '', updated_at: '' },
+];
+
+const DEFAULT_GOALS: SavingsGoal[] = [
+  { id: 'goal-1', user_id: 'demo', name: 'Dana Darurat Kost', target_amount: 1500000, current_amount: 600000, target_date: '2026-12-31', icon: 'shield-alert', color: '#10b981', created_at: '', updated_at: '' },
+  { id: 'goal-2', user_id: 'demo', name: 'Upgrade Laptop / Gadget', target_amount: 5000000, current_amount: 1200000, target_date: '2027-02-01', icon: 'laptop', color: '#6366f1', created_at: '', updated_at: '' },
+];
+
+const DEFAULT_BUDGETS: Budget[] = [
+  { id: 'b-1', user_id: 'demo', category_id: 'cat-1', amount: 900000, period_month: new Date().getMonth() + 1, period_year: new Date().getFullYear(), created_at: '' },
+  { id: 'b-2', user_id: 'demo', category_id: 'cat-2', amount: 600000, period_month: new Date().getMonth() + 1, period_year: new Date().getFullYear(), created_at: '' },
+  { id: 'b-3', user_id: 'demo', category_id: 'cat-3', amount: 200000, period_month: new Date().getMonth() + 1, period_year: new Date().getFullYear(), created_at: '' },
+  { id: 'b-4', user_id: 'demo', category_id: 'cat-5', amount: 250000, period_month: new Date().getMonth() + 1, period_year: new Date().getFullYear(), created_at: '' },
+];
+
+export function FinanceProvider({ children }: { children: React.ReactNode }) {
+  const { user, profile, isDemoUser, isConfigured } = useAuth();
+
+  const [wallets, setWallets] = useState<Wallet[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [savingsGoals, setSavingsGoals] = useState<SavingsGoal[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const cycleStartDay = profile?.cycle_start_day ?? 25;
+  const cycleInfo = useMemo(() => getCycleInfo(cycleStartDay), [cycleStartDay]);
+
+  // Load / Seed Data from Supabase or Local Storage
+  const refreshData = useCallback(async () => {
+    setIsLoading(true);
+
+    if (isDemoUser || !isConfigured || !user) {
+      // LocalStorage Demo Storage
+      const storedWallets = localStorage.getItem('demo_wallets');
+      const storedCategories = localStorage.getItem('demo_categories');
+      const storedTransactions = localStorage.getItem('demo_transactions');
+      const storedBudgets = localStorage.getItem('demo_budgets');
+      const storedGoals = localStorage.getItem('demo_goals');
+
+      setWallets(storedWallets ? JSON.parse(storedWallets) : DEFAULT_WALLETS);
+      setCategories(storedCategories ? JSON.parse(storedCategories) : DEFAULT_CATEGORIES);
+      setBudgets(storedBudgets ? JSON.parse(storedBudgets) : DEFAULT_BUDGETS);
+      setSavingsGoals(storedGoals ? JSON.parse(storedGoals) : DEFAULT_GOALS);
+
+      if (storedTransactions) {
+        setTransactions(JSON.parse(storedTransactions));
+      } else {
+        const todayStr = new Date().toISOString().split('T')[0];
+        const initialTx: Transaction[] = [
+          {
+            id: 'tx-1',
+            user_id: 'demo',
+            wallet_id: 'w-2',
+            category_id: 'cat-7',
+            goal_id: null,
+            type: 'income',
+            amount: 2500000,
+            transaction_date: todayStr,
+            destination_wallet_id: null,
+            note: 'Kiriman bulanan orang tua',
+            created_at: new Date().toISOString(),
+          },
+          {
+            id: 'tx-2',
+            user_id: 'demo',
+            wallet_id: 'w-1',
+            category_id: 'cat-1',
+            goal_id: null,
+            type: 'expense',
+            amount: 25000,
+            transaction_date: todayStr,
+            destination_wallet_id: null,
+            note: 'Makan siang warteg',
+            created_at: new Date().toISOString(),
+          },
+        ];
+        setTransactions(initialTx);
+        localStorage.setItem('demo_transactions', JSON.stringify(initialTx));
+      }
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      // Fetch from Supabase
+      const [
+        { data: wData },
+        { data: cData },
+        { data: tData },
+        { data: bData },
+        { data: gData },
+      ] = await Promise.all([
+        supabase.from('wallets').select('*').order('created_at', { ascending: true }),
+        supabase.from('categories').select('*').order('name', { ascending: true }),
+        supabase.from('transactions').select('*, wallet:wallets(*), category:categories(*), destination_wallet:wallets!destination_wallet_id(*)').order('transaction_date', { ascending: false }).order('created_at', { ascending: false }),
+        supabase.from('budgets').select('*'),
+        supabase.from('savings_goals').select('*').order('created_at', { ascending: true }),
+      ]);
+
+      setWallets((wData as Wallet[]) || []);
+      setCategories((cData as Category[]) || []);
+      setTransactions((tData as Transaction[]) || []);
+      setBudgets((bData as Budget[]) || []);
+      setSavingsGoals((gData as SavingsGoal[]) || []);
+    } catch (err) {
+      console.error('Failed to load finance data from Supabase:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user, isDemoUser, isConfigured]);
+
+  useEffect(() => {
+    refreshData();
+  }, [refreshData]);
+
+  // Calculations within current active cycle
+  const { todayExpenses, totalIncomeInCycle, totalExpenseInCycle } = useMemo(() => {
+    const startStr = cycleInfo.startDate.toISOString().split('T')[0];
+    const endStr = cycleInfo.endDate.toISOString().split('T')[0];
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    let income = 0;
+    let expense = 0;
+    let todayExp = 0;
+
+    transactions.forEach((tx) => {
+      const isDateInCycle = tx.transaction_date >= startStr && tx.transaction_date <= endStr;
+      if (isDateInCycle) {
+        if (tx.type === 'income') income += Number(tx.amount);
+        if (tx.type === 'expense') {
+          expense += Number(tx.amount);
+          if (tx.transaction_date === todayStr) {
+            todayExp += Number(tx.amount);
+          }
+        }
+      }
+    });
+
+    return {
+      todayExpenses: todayExp,
+      totalIncomeInCycle: income,
+      totalExpenseInCycle: expense,
+    };
+  }, [transactions, cycleInfo]);
+
+  // Total allocated budget in current period
+  const totalBudget = useMemo(() => {
+    return budgets.reduce((acc, b) => acc + Number(b.amount), 0);
+  }, [budgets]);
+
+  // Total current balance across all active wallets
+  const totalBalance = useMemo(() => {
+    return wallets.filter((w) => w.is_active).reduce((acc, w) => acc + Number(w.balance), 0);
+  }, [wallets]);
+
+  // Safe to Spend calculation
+  const safeToSpend = useMemo(() => {
+    // If user has not set any budget categories, fall back to current balance as reference budget
+    const effectiveBudget = totalBudget > 0 ? totalBudget : totalBalance + totalExpenseInCycle;
+
+    return calculateSafeToSpend({
+      totalBudget: effectiveBudget,
+      totalExpenses: totalExpenseInCycle,
+      todayExpenses,
+      cycleStartDay,
+    });
+  }, [totalBudget, totalBalance, totalExpenseInCycle, todayExpenses, cycleStartDay]);
+
+  // Actions
+  const addTransaction = async (params: {
+    type: TransactionType;
+    amount: number;
+    walletId: string;
+    categoryId?: string;
+    destinationWalletId?: string;
+    goalId?: string;
+    note?: string;
+    transactionDate?: string;
+  }) => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const txDate = params.transactionDate || todayStr;
+
+    if (isDemoUser || !isConfigured || !user) {
+      const newTx: Transaction = {
+        id: 'tx-' + Date.now(),
+        user_id: 'demo',
+        wallet_id: params.walletId,
+        category_id: params.categoryId || null,
+        goal_id: params.goalId || null,
+        type: params.type,
+        amount: params.amount,
+        transaction_date: txDate,
+        destination_wallet_id: params.destinationWalletId || null,
+        note: params.note || null,
+        created_at: new Date().toISOString(),
+      };
+
+      // update wallets in demo state
+      setWallets((prev) =>
+        prev.map((w) => {
+          if (w.id === params.walletId) {
+            if (params.type === 'income') return { ...w, balance: w.balance + params.amount };
+            if (params.type === 'expense' || params.type === 'transfer') return { ...w, balance: w.balance - params.amount };
+          }
+          if (params.type === 'transfer' && w.id === params.destinationWalletId) {
+            return { ...w, balance: w.balance + params.amount };
+          }
+          return w;
+        })
+      );
+
+      // update goal if applicable
+      if (params.goalId && params.type === 'expense') {
+        setSavingsGoals((prev) =>
+          prev.map((g) => (g.id === params.goalId ? { ...g, current_amount: g.current_amount + params.amount } : g))
+        );
+      }
+
+      const updatedTx = [newTx, ...transactions];
+      setTransactions(updatedTx);
+      localStorage.setItem('demo_transactions', JSON.stringify(updatedTx));
+      return { error: null };
+    }
+
+    try {
+      const { error } = await supabase.from('transactions').insert({
+        user_id: user.id,
+        wallet_id: params.walletId,
+        category_id: params.categoryId || null,
+        goal_id: params.goalId || null,
+        type: params.type,
+        amount: params.amount,
+        transaction_date: txDate,
+        destination_wallet_id: params.destinationWalletId || null,
+        note: params.note || null,
+      });
+
+      if (error) throw error;
+
+      await refreshData();
+      return { error: null };
+    } catch (err: any) {
+      return { error: err };
+    }
+  };
+
+  const deleteTransaction = async (id: string) => {
+    if (isDemoUser || !isConfigured || !user) {
+      const tx = transactions.find((t) => t.id === id);
+      if (tx) {
+        setWallets((prev) =>
+          prev.map((w) => {
+            if (w.id === tx.wallet_id) {
+              if (tx.type === 'income') return { ...w, balance: w.balance - tx.amount };
+              if (tx.type === 'expense' || tx.type === 'transfer') return { ...w, balance: w.balance + tx.amount };
+            }
+            if (tx.type === 'transfer' && w.id === tx.destination_wallet_id) {
+              return { ...w, balance: w.balance - tx.amount };
+            }
+            return w;
+          })
+        );
+      }
+      const updated = transactions.filter((t) => t.id !== id);
+      setTransactions(updated);
+      localStorage.setItem('demo_transactions', JSON.stringify(updated));
+      return { error: null };
+    }
+
+    try {
+      const { error } = await supabase.from('transactions').delete().eq('id', id);
+      if (error) throw error;
+      await refreshData();
+      return { error: null };
+    } catch (err: any) {
+      return { error: err };
+    }
+  };
+
+  const addWallet = async (params: { name: string; wallet_type: WalletType; balance: number; color?: string; icon?: string }) => {
+    if (isDemoUser || !isConfigured || !user) {
+      const newWallet: Wallet = {
+        id: 'w-' + Date.now(),
+        user_id: 'demo',
+        name: params.name,
+        wallet_type: params.wallet_type,
+        balance: params.balance,
+        color: params.color || '#3b82f6',
+        icon: params.icon || 'wallet',
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      const updated = [...wallets, newWallet];
+      setWallets(updated);
+      localStorage.setItem('demo_wallets', JSON.stringify(updated));
+      return { error: null };
+    }
+
+    try {
+      const { error } = await supabase.from('wallets').insert({
+        user_id: user.id,
+        name: params.name,
+        wallet_type: params.wallet_type,
+        balance: params.balance,
+        color: params.color || '#3b82f6',
+        icon: params.icon || 'wallet',
+      });
+      if (error) throw error;
+      await refreshData();
+      return { error: null };
+    } catch (err: any) {
+      return { error: err };
+    }
+  };
+
+  const updateWallet = async (id: string, updates: Partial<Wallet>) => {
+    if (isDemoUser || !isConfigured || !user) {
+      const updated = wallets.map((w) => (w.id === id ? { ...w, ...updates } : w));
+      setWallets(updated);
+      localStorage.setItem('demo_wallets', JSON.stringify(updated));
+      return { error: null };
+    }
+
+    try {
+      const { error } = await supabase.from('wallets').update(updates).eq('id', id);
+      if (error) throw error;
+      await refreshData();
+      return { error: null };
+    } catch (err: any) {
+      return { error: err };
+    }
+  };
+
+  const deleteWallet = async (id: string) => {
+    if (isDemoUser || !isConfigured || !user) {
+      const updated = wallets.filter((w) => w.id !== id);
+      setWallets(updated);
+      localStorage.setItem('demo_wallets', JSON.stringify(updated));
+      return { error: null };
+    }
+
+    try {
+      const { error } = await supabase.from('wallets').delete().eq('id', id);
+      if (error) throw error;
+      await refreshData();
+      return { error: null };
+    } catch (err: any) {
+      return { error: err };
+    }
+  };
+
+  const setCategoryBudget = async (categoryId: string, amount: number) => {
+    const currentMonth = new Date().getMonth() + 1;
+    const currentYear = new Date().getFullYear();
+
+    if (isDemoUser || !isConfigured || !user) {
+      const existing = budgets.findIndex((b) => b.category_id === categoryId);
+      let updated: Budget[];
+      if (existing >= 0) {
+        updated = budgets.map((b, idx) => (idx === existing ? { ...b, amount } : b));
+      } else {
+        const newBudget: Budget = {
+          id: 'b-' + Date.now(),
+          user_id: 'demo',
+          category_id: categoryId,
+          amount,
+          period_month: currentMonth,
+          period_year: currentYear,
+          created_at: new Date().toISOString(),
+        };
+        updated = [...budgets, newBudget];
+      }
+      setBudgets(updated);
+      localStorage.setItem('demo_budgets', JSON.stringify(updated));
+      return { error: null };
+    }
+
+    try {
+      const { error } = await supabase.from('budgets').upsert(
+        {
+          user_id: user.id,
+          category_id: categoryId,
+          amount,
+          period_month: currentMonth,
+          period_year: currentYear,
+        },
+        { onConflict: 'user_id, category_id, period_month, period_year' }
+      );
+      if (error) throw error;
+      await refreshData();
+      return { error: null };
+    } catch (err: any) {
+      return { error: err };
+    }
+  };
+
+  const addSavingsGoal = async (params: { name: string; target_amount: number; target_date?: string; color?: string }) => {
+    if (isDemoUser || !isConfigured || !user) {
+      const newGoal: SavingsGoal = {
+        id: 'goal-' + Date.now(),
+        user_id: 'demo',
+        name: params.name,
+        target_amount: params.target_amount,
+        current_amount: 0,
+        target_date: params.target_date || null,
+        icon: 'target',
+        color: params.color || '#10b981',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      const updated = [...savingsGoals, newGoal];
+      setSavingsGoals(updated);
+      localStorage.setItem('demo_goals', JSON.stringify(updated));
+      return { error: null };
+    }
+
+    try {
+      const { error } = await supabase.from('savings_goals').insert({
+        user_id: user.id,
+        name: params.name,
+        target_amount: params.target_amount,
+        target_date: params.target_date || null,
+        color: params.color || '#10b981',
+      });
+      if (error) throw error;
+      await refreshData();
+      return { error: null };
+    } catch (err: any) {
+      return { error: err };
+    }
+  };
+
+  const allocateToGoal = async (goalId: string, walletId: string, amount: number) => {
+    return addTransaction({
+      type: 'expense',
+      amount,
+      walletId,
+      goalId,
+      note: 'Alokasi Tabungan',
+    });
+  };
+
+  return (
+    <FinanceContext.Provider
+      value={{
+        wallets,
+        categories,
+        transactions,
+        budgets,
+        savingsGoals,
+        isLoading,
+        cycleInfo,
+        safeToSpend,
+        totalBalance,
+        totalIncomeInCycle,
+        totalExpenseInCycle,
+        addTransaction,
+        deleteTransaction,
+        addWallet,
+        updateWallet,
+        deleteWallet,
+        setCategoryBudget,
+        addSavingsGoal,
+        allocateToGoal,
+        refreshData,
+      }}
+    >
+      {children}
+    </FinanceContext.Provider>
+  );
+}
+
+export function useFinance() {
+  const context = useContext(FinanceContext);
+  if (!context) {
+    throw new Error('useFinance must be used within a FinanceProvider');
+  }
+  return context;
+}

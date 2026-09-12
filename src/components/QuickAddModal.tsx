@@ -7,13 +7,19 @@ interface QuickAddModalProps {
   isOpen: boolean;
   onClose: () => void;
   onShowToast?: (msg: string) => void;
+  initialAmount?: number;
 }
 
-export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, onShowToast }) => {
+export const QuickAddModal: React.FC<QuickAddModalProps> = ({
+  isOpen,
+  onClose,
+  onShowToast,
+  initialAmount,
+}) => {
   const { wallets, categories, addTransaction } = useFinance();
 
   const [type, setType] = useState<TransactionType>('expense');
-  const [amountStr, setAmountStr] = useState<string>('');
+  const [amountStr, setAmountStr] = useState<string>(initialAmount ? initialAmount.toString() : '');
   const [walletId, setWalletId] = useState<string>(wallets[0]?.id || '');
   const [destinationWalletId, setDestinationWalletId] = useState<string>(wallets[1]?.id || '');
   const [categoryId, setCategoryId] = useState<string>('');

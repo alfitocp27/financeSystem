@@ -1,9 +1,13 @@
 import React from 'react';
-import { ShieldCheck, AlertTriangle, AlertCircle, ArrowUpRight, ArrowDownRight, CalendarClock, Info } from 'lucide-react';
+import { ShieldCheck, AlertTriangle, AlertCircle, ArrowUpRight, ArrowDownRight, CalendarClock, Info, Calculator } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import { formatCurrency, formatCompactCurrency } from '../lib/formatters';
 
-export const SafeToSpendCard: React.FC = () => {
+interface SafeToSpendCardProps {
+  onOpenSimulator?: () => void;
+}
+
+export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({ onOpenSimulator }) => {
   const { safeToSpend, cycleInfo, totalBalance, totalIncomeInCycle, totalExpenseInCycle } = useFinance();
 
   const getPaceBadge = () => {
@@ -63,9 +67,21 @@ export const SafeToSpendCard: React.FC = () => {
 
       {/* Main Safe to Spend Figure */}
       <div className="mb-6">
-        <span className="text-xs uppercase font-bold tracking-wider text-slate-400">
-          Safe to Spend Hari Ini
-        </span>
+        <div className="flex items-center justify-between">
+          <span className="text-xs uppercase font-bold tracking-wider text-slate-400">
+            Safe to Spend Hari Ini
+          </span>
+          {onOpenSimulator && (
+            <button
+              onClick={onOpenSimulator}
+              className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[11px] font-bold rounded-xl transition-colors"
+              title="Hitung dampak rencana belanja terhadap jatah hari esok"
+            >
+              <Calculator className="w-3.5 h-3.5" />
+              Simulasi Jajan
+            </button>
+          )}
+        </div>
         <div className="flex items-baseline gap-2 mt-1">
           <div className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
             {formatCurrency(safeToSpend.dailySafeToSpend)}

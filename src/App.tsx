@@ -11,6 +11,7 @@ import { TransferModal } from './components/TransferModal';
 import { AddWalletModal } from './components/AddWalletModal';
 import { EditWalletModal } from './components/EditWalletModal';
 import { AddCategoryModal } from './components/AddCategoryModal';
+import { SpendingSimulatorModal } from './components/SpendingSimulatorModal';
 import { SavingsGoalSection } from './components/SavingsGoalSection';
 import { RecurringBillsSection } from './components/RecurringBillsSection';
 import { BudgetManager } from './components/BudgetManager';
@@ -28,10 +29,12 @@ function DashboardContent() {
 
   // Modal States
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
+  const [quickAddInitialAmount, setQuickAddInitialAmount] = useState<number | undefined>(undefined);
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [isAddWalletOpen, setIsAddWalletOpen] = useState(false);
   const [editingWallet, setEditingWallet] = useState<Wallet | null>(null);
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
+  const [isSimulatorOpen, setIsSimulatorOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
 
@@ -51,6 +54,7 @@ function DashboardContent() {
           setIsAddWalletOpen(false);
           setEditingWallet(null);
           setIsAddCategoryOpen(false);
+          setIsSimulatorOpen(false);
           setIsSettingsOpen(false);
           setIsAuthOpen(false);
         }
@@ -59,6 +63,7 @@ function DashboardContent() {
 
       if (e.key === 'n' || e.key === 'N' || e.key === '+') {
         e.preventDefault();
+        setQuickAddInitialAmount(undefined);
         setIsQuickAddOpen(true);
       } else if (e.key === 'Escape') {
         setIsQuickAddOpen(false);
@@ -66,6 +71,7 @@ function DashboardContent() {
         setIsAddWalletOpen(false);
         setEditingWallet(null);
         setIsAddCategoryOpen(false);
+        setIsSimulatorOpen(false);
         setIsSettingsOpen(false);
         setIsAuthOpen(false);
       }
@@ -99,7 +105,10 @@ function DashboardContent() {
             </p>
           </div>
           <button
-            onClick={() => setIsQuickAddOpen(true)}
+            onClick={() => {
+              setQuickAddInitialAmount(undefined);
+              setIsQuickAddOpen(true);
+            }}
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold text-xs shadow-md shadow-indigo-200 transition-all hover:scale-[1.02] active:scale-95"
             title="Tekan 'N' atau '+' di keyboard"
           >
@@ -139,11 +148,14 @@ function DashboardContent() {
             <OnboardingGuide
               onOpenSettings={() => setIsSettingsOpen(true)}
               onOpenAddWallet={() => setIsAddWalletOpen(true)}
-              onOpenQuickAdd={() => setIsQuickAddOpen(true)}
+              onOpenQuickAdd={() => {
+                setQuickAddInitialAmount(undefined);
+                setIsQuickAddOpen(true);
+              }}
             />
 
             {/* Safe to Spend Hero Card */}
-            <SafeToSpendCard />
+            <SafeToSpendCard onOpenSimulator={() => setIsSimulatorOpen(true)} />
 
             {/* Financial Forecast & Burn Rate */}
             <FinancialForecastCard />
@@ -188,7 +200,7 @@ function DashboardContent() {
 
         {activeTab === 'budget' && (
           <div className="space-y-6">
-            <SafeToSpendCard />
+            <SafeToSpendCard onOpenSimulator={() => setIsSimulatorOpen(true)} />
             <FinancialForecastCard />
             <RecurringBillsSection onShowToast={showToast} />
             <BudgetManager
@@ -206,7 +218,7 @@ function DashboardContent() {
 
         {activeTab === 'analytics' && (
           <div className="space-y-6">
-            <SafeToSpendCard />
+            <SafeToSpendCard onOpenSimulator={() => setIsSimulatorOpen(true)} />
             <FinancialForecastCard />
             <AnalyticsSection />
           </div>
@@ -217,7 +229,10 @@ function DashboardContent() {
       <BottomNav
         activeTab={activeTab}
         onSelectTab={setActiveTab}
-        onOpenQuickAdd={() => setIsQuickAddOpen(true)}
+        onOpenQuickAdd={() => {
+          setQuickAddInitialAmount(undefined);
+          setIsQuickAddOpen(true);
+        }}
       />
 
       {/* Modals */}
@@ -225,6 +240,7 @@ function DashboardContent() {
         isOpen={isQuickAddOpen}
         onClose={() => setIsQuickAddOpen(false)}
         onShowToast={showToast}
+        initialAmount={quickAddInitialAmount}
       />
 
       <TransferModal
@@ -250,6 +266,15 @@ function DashboardContent() {
         isOpen={isAddCategoryOpen}
         onClose={() => setIsAddCategoryOpen(false)}
         onShowToast={showToast}
+      />
+
+      <SpendingSimulatorModal
+        isOpen={isSimulatorOpen}
+        onClose={() => setIsSimulatorOpen(false)}
+        onProceedToRecord={(amt) => {
+          setQuickAddInitialAmount(amt);
+          setIsQuickAddOpen(true);
+        }}
       />
 
       <SettingsModal

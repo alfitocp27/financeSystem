@@ -102,4 +102,27 @@ describe('Safe to Spend Calculation', () => {
     expect(result.dailySafeToSpend).toBe(10000);
     expect(result.paceStatus).toBe('warning');
   });
+
+  it('calculates simulated impact of planned expense on future days correctly', () => {
+    const refDate = new Date(2026, 8, 15);
+    const initial = calculateSafeToSpend({
+      totalBudget: 320000,
+      totalExpenses: 0,
+      todayExpenses: 0,
+      cycleStartDay: 1,
+      referenceDate: refDate,
+    });
+
+    // 16 days total remaining (Sep 15 to Sep 30)
+    expect(initial.dailySafeToSpend).toBe(20000); // 320k / 16 = 20k/day
+
+    // If spending 50k today, 15 days remain from tomorrow:
+    // New remaining = 320k - 50k = 270k
+    // Future daily allowance = 270k / 15 = 18k/day
+    const plannedExtra = 50000;
+    const futureDays = 15;
+    const futureAllowance = Math.floor((initial.remainingBudget - plannedExtra) / futureDays);
+    expect(futureAllowance).toBe(18000);
+    expect(initial.dailySafeToSpend - futureAllowance).toBe(2000);
+  });
 });

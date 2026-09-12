@@ -102,7 +102,7 @@ export function calculateSafeToSpend(params: {
   const dailySafeToSpend = remainingBudget > 0 ? Math.floor(remainingBudget / cycle.daysRemaining) : 0;
   const remainingToday = dailySafeToSpend - todayExpenses;
 
-  let paceStatus: PaceStatus = 'safe';
+  let paceStatus: PaceStatus;
   if (totalBudget <= 0) {
     paceStatus = 'no-budget';
   } else if (remainingToday < 0) {

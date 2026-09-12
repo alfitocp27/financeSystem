@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { ArrowDownRight, ArrowUpRight, ArrowRightLeft, Trash2, History, Search, Download, Filter, X } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import { formatCurrency, formatRelativeDate, formatDateIndo } from '../lib/formatters';
@@ -16,13 +16,13 @@ export const TransactionList: React.FC<TransactionListProps> = ({ onShowToast })
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showFilters, setShowFilters] = useState<boolean>(false);
 
-  const getWalletName = (walletId: string) => {
+  const getWalletName = useCallback((walletId: string) => {
     return wallets.find((w) => w.id === walletId)?.name || 'Dompet';
-  };
+  }, [wallets]);
 
-  const getCategory = (catId?: string | null) => {
+  const getCategory = useCallback((catId?: string | null) => {
     return categories.find((c) => c.id === catId);
-  };
+  }, [categories]);
 
   // Filtered transactions calculation
   const filteredTransactions = useMemo(() => {
@@ -60,7 +60,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({ onShowToast })
 
       return true;
     });
-  }, [transactions, filterType, filterWallet, dateScope, searchQuery, cycleInfo, categories, wallets]);
+  }, [transactions, filterType, filterWallet, dateScope, searchQuery, cycleInfo, getCategory, getWalletName]);
 
   // Export CSV
   const handleExportCSV = () => {

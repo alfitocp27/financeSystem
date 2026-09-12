@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import type { Profile } from '../types/database.types';
@@ -36,7 +36,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isDemoUser, setIsDemoUser] = useState(false);
 
   // Load profile from Supabase
-  const loadProfile = async (userId: string) => {
+  const loadProfile = useCallback(async (userId: string) => {
     if (!isSupabaseConfigured) return;
 
     try {
@@ -68,13 +68,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       console.error('Failed to load profile:', err);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
       // Default to demo mode if Supabase credentials are not yet configured
       const savedDemo = localStorage.getItem('demo_mode');
-      if (savedDemo === 'true' || true) {
+      if (savedDemo !== 'false') {
         setIsDemoUser(true);
         const savedCycle = localStorage.getItem('demo_cycle_start_day');
         setProfile({
@@ -121,7 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [loadProfile]);
 
   const signIn = async (email: string, password: string) => {
     if (!isSupabaseConfigured) {

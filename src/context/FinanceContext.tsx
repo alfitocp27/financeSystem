@@ -42,6 +42,7 @@ interface FinanceContextType {
   addCommitment: (params: { name: string; amount: number; due_day: number; category_id?: string }) => Promise<{ error: Error | null }>;
   deleteCommitment: (id: string) => Promise<{ error: Error | null }>;
   payCommitment: (commitmentId: string, walletId: string) => Promise<{ error: Error | null }>;
+  applyPresetTemplate: (preset: 'kost' | 'home') => Promise<void>;
   refreshData: () => Promise<void>;
 }
 
@@ -677,6 +678,60 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const applyPresetTemplate = async (preset: 'kost' | 'home') => {
+    let presetCategories: Category[];
+    let presetCommitments: RecurringCommitment[];
+    let presetGoals: SavingsGoal[];
+
+    if (preset === 'kost') {
+      presetCategories = [
+        { id: 'cat-1', user_id: 'demo', name: 'Makanan Warteg & Kost', type: 'expense', icon: 'utensils', color: '#f59e0b', created_at: '' },
+        { id: 'cat-2', user_id: 'demo', name: 'Sewa Kost & Listrik', type: 'expense', icon: 'home', color: '#ef4444', created_at: '' },
+        { id: 'cat-3', user_id: 'demo', name: 'Laundry & Kebutuhan Kamar', type: 'expense', icon: 'shopping-bag', color: '#14b8a6', created_at: '' },
+        { id: 'cat-4', user_id: 'demo', name: 'Transportasi Kampus', type: 'expense', icon: 'bus', color: '#3b82f6', created_at: '' },
+        { id: 'cat-5', user_id: 'demo', name: 'Kuliah & Tugas', type: 'expense', icon: 'book-open', color: '#8b5cf6', created_at: '' },
+        { id: 'cat-6', user_id: 'demo', name: 'Hiburan & Nongkrong', type: 'expense', icon: 'coffee', color: '#ec4899', created_at: '' },
+        { id: 'cat-7', user_id: 'demo', name: 'Kiriman Uang Ortu', type: 'income', icon: 'wallet', color: '#10b981', created_at: '' },
+        { id: 'cat-8', user_id: 'demo', name: 'Freelance / Sampingan', type: 'income', icon: 'briefcase', color: '#3b82f6', created_at: '' },
+      ];
+      presetCommitments = [
+        { id: 'rec-1', user_id: 'demo', category_id: 'cat-2', name: 'Sewa Kost Bulanan', amount: 650000, due_day: 1, is_paid: false, created_at: '' },
+        { id: 'rec-2', user_id: 'demo', category_id: 'cat-2', name: 'Wifi Kost & Kuota', amount: 75000, due_day: 10, is_paid: false, created_at: '' },
+        { id: 'rec-3', user_id: 'demo', category_id: 'cat-3', name: 'Paket Laundry Bulanan', amount: 60000, due_day: 15, is_paid: false, created_at: '' },
+      ];
+      presetGoals = [
+        { id: 'goal-1', user_id: 'demo', name: 'Dana Darurat Kost', target_amount: 1500000, current_amount: 500000, target_date: '2026-12-31', icon: 'shield-alert', color: '#10b981', created_at: '', updated_at: '' },
+        { id: 'goal-2', user_id: 'demo', name: 'Tabungan Mudik Semester', target_amount: 1000000, current_amount: 300000, target_date: '2027-01-15', icon: 'bus', color: '#6366f1', created_at: '', updated_at: '' },
+      ];
+    } else {
+      presetCategories = [
+        { id: 'cat-1', user_id: 'demo', name: 'Makanan & Jajan Kampus', type: 'expense', icon: 'utensils', color: '#f59e0b', created_at: '' },
+        { id: 'cat-2', user_id: 'demo', name: 'Bensin & Transportasi', type: 'expense', icon: 'bus', color: '#3b82f6', created_at: '' },
+        { id: 'cat-3', user_id: 'demo', name: 'Kuliah & Fotokopi Buku', type: 'expense', icon: 'book-open', color: '#8b5cf6', created_at: '' },
+        { id: 'cat-4', user_id: 'demo', name: 'Nongkrong & Ngopi', type: 'expense', icon: 'coffee', color: '#ec4899', created_at: '' },
+        { id: 'cat-5', user_id: 'demo', name: 'Belanja Pribadi & Hobi', type: 'expense', icon: 'shopping-bag', color: '#14b8a6', created_at: '' },
+        { id: 'cat-6', user_id: 'demo', name: 'Uang Saku Ortu', type: 'income', icon: 'wallet', color: '#10b981', created_at: '' },
+        { id: 'cat-7', user_id: 'demo', name: 'Part-time / Gaji', type: 'income', icon: 'briefcase', color: '#3b82f6', created_at: '' },
+      ];
+      presetCommitments = [
+        { id: 'rec-1', user_id: 'demo', category_id: 'cat-2', name: 'Paket Internet / Kuota', amount: 75000, due_day: 5, is_paid: false, created_at: '' },
+        { id: 'rec-2', user_id: 'demo', category_id: 'cat-4', name: 'Spotify / Streaming', amount: 25000, due_day: 15, is_paid: true, created_at: '' },
+      ];
+      presetGoals = [
+        { id: 'goal-1', user_id: 'demo', name: 'Beli Laptop / Gadget', target_amount: 5000000, current_amount: 800000, target_date: '2027-02-01', icon: 'laptop', color: '#6366f1', created_at: '', updated_at: '' },
+        { id: 'goal-2', user_id: 'demo', name: 'Dana Kursus / Sertifikasi', target_amount: 1000000, current_amount: 200000, target_date: '2026-12-01', icon: 'award', color: '#10b981', created_at: '', updated_at: '' },
+      ];
+    }
+
+    setCategories(presetCategories);
+    setCommitments(presetCommitments);
+    setSavingsGoals(presetGoals);
+
+    localStorage.setItem('demo_categories', JSON.stringify(presetCategories));
+    localStorage.setItem('demo_commitments', JSON.stringify(presetCommitments));
+    localStorage.setItem('demo_goals', JSON.stringify(presetGoals));
+  };
+
   return (
     <FinanceContext.Provider
       value={{
@@ -707,6 +762,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
         addCommitment,
         deleteCommitment,
         payCommitment,
+        applyPresetTemplate,
         refreshData,
       }}
     >

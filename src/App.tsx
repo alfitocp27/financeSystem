@@ -255,6 +255,7 @@ function DashboardContent() {
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
+        onShowToast={showToast}
       />
 
       <AuthModal

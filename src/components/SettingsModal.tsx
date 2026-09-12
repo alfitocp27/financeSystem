@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
-import { X, Calendar, Database, Check, RefreshCw } from 'lucide-react';
+import { X, Calendar, Database, Check, RefreshCw, Layers, Home, Building2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useFinance } from '../context/FinanceContext';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onShowToast?: (msg: string) => void;
 }
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
+export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, onShowToast }) => {
   const { profile, updateCycleStartDay, isConfigured, isDemoUser, setDemoMode } = useAuth();
-  const { refreshData } = useFinance();
+  const { refreshData, applyPresetTemplate } = useFinance();
 
   const [cycleDay, setCycleDay] = useState<number>(profile?.cycle_start_day || 25);
   const [isSaved, setIsSaved] = useState(false);
@@ -28,11 +29,24 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
       setErrorMsg(error.message);
     } else {
       setIsSaved(true);
+      if (onShowToast) onShowToast('Tanggal siklus berhasil diperbarui');
       setTimeout(() => {
         setIsSaved(false);
         onClose();
-      }, 1000);
+      }, 800);
     }
+  };
+
+  const handleApplyPreset = async (preset: 'kost' | 'home') => {
+    await applyPresetTemplate(preset);
+    if (onShowToast) {
+      onShowToast(
+        preset === 'kost'
+          ? 'Template Mahasiswa Kost diterapkan!'
+          : 'Template Mahasiswa Rumah/Non-Kost diterapkan!'
+      );
+    }
+    onClose();
   };
 
   const handleResetDemo = () => {
@@ -41,15 +55,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     localStorage.removeItem('demo_transactions');
     localStorage.removeItem('demo_budgets');
     localStorage.removeItem('demo_goals');
+    localStorage.removeItem('demo_commitments');
     localStorage.removeItem('demo_cycle_start_day');
     setDemoMode();
     refreshData();
+    if (onShowToast) onShowToast('Data demo berhasil direset ke awal');
     onClose();
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
-      <div className="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl">
+      <div className="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
           <h2 className="text-base font-bold text-slate-800">Pengaturan Aplikasi</h2>
           <button
@@ -58,6 +74,41 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
           >
             <X className="w-5 h-5" />
           </button>
+        </div>
+
+        {/* Preset Template Switcher */}
+        <div className="mb-5 pb-5 border-b border-slate-100">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <Layers className="w-4 h-4 text-indigo-600" />
+            <label className="text-xs font-bold text-slate-700">
+              Template Gaya Hidup Mahasiswa
+            </label>
+          </div>
+          <p className="text-[11px] text-slate-500 mb-3">
+            Sesuaikan otomatis pos kategori, tagihan wajib, dan target tabungan sesuai tempat tinggal:
+          </p>
+
+          <div className="grid grid-cols-2 gap-2.5">
+            <button
+              type="button"
+              onClick={() => handleApplyPreset('kost')}
+              className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-2xl text-left transition-colors"
+            >
+              <Building2 className="w-5 h-5 text-indigo-600 mb-1.5" />
+              <div className="text-xs font-bold text-slate-800">Anak Kost</div>
+              <div className="text-[10px] text-slate-500 mt-0.5">Sewa Kost, Wifi, Laundry, Warteg</div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleApplyPreset('home')}
+              className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-2xl text-left transition-colors"
+            >
+              <Home className="w-5 h-5 text-emerald-600 mb-1.5" />
+              <div className="text-xs font-bold text-slate-800">Tinggal di Rumah</div>
+              <div className="text-[10px] text-slate-500 mt-0.5">Bensin, Uang Jajan, Hobi, Tabungan Laptop</div>
+            </button>
+          </div>
         </div>
 
         {/* Cycle Date Settings */}
@@ -70,7 +121,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
               </label>
             </div>
             <p className="text-[11px] text-slate-500 mb-2.5">
-              Biasanya disesuaikan dengan tanggal penerimaan uang saku/bulanan dari orang tua.
+              Dihitung dari tanggal ini hingga 1 hari sebelum tanggal ini di bulan berikutnya (misal kiriman uang tiap tanggal 25).
             </p>
 
             <div className="flex items-center gap-3">

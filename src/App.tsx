@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { FinanceProvider } from './context/FinanceContext';
+import { Sidebar, type ActiveTab } from './components/Sidebar';
 import { Navbar } from './components/Navbar';
 import { OnboardingGuide } from './components/OnboardingGuide';
 import { SafeToSpendCard } from './components/SafeToSpendCard';
@@ -19,13 +20,13 @@ import { TransactionList } from './components/TransactionList';
 import { AnalyticsSection } from './components/AnalyticsSection';
 import { SettingsModal } from './components/SettingsModal';
 import { AuthModal } from './components/AuthModal';
-import { BottomNav, type TabType } from './components/BottomNav';
+import { BottomNav } from './components/BottomNav';
 import { Toast } from './components/Toast';
 import type { Wallet } from './types/database.types';
-import { Plus } from 'lucide-react';
 
 function DashboardContent() {
-  const [activeTab, setActiveTab] = useState<TabType>('dashboard');
+  const { user, profile } = useAuth();
+  const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
 
   // Modal States
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
@@ -42,10 +43,12 @@ function DashboardContent() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const showToast = (msg: string) => setToastMessage(msg);
 
+  // Student greeting name
+  const studentName = profile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Mahasiswa';
+
   // Global Keyboard Shortcuts (N / + for quick add, Escape to close)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger if user is typing in an input or textarea
       const target = e.target as HTMLElement;
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) {
         if (e.key === 'Escape') {
@@ -82,150 +85,177 @@ function DashboardContent() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col text-slate-900 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:pb-12">
+    <div className="min-h-screen bg-bg-primary text-text-primary flex flex-col antialiased">
       {/* Toast Notification */}
       <Toast message={toastMessage} onClose={() => setToastMessage(null)} />
 
-      {/* Top Navbar */}
-      <Navbar
-        onOpenSettings={() => setIsSettingsOpen(true)}
+      {/* Desktop Persistent Left Sidebar (Stitch Design) */}
+      <Sidebar
+        activeTab={activeTab}
+        onSelectTab={setActiveTab}
         onOpenAuth={() => setIsAuthOpen(true)}
       />
 
-      {/* Main Container */}
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 pt-5 space-y-6">
-        {/* Desktop Header & Quick Add Bar */}
-        <div className="hidden sm:flex items-center justify-between pb-1">
-          <div>
-            <h1 className="text-xl font-extrabold text-slate-800 tracking-tight">
-              Ringkasan Keuangan
-            </h1>
-            <p className="text-xs text-slate-500">
-              Pantau jatah harian dan laju belanja agar uang cukup sampai akhir bulan.
-            </p>
-          </div>
-          <button
-            onClick={() => {
-              setQuickAddInitialAmount(undefined);
-              setIsQuickAddOpen(true);
-            }}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold text-xs shadow-md shadow-indigo-200 transition-all hover:scale-[1.02] active:scale-95"
-            title="Tekan 'N' atau '+' di keyboard"
-          >
-            <Plus className="w-4 h-4 stroke-[2.5]" />
-            Catat Transaksi Cepat
-            <span className="ml-1 px-1.5 py-0.5 bg-indigo-500/60 rounded text-[10px] font-mono">N</span>
-          </button>
-        </div>
+      {/* Main Content Area (offset by 240px on desktop) */}
+      <div className="lg:pl-[240px] flex flex-col flex-1 min-w-0 pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-12">
+        {/* Top Navbar */}
+        <Navbar
+          activeTab={activeTab}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          onOpenAuth={() => setIsAuthOpen(true)}
+          onOpenQuickAdd={() => {
+            setQuickAddInitialAmount(undefined);
+            setIsQuickAddOpen(true);
+          }}
+        />
 
-        {/* Desktop Tab Selector */}
-        <div className="hidden sm:flex items-center gap-1.5 p-1 bg-slate-100/80 rounded-2xl w-fit">
-          {[
-            { id: 'dashboard', label: 'Ringkasan Utama' },
-            { id: 'wallets', label: 'Dompet & Transfer' },
-            { id: 'budget', label: 'Anggaran Kategori' },
-            { id: 'savings', label: 'Target Tabungan' },
-            { id: 'analytics', label: 'Analisis & Grafik' },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as TabType)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                activeTab === tab.id
-                  ? 'bg-white text-slate-900 shadow-xs'
-                  : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        {/* Main Content View Container */}
+        <main className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-5 space-y-6 flex-1">
+          {/* Dashboard Tab (Stitch 2-Column Layout) */}
+          {activeTab === 'dashboard' && (
+            <>
+              {/* Top Greeting Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1">
+                <div>
+                  <h1 className="text-xl sm:text-2xl font-bold text-text-primary tracking-tight">
+                    Halo, {studentName} 👋
+                  </h1>
+                  <p className="text-xs sm:text-sm text-text-muted mt-0.5">
+                    Berikut ringkasan kondisi keuangan dan batas aman belanja harianmu.
+                  </p>
+                </div>
+              </div>
 
-        {/* View switching */}
-        {activeTab === 'dashboard' && (
-          <>
-            {/* Onboarding Guide */}
-            <OnboardingGuide
-              onOpenSettings={() => setIsSettingsOpen(true)}
-              onOpenAddWallet={() => setIsAddWalletOpen(true)}
-              onOpenQuickAdd={() => {
-                setQuickAddInitialAmount(undefined);
-                setIsQuickAddOpen(true);
-              }}
-            />
+              {/* Onboarding Guide Card for first steps */}
+              <OnboardingGuide
+                onOpenSettings={() => setIsSettingsOpen(true)}
+                onOpenAddWallet={() => setIsAddWalletOpen(true)}
+                onOpenQuickAdd={() => {
+                  setQuickAddInitialAmount(undefined);
+                  setIsQuickAddOpen(true);
+                }}
+              />
 
-            {/* Safe to Spend Hero Card */}
-            <SafeToSpendCard onOpenSimulator={() => setIsSimulatorOpen(true)} />
+              {/* Safe to Spend Hero + 4 Summary Cards */}
+              <SafeToSpendCard onOpenSimulator={() => setIsSimulatorOpen(true)} />
 
-            {/* Financial Forecast & Burn Rate */}
-            <FinancialForecastCard />
+              {/* Financial Forecast & Burn Rate Card */}
+              <FinancialForecastCard />
 
-            {/* Dompet & Rekening Carousel */}
-            <WalletCarousel
-              onOpenTransfer={() => setIsTransferOpen(true)}
-              onOpenAddWallet={() => setIsAddWalletOpen(true)}
-              onEditWallet={(w) => setEditingWallet(w)}
-            />
+              {/* 2-Column Responsive Layout (Span 8 Left vs Span 4 Right) */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                {/* Left Column (Span 8 on desktop) */}
+                <div className="lg:col-span-8 space-y-6">
+                  {/* Budget Usage Breakdown Gauge */}
+                  <BudgetManager
+                    onShowToast={showToast}
+                    onOpenAddCategory={() => setIsAddCategoryOpen(true)}
+                  />
 
-            {/* Anggaran per Kategori */}
-            <BudgetManager
-              onShowToast={showToast}
-              onOpenAddCategory={() => setIsAddCategoryOpen(true)}
-            />
+                  {/* Wallets Overview Carousel */}
+                  <WalletCarousel
+                    onOpenTransfer={() => setIsTransferOpen(true)}
+                    onOpenAddWallet={() => setIsAddWalletOpen(true)}
+                    onEditWallet={(w) => setEditingWallet(w)}
+                  />
+                </div>
 
-            {/* Pengeluaran Tetap Bulanan (Kost, Wifi, Langganan) */}
-            <RecurringBillsSection onShowToast={showToast} />
+                {/* Right Column (Span 4 on desktop) */}
+                <div className="lg:col-span-4 space-y-6">
+                  {/* Transaksi Terbaru */}
+                  <TransactionList
+                    onShowToast={showToast}
+                    onOpenQuickAdd={() => {
+                      setQuickAddInitialAmount(undefined);
+                      setIsQuickAddOpen(true);
+                    }}
+                  />
 
-            {/* Target Tabungan Section */}
-            <SavingsGoalSection onShowToast={showToast} />
+                  {/* Pengeluaran Tetap Bulanan */}
+                  <RecurringBillsSection onShowToast={showToast} />
 
-            {/* Analisis Pengeluaran & Grafik Tren */}
-            <AnalyticsSection />
+                  {/* Target Tabungan */}
+                  <SavingsGoalSection onShowToast={showToast} />
+                </div>
+              </div>
+            </>
+          )}
 
-            {/* Riwayat Transaksi with Search & Filters */}
-            <TransactionList onShowToast={showToast} />
-          </>
-        )}
+          {/* Transactions Tab */}
+          {activeTab === 'transactions' && (
+            <div className="space-y-6">
+              <TransactionList
+                onShowToast={showToast}
+                onOpenQuickAdd={() => {
+                  setQuickAddInitialAmount(undefined);
+                  setIsQuickAddOpen(true);
+                }}
+              />
+            </div>
+          )}
 
-        {activeTab === 'wallets' && (
-          <div className="space-y-6">
-            <WalletCarousel
-              onOpenTransfer={() => setIsTransferOpen(true)}
-              onOpenAddWallet={() => setIsAddWalletOpen(true)}
-              onEditWallet={(w) => setEditingWallet(w)}
-            />
-            <TransactionList onShowToast={showToast} />
-          </div>
-        )}
+          {/* Wallets Tab */}
+          {activeTab === 'wallets' && (
+            <div className="space-y-6">
+              <WalletCarousel
+                onOpenTransfer={() => setIsTransferOpen(true)}
+                onOpenAddWallet={() => setIsAddWalletOpen(true)}
+                onEditWallet={(w) => setEditingWallet(w)}
+              />
+              <TransactionList
+                onShowToast={showToast}
+                onOpenQuickAdd={() => {
+                  setQuickAddInitialAmount(undefined);
+                  setIsQuickAddOpen(true);
+                }}
+              />
+            </div>
+          )}
 
-        {activeTab === 'budget' && (
-          <div className="space-y-6">
-            <SafeToSpendCard onOpenSimulator={() => setIsSimulatorOpen(true)} />
-            <FinancialForecastCard />
-            <RecurringBillsSection onShowToast={showToast} />
-            <BudgetManager
-              onShowToast={showToast}
-              onOpenAddCategory={() => setIsAddCategoryOpen(true)}
-            />
-          </div>
-        )}
+          {/* Budget Tab */}
+          {activeTab === 'budget' && (
+            <div className="space-y-6">
+              <SafeToSpendCard onOpenSimulator={() => setIsSimulatorOpen(true)} />
+              <BudgetManager
+                onShowToast={showToast}
+                onOpenAddCategory={() => setIsAddCategoryOpen(true)}
+              />
+              <RecurringBillsSection onShowToast={showToast} />
+              <FinancialForecastCard />
+            </div>
+          )}
 
-        {activeTab === 'savings' && (
-          <div className="space-y-6">
-            <SavingsGoalSection onShowToast={showToast} />
-          </div>
-        )}
+          {/* Savings Tab */}
+          {activeTab === 'savings' && (
+            <div className="space-y-6">
+              <SavingsGoalSection onShowToast={showToast} />
+              <FinancialForecastCard />
+            </div>
+          )}
 
-        {activeTab === 'analytics' && (
-          <div className="space-y-6">
-            <SafeToSpendCard onOpenSimulator={() => setIsSimulatorOpen(true)} />
-            <FinancialForecastCard />
-            <AnalyticsSection />
-          </div>
-        )}
-      </main>
+          {/* Reports & Analytics Tab */}
+          {activeTab === 'analytics' && (
+            <div className="space-y-6">
+              <AnalyticsSection />
+              <SafeToSpendCard onOpenSimulator={() => setIsSimulatorOpen(true)} />
+              <FinancialForecastCard />
+            </div>
+          )}
 
-      {/* Mobile Bottom Navigation Bar */}
+          {/* Settings Tab */}
+          {activeTab === 'settings' && (
+            <div className="space-y-6 max-w-2xl mx-auto">
+              <SettingsModal
+                isOpen={true}
+                onClose={() => setActiveTab('dashboard')}
+                onShowToast={showToast}
+              />
+            </div>
+          )}
+        </main>
+      </div>
+
+      {/* Mobile Bottom Navigation Bar (Stitch Mobile Footer) */}
       <BottomNav
         activeTab={activeTab}
         onSelectTab={setActiveTab}
@@ -235,7 +265,7 @@ function DashboardContent() {
         }}
       />
 
-      {/* Modals */}
+      {/* Modals & Bottom Sheets */}
       <QuickAddModal
         isOpen={isQuickAddOpen}
         onClose={() => setIsQuickAddOpen(false)}
@@ -277,11 +307,13 @@ function DashboardContent() {
         }}
       />
 
-      <SettingsModal
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        onShowToast={showToast}
-      />
+      {activeTab !== 'settings' && (
+        <SettingsModal
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+          onShowToast={showToast}
+        />
+      )}
 
       <AuthModal
         isOpen={isAuthOpen}

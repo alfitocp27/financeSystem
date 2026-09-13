@@ -1,13 +1,36 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { ArrowDownRight, ArrowUpRight, ArrowRightLeft, Trash2, History, Search, Download, Filter, X } from 'lucide-react';
+import {
+  ArrowRightLeft,
+  Trash2,
+  ReceiptText,
+  Search,
+  Download,
+  Filter,
+  X,
+  Plus,
+  Utensils,
+  Home,
+  Bus,
+  BookOpen,
+  Coffee,
+  ShoppingBag,
+  Tag,
+  Wallet,
+  Briefcase,
+  Award,
+} from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import { formatCurrency, formatRelativeDate, formatDateIndo } from '../lib/formatters';
 
 interface TransactionListProps {
   onShowToast?: (msg: string) => void;
+  onOpenQuickAdd?: () => void;
 }
 
-export const TransactionList: React.FC<TransactionListProps> = ({ onShowToast }) => {
+export const TransactionList: React.FC<TransactionListProps> = ({
+  onShowToast,
+  onOpenQuickAdd,
+}) => {
   const { transactions, wallets, categories, cycleInfo, deleteTransaction } = useFinance();
 
   const [filterType, setFilterType] = useState<string>('all');
@@ -23,6 +46,31 @@ export const TransactionList: React.FC<TransactionListProps> = ({ onShowToast })
   const getCategory = useCallback((catId?: string | null) => {
     return categories.find((c) => c.id === catId);
   }, [categories]);
+
+  const getCategoryIcon = (iconName?: string) => {
+    switch (iconName) {
+      case 'utensils':
+        return <Utensils className="w-4 h-4" />;
+      case 'home':
+        return <Home className="w-4 h-4" />;
+      case 'bus':
+        return <Bus className="w-4 h-4" />;
+      case 'book-open':
+        return <BookOpen className="w-4 h-4" />;
+      case 'coffee':
+        return <Coffee className="w-4 h-4" />;
+      case 'shopping-bag':
+        return <ShoppingBag className="w-4 h-4" />;
+      case 'briefcase':
+        return <Briefcase className="w-4 h-4" />;
+      case 'award':
+        return <Award className="w-4 h-4" />;
+      case 'wallet':
+        return <Wallet className="w-4 h-4" />;
+      default:
+        return <Tag className="w-4 h-4" />;
+    }
+  };
 
   // Filtered transactions calculation
   const filteredTransactions = useMemo(() => {
@@ -91,7 +139,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({ onShowToast })
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `transaksi_keuangan_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `transaksi_sakumhs_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -105,24 +153,36 @@ export const TransactionList: React.FC<TransactionListProps> = ({ onShowToast })
   };
 
   return (
-    <section>
-      {/* Header & Main Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-        <div className="flex items-center gap-1.5">
-          <History className="w-4 h-4 text-slate-500" />
-          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500">
-            Riwayat Transaksi ({filteredTransactions.length})
+    <section className="bg-surface rounded-2xl sm:rounded-[14px] p-5 sm:p-6 border border-border-default shadow-sm">
+      {/* Header & Main Action Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-border-default">
+        <div className="flex items-center gap-2">
+          <ReceiptText className="w-4 h-4 text-primary-600" />
+          <h2 className="text-base font-bold text-text-primary tracking-tight">
+            Riwayat Transaksi
           </h2>
+          <span className="text-xs text-text-muted font-normal">
+            ({filteredTransactions.length})
+          </span>
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Toggle Filter Bar Button */}
+          {onOpenQuickAdd && (
+            <button
+              onClick={onOpenQuickAdd}
+              className="inline-flex sm:hidden items-center gap-1 text-xs font-semibold text-primary-600 bg-primary-50 px-2.5 py-1.5 rounded-lg"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Catat</span>
+            </button>
+          )}
+
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`p-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1 transition-colors ${
+            className={`p-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition-colors ${
               showFilters || filterWallet !== 'all' || dateScope !== 'cycle'
-                ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
-                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                ? 'bg-primary-50 border-primary-200 text-primary-700'
+                : 'bg-surface border-border-default text-text-secondary hover:bg-bg-secondary'
             }`}
             title="Filter Lanjutan"
           >
@@ -130,43 +190,42 @@ export const TransactionList: React.FC<TransactionListProps> = ({ onShowToast })
             <span className="hidden sm:inline">Filter</span>
           </button>
 
-          {/* Export CSV Button */}
           <button
             onClick={handleExportCSV}
-            className="p-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1 transition-colors"
+            className="p-1.5 bg-surface border border-border-default hover:bg-bg-secondary text-text-secondary rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors"
             title="Download CSV"
           >
-            <Download className="w-3.5 h-3.5 text-indigo-600" />
+            <Download className="w-3.5 h-3.5 text-primary-600" />
             <span className="hidden sm:inline">Export CSV</span>
           </button>
         </div>
       </div>
 
-      {/* Search and Quick Type Tabs */}
-      <div className="space-y-2 mb-3">
-        <div className="flex gap-2">
-          {/* Search Box */}
+      {/* Search Input & Quick Type Tabs */}
+      <div className="space-y-3 mb-4">
+        <div className="flex flex-col sm:flex-row gap-2.5">
+          {/* Search Input */}
           <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
             <input
               type="text"
-              placeholder="Cari transaksi, makanan, dompet..."
+              placeholder="Cari transaksi, makanan, rekening..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-8 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-2xs"
+              className="w-full pl-9 pr-8 py-2 bg-surface border border-border-default rounded-xl text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-primary-500 shadow-2xs"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
 
-          {/* Type Filter Chips */}
-          <div className="flex gap-1 bg-slate-100 p-1 rounded-xl text-xs shrink-0">
+          {/* Type Filter Tabs */}
+          <div className="flex gap-1 bg-bg-secondary p-1 rounded-xl text-xs shrink-0 self-start sm:self-auto">
             {[
               { id: 'all', label: 'Semua' },
               { id: 'expense', label: 'Keluar' },
@@ -176,10 +235,10 @@ export const TransactionList: React.FC<TransactionListProps> = ({ onShowToast })
               <button
                 key={tab.id}
                 onClick={() => setFilterType(tab.id)}
-                className={`px-2.5 py-1 rounded-lg font-semibold transition-all ${
+                className={`px-3 py-1 rounded-lg font-semibold transition-all ${
                   filterType === tab.id
-                    ? 'bg-white text-slate-900 shadow-2xs'
-                    : 'text-slate-500 hover:text-slate-800'
+                    ? 'bg-surface text-text-primary shadow-2xs'
+                    : 'text-text-muted hover:text-text-secondary'
                 }`}
               >
                 {tab.label}
@@ -188,30 +247,30 @@ export const TransactionList: React.FC<TransactionListProps> = ({ onShowToast })
           </div>
         </div>
 
-        {/* Collapsible Advanced Filters (Wallet & Date Scope) */}
+        {/* Advanced Filters Drawer */}
         {showFilters && (
-          <div className="p-3 bg-slate-50/90 border border-slate-200 rounded-2xl flex flex-wrap items-center gap-3 text-xs animate-in fade-in duration-200">
-            {/* Date Scope */}
+          <div className="p-3 bg-bg-secondary rounded-xl flex flex-wrap items-center gap-3 text-xs border border-border-subtle animate-in fade-in duration-150">
             <div className="flex items-center gap-1.5">
-              <span className="text-slate-500 font-medium">Periode:</span>
+              <span className="text-text-muted font-medium">Periode:</span>
               <select
                 value={dateScope}
                 onChange={(e) => setDateScope(e.target.value as any)}
-                className="px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-slate-800 font-semibold focus:outline-none"
+                className="px-2.5 py-1 bg-surface border border-border-default rounded-lg text-text-primary font-semibold focus:outline-none"
               >
-                <option value="cycle">Siklus Aktif ({formatDateIndo(cycleInfo.startDate)} - {formatDateIndo(cycleInfo.endDate)})</option>
+                <option value="cycle">
+                  Siklus Aktif ({formatDateIndo(cycleInfo.startDate)} – {formatDateIndo(cycleInfo.endDate)})
+                </option>
                 <option value="month">Bulan Kalender Ini</option>
                 <option value="all">Semua Riwayat</option>
               </select>
             </div>
 
-            {/* Wallet Filter */}
             <div className="flex items-center gap-1.5">
-              <span className="text-slate-500 font-medium">Dompet:</span>
+              <span className="text-text-muted font-medium">Dompet:</span>
               <select
                 value={filterWallet}
                 onChange={(e) => setFilterWallet(e.target.value)}
-                className="px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-slate-800 font-semibold focus:outline-none"
+                className="px-2.5 py-1 bg-surface border border-border-default rounded-lg text-text-primary font-semibold focus:outline-none"
               >
                 <option value="all">Semua Dompet</option>
                 {wallets.map((w) => (
@@ -225,15 +284,13 @@ export const TransactionList: React.FC<TransactionListProps> = ({ onShowToast })
         )}
       </div>
 
-      {/* Transaction Records List */}
+      {/* Transaction Rows List */}
       {filteredTransactions.length === 0 ? (
-        <div className="bg-white p-8 rounded-2xl border border-slate-100 text-center">
-          <p className="text-xs text-slate-400 font-medium">
-            Tidak ada transaksi yang cocok dengan filter.
-          </p>
+        <div className="p-8 text-center text-xs text-text-muted">
+          Tidak ada transaksi yang cocok dengan filter.
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm divide-y divide-slate-100 overflow-hidden">
+        <div className="divide-y divide-border-subtle">
           {filteredTransactions.map((tx) => {
             const category = getCategory(tx.category_id);
             const sourceWalletName = getWalletName(tx.wallet_id);
@@ -242,63 +299,66 @@ export const TransactionList: React.FC<TransactionListProps> = ({ onShowToast })
             return (
               <div
                 key={tx.id}
-                className="p-3.5 sm:p-4 flex items-center justify-between hover:bg-slate-50/80 transition-colors group"
+                className="py-3 sm:py-3.5 flex items-center justify-between hover:bg-surface-container-low px-2 rounded-xl transition-colors group"
               >
-                {/* Left: Type Icon & Details */}
+                {/* Left: Category Icon & Details */}
                 <div className="flex items-center gap-3 min-w-0">
                   <div
-                    className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                    className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
                       tx.type === 'income'
-                        ? 'bg-emerald-50 text-emerald-600'
+                        ? 'bg-semantic-green-soft text-semantic-green'
                         : tx.type === 'expense'
-                        ? 'bg-rose-50 text-rose-600'
-                        : 'bg-indigo-50 text-indigo-600'
+                        ? 'bg-semantic-rose-soft text-semantic-rose'
+                        : 'bg-primary-50 text-primary-600'
                     }`}
                   >
-                    {tx.type === 'income' && <ArrowUpRight className="w-5 h-5" />}
-                    {tx.type === 'expense' && <ArrowDownRight className="w-5 h-5" />}
-                    {tx.type === 'transfer' && <ArrowRightLeft className="w-4 h-4" />}
+                    {tx.type === 'transfer' ? (
+                      <ArrowRightLeft className="w-4 h-4" />
+                    ) : (
+                      getCategoryIcon(category?.icon)
+                    )}
                   </div>
 
                   <div className="min-w-0">
-                    <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5 flex-wrap">
-                      <span>{category?.name || (tx.type === 'transfer' ? 'Transfer Saldo' : 'Lainnya')}</span>
-                      {tx.note && (
-                        <span className="text-slate-400 font-normal text-[11px] truncate max-w-[140px] sm:max-w-[240px]">
-                          • {tx.note}
-                        </span>
-                      )}
+                    <div className="text-xs sm:text-sm font-semibold text-text-primary truncate">
+                      {tx.note || category?.name || (tx.type === 'transfer' ? 'Transfer Saldo' : 'Lainnya')}
                     </div>
-                    <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
-                      <span>{formatRelativeDate(tx.transaction_date)}</span>
-                      <span>•</span>
-                      <span className="truncate">
+                    <div className="text-[11px] text-text-muted mt-0.5 flex items-center gap-1.5 flex-wrap truncate">
+                      <span>
                         {tx.type === 'transfer'
                           ? `${sourceWalletName} ➔ ${destWalletName}`
                           : sourceWalletName}
                       </span>
+                      <span>•</span>
+                      <span>{formatRelativeDate(tx.transaction_date)}</span>
+                      {category && tx.note && (
+                        <>
+                          <span>•</span>
+                          <span className="text-text-secondary">{category.name}</span>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
 
                 {/* Right: Amount & Delete Button */}
-                <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-2">
+                <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-3">
                   <div
-                    className={`text-xs sm:text-sm font-bold text-right ${
+                    className={`text-xs sm:text-sm font-bold text-right tabular-nums ${
                       tx.type === 'income'
-                        ? 'text-emerald-600'
+                        ? 'text-semantic-green'
                         : tx.type === 'expense'
-                        ? 'text-rose-600'
-                        : 'text-indigo-600'
+                        ? 'text-semantic-rose'
+                        : 'text-text-primary'
                     }`}
                   >
-                    {tx.type === 'income' ? '+' : tx.type === 'expense' ? '-' : ''}
+                    {tx.type === 'income' ? '+ ' : tx.type === 'expense' ? '- ' : ''}
                     {formatCurrency(tx.amount)}
                   </div>
 
                   <button
                     onClick={() => handleDelete(tx.id)}
-                    className="opacity-70 sm:opacity-0 sm:group-hover:opacity-100 p-1.5 text-slate-300 hover:text-rose-500 rounded-lg transition-all active:scale-95"
+                    className="opacity-70 sm:opacity-0 sm:group-hover:opacity-100 p-1.5 text-text-muted hover:text-semantic-rose rounded-lg transition-all active:scale-95"
                     title="Hapus transaksi"
                     aria-label="Hapus transaksi"
                   >

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Target, Plus, PiggyBank, X, CheckCircle2, ArrowDownLeft } from 'lucide-react';
+import { Target, Plus, PiggyBank, X, CheckCircle2, ArrowDownLeft, ShieldAlert, Laptop, Award } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import { formatCurrency } from '../lib/formatters';
 import type { SavingsGoal } from '../types/database.types';
@@ -22,12 +22,12 @@ export const SavingsGoalSection: React.FC<SavingsGoalSectionProps> = ({ onShowTo
   const [goalColor, setGoalColor] = useState('#10b981');
 
   // Allocate Form state
-  const [allocateWalletId, setAllocateWalletId] = useState(wallets[0]?.id || '');
+  const [allocateWalletId, setAllocateWalletId] = useState('');
   const [allocateAmountStr, setAllocateAmountStr] = useState('');
   const [allocateError, setAllocateError] = useState<string | null>(null);
 
   // Withdraw Form state
-  const [withdrawWalletId, setWithdrawWalletId] = useState(wallets[0]?.id || '');
+  const [withdrawWalletId, setWithdrawWalletId] = useState('');
   const [withdrawAmountStr, setWithdrawAmountStr] = useState('');
   const [withdrawError, setWithdrawError] = useState<string | null>(null);
 
@@ -105,33 +105,50 @@ export const SavingsGoalSection: React.FC<SavingsGoalSectionProps> = ({ onShowTo
     }
   };
 
+  const getGoalIcon = (iconName?: string) => {
+    switch (iconName) {
+      case 'shield-alert':
+        return <ShieldAlert className="w-4 h-4" />;
+      case 'laptop':
+        return <Laptop className="w-4 h-4" />;
+      case 'award':
+        return <Award className="w-4 h-4" />;
+      default:
+        return <Target className="w-4 h-4" />;
+    }
+  };
+
   return (
-    <section>
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-1.5">
-          <PiggyBank className="w-4 h-4 text-emerald-600" />
-          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500">
+    <section className="bg-surface rounded-2xl sm:rounded-[14px] p-5 sm:p-6 border border-border-default shadow-sm">
+      <div className="flex items-center justify-between mb-4 pb-3 border-b border-border-default">
+        <div className="flex items-center gap-2">
+          <PiggyBank className="w-4 h-4 text-primary-600" />
+          <h2 className="text-base font-bold text-text-primary tracking-tight">
             Target Tabungan
           </h2>
+          <span className="text-xs text-text-muted font-normal">
+            ({savingsGoals.length})
+          </span>
         </div>
+
         <button
           onClick={() => setIsAddOpen(true)}
-          className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-xl transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary-600 bg-primary-50 hover:bg-primary-100 px-3 py-1.5 rounded-lg transition-colors"
         >
           <Plus className="w-3.5 h-3.5" />
-          Target Baru
+          <span>Target Baru</span>
         </button>
       </div>
 
       {savingsGoals.length === 0 ? (
-        <div className="bg-white p-6 rounded-2xl border border-dashed border-slate-200 text-center">
-          <Target className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-          <p className="text-xs text-slate-500 font-medium">Belum ada target tabungan.</p>
+        <div className="p-8 text-center border border-dashed border-border-default rounded-xl">
+          <Target className="w-8 h-8 text-text-muted mx-auto mb-2" />
+          <p className="text-xs text-text-secondary font-medium">Belum ada target tabungan.</p>
           <button
             onClick={() => setIsAddOpen(true)}
-            className="mt-2 text-xs font-bold text-indigo-600 hover:underline"
+            className="mt-2 text-xs font-semibold text-primary-600 hover:underline"
           >
-            Buat target pertamamu (misal: Dana Darurat)
+            Buat target pertamamu (misal: Dana Darurat Kost)
           </button>
         </div>
       ) : (
@@ -143,36 +160,41 @@ export const SavingsGoalSection: React.FC<SavingsGoalSectionProps> = ({ onShowTo
             return (
               <div
                 key={goal.id}
-                className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden flex flex-col justify-between"
+                className="bg-surface-container-low p-4 rounded-xl border border-border-default hover:border-primary-500 transition-colors flex flex-col justify-between"
               >
                 <div>
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-between gap-2 mb-2.5">
+                    <div className="flex items-center gap-2.5 min-w-0">
                       <div
-                        className="w-2.5 h-2.5 rounded-full"
-                        style={{ backgroundColor: goal.color }}
-                      />
-                      <h3 className="text-sm font-bold text-slate-800 truncate">{goal.name}</h3>
+                        className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: `${goal.color}20`, color: goal.color }}
+                      >
+                        {getGoalIcon(goal.icon)}
+                      </div>
+                      <h3 className="text-xs font-bold text-text-primary truncate">{goal.name}</h3>
                     </div>
+
                     {isCompleted ? (
-                      <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                      <span className="flex items-center gap-1 text-[10px] font-bold text-semantic-green bg-semantic-green-soft px-2 py-0.5 rounded-full border border-semantic-green/20">
                         <CheckCircle2 className="w-3 h-3" /> Tercapai
                       </span>
                     ) : (
-                      <span className="text-xs font-bold text-slate-600">{progress}%</span>
+                      <span className="text-xs font-bold text-text-primary tabular-nums">
+                        {progress}%
+                      </span>
                     )}
                   </div>
 
                   {/* Amounts */}
-                  <div className="flex items-baseline justify-between text-xs text-slate-500 mb-2">
+                  <div className="flex items-baseline justify-between text-xs text-text-muted mb-2">
                     <span>
-                      Terkumpul: <strong className="text-slate-800">{formatCurrency(goal.current_amount)}</strong>
+                      Terkumpul: <strong className="text-text-primary tabular-nums">{formatCurrency(goal.current_amount)}</strong>
                     </span>
                     <span>Target: {formatCurrency(goal.target_amount)}</span>
                   </div>
 
                   {/* Progress Bar */}
-                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden mb-3">
+                  <div className="w-full bg-border-default h-1.5 rounded-full overflow-hidden mb-3">
                     <div
                       className="h-full rounded-full transition-all duration-500"
                       style={{
@@ -183,24 +205,32 @@ export const SavingsGoalSection: React.FC<SavingsGoalSectionProps> = ({ onShowTo
                   </div>
                 </div>
 
-                {/* Actions: Tabung & Tarik */}
+                {/* Actions */}
                 <div className="flex items-center gap-2 pt-1">
                   <button
-                    onClick={() => setSelectedGoal(goal)}
-                    className="flex-1 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-xl border border-slate-100 transition-colors flex items-center justify-center gap-1.5"
+                    onClick={() => {
+                      setSelectedGoal(goal);
+                      setAllocateAmountStr('');
+                      setAllocateError(null);
+                    }}
+                    className="flex-1 py-1.5 bg-surface hover:bg-bg-secondary text-text-primary text-xs font-semibold rounded-lg border border-border-default transition-colors flex items-center justify-center gap-1.5 active:scale-95"
                   >
-                    <Plus className="w-3.5 h-3.5 text-emerald-600" />
-                    Nabung
+                    <Plus className="w-3.5 h-3.5 text-semantic-green" />
+                    <span>Nabung</span>
                   </button>
 
                   {goal.current_amount > 0 && (
                     <button
-                      onClick={() => setWithdrawGoal(goal)}
-                      className="py-2 px-3 bg-slate-50 hover:bg-slate-100 text-slate-600 text-xs font-bold rounded-xl border border-slate-100 transition-colors flex items-center justify-center gap-1"
+                      onClick={() => {
+                        setWithdrawGoal(goal);
+                        setWithdrawAmountStr('');
+                        setWithdrawError(null);
+                      }}
+                      className="py-1.5 px-3 bg-surface hover:bg-bg-secondary text-text-secondary text-xs font-semibold rounded-lg border border-border-default transition-colors flex items-center justify-center gap-1 active:scale-95"
                       title="Cairkan dana ke dompet"
                     >
-                      <ArrowDownLeft className="w-3.5 h-3.5 text-indigo-600" />
-                      Tarik
+                      <ArrowDownLeft className="w-3.5 h-3.5 text-primary-600" />
+                      <span>Tarik</span>
                     </button>
                   )}
                 </div>
@@ -213,61 +243,61 @@ export const SavingsGoalSection: React.FC<SavingsGoalSectionProps> = ({ onShowTo
       {/* Modal Add Goal */}
       {isAddOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
-          <div className="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-              <h2 className="text-base font-bold text-slate-800">Target Tabungan Baru</h2>
+          <div className="bg-surface w-full max-w-md rounded-2xl p-6 shadow-2xl border border-border-default">
+            <div className="flex items-center justify-between pb-3 border-b border-border-default mb-4">
+              <h2 className="text-base font-bold text-text-primary">Target Tabungan Baru</h2>
               <button
                 onClick={() => setIsAddOpen(false)}
-                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100"
+                className="p-1.5 text-text-muted hover:text-text-primary rounded-full hover:bg-bg-secondary"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleAddGoal} className="space-y-4">
               <div>
-                <label className="text-xs font-semibold text-slate-500 block mb-1">Nama Target</label>
+                <label className="text-xs font-semibold text-text-secondary block mb-1">Nama Target</label>
                 <input
                   type="text"
-                  placeholder="Misal: Beli Laptop, Liburan Semester, KKN"
+                  placeholder="Misal: Beli Laptop, Liburan Semester"
                   value={goalName}
                   onChange={(e) => setGoalName(e.target.value)}
                   required
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-3.5 py-2 bg-surface border border-border-default rounded-xl text-sm font-semibold text-text-primary focus:outline-none focus:ring-1 focus:ring-primary-500"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-500 block mb-1">Target Nominal (Rp)</label>
+                <label className="text-xs font-semibold text-text-secondary block mb-1">Target Nominal (Rp)</label>
                 <input
                   type="number"
                   placeholder="1000000"
                   value={targetAmountStr}
                   onChange={(e) => setTargetAmountStr(e.target.value)}
                   required
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-base font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-3.5 py-2 bg-surface border border-border-default rounded-xl text-base font-bold text-text-primary focus:outline-none focus:ring-1 focus:ring-primary-500 tabular-nums"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-500 block mb-1">Target Tanggal (Opsional)</label>
+                <label className="text-xs font-semibold text-text-secondary block mb-1">Target Tanggal (Opsional)</label>
                 <input
                   type="date"
                   value={targetDate}
                   onChange={(e) => setTargetDate(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-3.5 py-2 bg-surface border border-border-default rounded-xl text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-primary-500"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-500 block mb-1.5">Warna Target</label>
+                <label className="text-xs font-semibold text-text-secondary block mb-1.5">Warna Aksen</label>
                 <div className="flex gap-2">
-                  {['#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b'].map((c) => (
+                  {['#10b981', '#6366f1', '#8b5cf6', '#ec4899', '#f59e0b'].map((c) => (
                     <button
                       key={c}
                       type="button"
                       onClick={() => setGoalColor(c)}
                       className={`w-7 h-7 rounded-full transition-transform ${
-                        goalColor === c ? 'scale-110 ring-2 ring-offset-2 ring-slate-400' : ''
+                        goalColor === c ? 'scale-110 ring-2 ring-offset-2 ring-primary-500' : ''
                       }`}
                       style={{ backgroundColor: c }}
                     />
@@ -277,7 +307,7 @@ export const SavingsGoalSection: React.FC<SavingsGoalSectionProps> = ({ onShowTo
 
               <button
                 type="submit"
-                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-md shadow-emerald-200 transition-all"
+                className="w-full py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-xl font-bold text-xs shadow-sm transition-all"
               >
                 Simpan Target
               </button>
@@ -289,23 +319,23 @@ export const SavingsGoalSection: React.FC<SavingsGoalSectionProps> = ({ onShowTo
       {/* Modal Allocate to Goal */}
       {selectedGoal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
-          <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-              <h2 className="text-base font-bold text-slate-800">Nabung ke: {selectedGoal.name}</h2>
+          <div className="bg-surface w-full max-w-sm rounded-2xl p-6 shadow-2xl border border-border-default">
+            <div className="flex items-center justify-between pb-3 border-b border-border-default mb-4">
+              <h2 className="text-base font-bold text-text-primary">Nabung ke: {selectedGoal.name}</h2>
               <button
                 onClick={() => setSelectedGoal(null)}
-                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100"
+                className="p-1.5 text-text-muted hover:text-text-primary rounded-full hover:bg-bg-secondary"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleAllocate} className="space-y-4">
               <div>
-                <label className="text-xs font-semibold text-slate-500 block mb-1">Ambil dari Dompet</label>
+                <label className="text-xs font-semibold text-text-secondary block mb-1">Ambil dari Dompet</label>
                 <select
-                  value={allocateWalletId}
+                  value={allocateWalletId || wallets[0]?.id || ''}
                   onChange={(e) => setAllocateWalletId(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-3.5 py-2 bg-surface border border-border-default rounded-xl text-sm font-semibold text-text-primary focus:outline-none focus:ring-1 focus:ring-primary-500"
                 >
                   {wallets.map((w) => (
                     <option key={w.id} value={w.id}>
@@ -316,26 +346,26 @@ export const SavingsGoalSection: React.FC<SavingsGoalSectionProps> = ({ onShowTo
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-500 block mb-1">Nominal yang Disisihkan (Rp)</label>
+                <label className="text-xs font-semibold text-text-secondary block mb-1">Nominal yang Disisihkan (Rp)</label>
                 <input
                   type="number"
                   placeholder="0"
                   value={allocateAmountStr}
                   onChange={(e) => setAllocateAmountStr(e.target.value)}
                   required
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-lg font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-3.5 py-2 bg-surface border border-border-default rounded-xl text-lg font-bold text-text-primary focus:outline-none focus:ring-1 focus:ring-primary-500 tabular-nums"
                 />
               </div>
 
               {allocateError && (
-                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 font-medium">
+                <div className="p-2.5 bg-semantic-rose-soft border border-semantic-rose/20 rounded-xl text-xs text-semantic-rose font-medium">
                   {allocateError}
                 </div>
               )}
 
               <button
                 type="submit"
-                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-md shadow-emerald-200 transition-all"
+                className="w-full py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-xl font-bold text-xs shadow-sm transition-all"
               >
                 Konfirmasi Simpan
               </button>
@@ -347,26 +377,26 @@ export const SavingsGoalSection: React.FC<SavingsGoalSectionProps> = ({ onShowTo
       {/* Modal Withdraw from Goal */}
       {withdrawGoal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
-          <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+          <div className="bg-surface w-full max-w-sm rounded-2xl p-6 shadow-2xl border border-border-default">
+            <div className="flex items-center justify-between pb-3 border-b border-border-default mb-4">
               <div>
-                <h2 className="text-base font-bold text-slate-800">Cairkan: {withdrawGoal.name}</h2>
-                <span className="text-xs text-slate-500">Tersedia: {formatCurrency(withdrawGoal.current_amount)}</span>
+                <h2 className="text-base font-bold text-text-primary">Cairkan: {withdrawGoal.name}</h2>
+                <span className="text-xs text-text-muted">Tersedia: {formatCurrency(withdrawGoal.current_amount)}</span>
               </div>
               <button
                 onClick={() => setWithdrawGoal(null)}
-                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100"
+                className="p-1.5 text-text-muted hover:text-text-primary rounded-full hover:bg-bg-secondary"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleWithdraw} className="space-y-4">
               <div>
-                <label className="text-xs font-semibold text-slate-500 block mb-1">Transfer ke Dompet</label>
+                <label className="text-xs font-semibold text-text-secondary block mb-1">Transfer ke Dompet</label>
                 <select
-                  value={withdrawWalletId}
+                  value={withdrawWalletId || wallets[0]?.id || ''}
                   onChange={(e) => setWithdrawWalletId(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3.5 py-2 bg-surface border border-border-default rounded-xl text-sm font-semibold text-text-primary focus:outline-none focus:ring-1 focus:ring-primary-500"
                 >
                   {wallets.map((w) => (
                     <option key={w.id} value={w.id}>
@@ -377,26 +407,26 @@ export const SavingsGoalSection: React.FC<SavingsGoalSectionProps> = ({ onShowTo
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-500 block mb-1">Nominal yang Ditarik (Rp)</label>
+                <label className="text-xs font-semibold text-text-secondary block mb-1">Nominal yang Ditarik (Rp)</label>
                 <input
                   type="number"
                   placeholder="0"
                   value={withdrawAmountStr}
                   onChange={(e) => setWithdrawAmountStr(e.target.value)}
                   required
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-lg font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3.5 py-2 bg-surface border border-border-default rounded-xl text-lg font-bold text-text-primary focus:outline-none focus:ring-1 focus:ring-primary-500 tabular-nums"
                 />
               </div>
 
               {withdrawError && (
-                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 font-medium">
+                <div className="p-2.5 bg-semantic-rose-soft border border-semantic-rose/20 rounded-xl text-xs text-semantic-rose font-medium">
                   {withdrawError}
                 </div>
               )}
 
               <button
                 type="submit"
-                className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md shadow-indigo-200 transition-all"
+                className="w-full py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-xl font-bold text-xs shadow-sm transition-all"
               >
                 Konfirmasi Tarik Dana
               </button>

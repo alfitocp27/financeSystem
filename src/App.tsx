@@ -20,6 +20,7 @@ import { TransactionList } from './components/TransactionList';
 import { AnalyticsSection } from './components/AnalyticsSection';
 import { SettingsModal } from './components/SettingsModal';
 import { AuthModal } from './components/AuthModal';
+import { LoginPage } from './components/LoginPage';
 import { BottomNav } from './components/BottomNav';
 import { Toast } from './components/Toast';
 import type { Wallet } from './types/database.types';
@@ -269,11 +270,30 @@ function DashboardContent() {
   );
 }
 
+function MainApp() {
+  const { user, isDemoUser, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
+        <div className="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // If not logged in and not in demo mode, go directly to LoginPage!
+  if (!user && !isDemoUser) {
+    return <LoginPage />;
+  }
+
+  return <DashboardContent />;
+}
+
 export default function App() {
   return (
     <AuthProvider>
       <FinanceProvider>
-        <DashboardContent />
+        <MainApp />
       </FinanceProvider>
     </AuthProvider>
   );

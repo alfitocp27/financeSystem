@@ -232,7 +232,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
     });
   }, [totalBudget, totalBalance, totalExpenseInCycle, totalUnpaidCommitments, todayExpenses, cycleStartDay]);
 
-  // Actions - Enhanced with 100% Guaranteed Instant Optimistic Updates
+  // Actions - Enhanced with Direct Supabase Persistence & State Sync
   const addTransaction = async (params: {
     type: TransactionType;
     amount: number;
@@ -244,11 +244,80 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
     transactionDate?: string;
   }) => {
     const txDate = params.transactionDate || getLocalDateString(new Date());
-    const newTxId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'tx-' + Date.now();
 
+    // When User is authenticated, persist DIRECTLY to Supabase
+    if (user && isConfigured) {
+      try {
+        const targetWallet = wallets.find((w) => w.id === params.walletId) || wallets[0];
+        if (!targetWallet) {
+          return { error: new Error('Dompet tidak ditemukan. Silakan tambahkan dompet terlebih dahulu.') };
+        }
+
+        const payload: any = {
+          user_id: user.id,
+          wallet_id: targetWallet.id,
+          type: params.type,
+          amount: Number(params.amount),
+          transaction_date: txDate,
+          note: params.note || null,
+        };
+
+        const targetCat = categories.find((c) => c.id === params.categoryId);
+        if (targetCat) {
+          payload.category_id = targetCat.id;
+        }
+
+        if (params.type === 'transfer' && params.destinationWalletId) {
+          const destWallet = wallets.find((w) => w.id === params.destinationWalletId);
+          if (destWallet) payload.destination_wallet_id = destWallet.id;
+        }
+
+        if (params.goalId) {
+          const targetGoal = savingsGoals.find((g) => g.id === params.goalId);
+          if (targetGoal) payload.goal_id = targetGoal.id;
+        }
+
+        const { data: insertedTx, error: insertError } = await supabase
+          .from('transactions')
+          .insert(payload)
+          .select('*, wallet:wallets(*), category:categories(*), destination_wallet:wallets!destination_wallet_id(*)')
+          .single();
+
+        if (insertError) {
+          console.error('Supabase transaction insert error:', insertError);
+          return { error: insertError };
+        }
+
+        if (insertedTx) {
+          setTransactions((prev) => [insertedTx as Transaction, ...prev]);
+
+          // Sync updated wallet balances from PostgreSQL trigger
+          const { data: updatedW } = await supabase.from('wallets').select('*').order('created_at', { ascending: true });
+          if (updatedW) {
+            setWallets(updatedW as Wallet[]);
+          }
+
+          // If goal affected, sync goals
+          if (params.goalId) {
+            const { data: updatedG } = await supabase.from('savings_goals').select('*').order('created_at', { ascending: true });
+            if (updatedG) {
+              setSavingsGoals(updatedG as SavingsGoal[]);
+            }
+          }
+        }
+
+        return { error: null };
+      } catch (err: any) {
+        console.error('Add transaction error:', err);
+        return { error: err };
+      }
+    }
+
+    // Demo / Offline Mode Fallback
+    const newTxId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'tx-' + Date.now();
     const newTx: Transaction = {
       id: newTxId,
-      user_id: user?.id || 'demo',
+      user_id: 'demo',
       wallet_id: params.walletId,
       category_id: params.categoryId || null,
       goal_id: params.goalId || null,
@@ -260,7 +329,6 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       created_at: new Date().toISOString(),
     };
 
-    // 1. Instant Optimistic State Update
     setTransactions((prev) => [newTx, ...prev]);
 
     setWallets((prev) =>
@@ -288,7 +356,6 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // Always mirror to localStorage
     try {
       const stored = localStorage.getItem('demo_transactions');
       const prevList = stored ? JSON.parse(stored) : transactions;
@@ -297,38 +364,29 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       // ignore
     }
 
-    // 2. Background Sync to Supabase if authenticated with valid UUID
-    if (user && isConfigured) {
-      const isValidUuid = (str?: string | null) => str && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
-
-      if (isValidUuid(params.walletId)) {
-        try {
-          const payload: any = {
-            user_id: user.id,
-            wallet_id: params.walletId,
-            type: params.type,
-            amount: Number(params.amount),
-            transaction_date: txDate,
-            note: params.note || null,
-          };
-          if (isValidUuid(params.categoryId)) payload.category_id = params.categoryId;
-          if (isValidUuid(params.destinationWalletId)) payload.destination_wallet_id = params.destinationWalletId;
-          if (isValidUuid(params.goalId)) payload.goal_id = params.goalId;
-
-          const { error } = await supabase.from('transactions').insert(payload);
-          if (error) {
-            console.warn('Supabase background insert note:', error.message);
-          }
-        } catch (err) {
-          console.warn('Supabase background sync note:', err);
-        }
-      }
-    }
-
     return { error: null };
   };
 
   const deleteTransaction = async (id: string) => {
+    if (user && isConfigured) {
+      try {
+        const { error: delError } = await supabase.from('transactions').delete().eq('id', id);
+        if (delError) {
+          console.error('Delete transaction error:', delError);
+          return { error: delError };
+        }
+        setTransactions((prev) => prev.filter((t) => t.id !== id));
+        const { data: updatedW } = await supabase.from('wallets').select('*').order('created_at', { ascending: true });
+        if (updatedW) {
+          setWallets(updatedW as Wallet[]);
+        }
+        return { error: null };
+      } catch (err: any) {
+        return { error: err };
+      }
+    }
+
+    // Demo Mode delete
     const tx = transactions.find((t) => t.id === id);
     if (tx) {
       setWallets((prev) =>
@@ -350,17 +408,6 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('demo_transactions', JSON.stringify(updated));
     } catch {
       // ignore
-    }
-
-    if (user && isConfigured) {
-      const isValidUuid = (str?: string | null) => str && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
-      if (isValidUuid(id)) {
-        try {
-          await supabase.from('transactions').delete().eq('id', id);
-        } catch {
-          // ignore
-        }
-      }
     }
 
     return { error: null };

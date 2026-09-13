@@ -83,10 +83,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   // Real Category Spending from Database
   const categorySpending = useMemo(() => {
     const expenseCats = categories.filter((c) => c.type === 'expense');
+    const inCycleExpenses = transactions.filter(
+      (t) => t.type === 'expense' && t.transaction_date >= startStr && t.transaction_date <= endStr
+    );
 
     const mapped = expenseCats.map((cat, idx) => {
-      const total = transactions
-        .filter((t) => t.type === 'expense' && t.category_id === cat.id && t.transaction_date >= startStr && t.transaction_date <= endStr)
+      const total = inCycleExpenses
+        .filter((t) => t.category_id === cat.id)
         .reduce((sum, t) => sum + Number(t.amount), 0);
       return {
         id: cat.id,
@@ -95,8 +98,24 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         icon: cat.icon,
         value: total,
       };
-    }).sort((a, b) => b.value - a.value);
+    });
 
+    // Handle any expenses with null or unmatched category_id
+    const uncategorizedTotal = inCycleExpenses
+      .filter((t) => !t.category_id || !expenseCats.some((c) => c.id === t.category_id))
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+
+    if (uncategorizedTotal > 0) {
+      mapped.push({
+        id: 'cat-uncategorized',
+        name: 'Lainnya / Umum',
+        color: '#64748b',
+        icon: 'tag',
+        value: uncategorizedTotal,
+      });
+    }
+
+    mapped.sort((a, b) => b.value - a.value);
     const totalSpent = mapped.reduce((acc, c) => acc + c.value, 0);
 
     return mapped.map((c) => ({

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import {
   HelpCircle,
   Calendar,
@@ -56,6 +56,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     savingsGoals,
     deleteTransaction,
   } = useFinance();
+
+  // Chart Interactive Hover States
+  const [hoveredPointIndex, setHoveredPointIndex] = useState<number | null>(null);
+  const [hoveredCategoryIndex, setHoveredCategoryIndex] = useState<number | null>(null);
+  const svgWaveRef = useRef<SVGSVGElement | null>(null);
 
   const startStr = cycleInfo.startDate.toISOString().split('T')[0];
   const endStr = cycleInfo.endDate.toISOString().split('T')[0];
@@ -243,6 +248,26 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     };
   }, [cycleInfo, transactions, safeToSpend.dailySafeToSpend]);
 
+  // Handle hover along SVG wave chart
+  const handleSvgMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (!svgWaveRef.current || cashFlowChartData.points.length === 0) return;
+    const rect = svgWaveRef.current.getBoundingClientRect();
+    const clientX = e.clientX - rect.left;
+    const svgX = (clientX / rect.width) * 900;
+
+    // Find nearest point
+    let nearestIdx = 0;
+    let minDiff = Infinity;
+    cashFlowChartData.points.forEach((p, idx) => {
+      const diff = Math.abs(p.x - svgX);
+      if (diff < minDiff) {
+        minDiff = diff;
+        nearestIdx = idx;
+      }
+    });
+    setHoveredPointIndex(nearestIdx);
+  };
+
   // Status badge logic
   const getPaceBadge = () => {
     switch (safeToSpend.paceStatus) {
@@ -303,6 +328,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   };
 
   const recentTransactions = transactions.slice(0, 5);
+  const activeHoveredPoint = hoveredPointIndex !== null ? cashFlowChartData.points[hoveredPointIndex] : null;
+  const activeHoveredCategory = hoveredCategoryIndex !== null ? categorySpending[hoveredCategoryIndex] : null;
 
   return (
     <div className="space-y-6 pb-6">
@@ -429,13 +456,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
       {/* 3. Financial Summary Cards (Grid of 4) WITH Arus Kas Harian SVG Wave Chart INSIDE (Stitch Exact: lines 64-65) */}
       <section className="bg-surface rounded-[14px] border border-border-default shadow-sm mb-6 overflow-hidden">
-        {/* Top 4 KPI Metric Blocks (with Stitch Colored Figures & Badges) */}
+        {/* Top 4 KPI Metric Blocks (Colored Numbers & Badges exactly as Stitch) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 border-b border-border-default">
           {/* Total Saldo */}
           <div className="p-5 flex flex-col justify-between border-b sm:border-b-0 sm:border-r border-border-default">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-text-muted">Total Saldo</span>
-              <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-semibold bg-semantic-green-soft text-semantic-green">
+              <span className="inline-flex items-center gap-0.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-semantic-green-soft text-semantic-green border border-semantic-green/20">
                 <ArrowUpRight className="w-3.5 h-3.5" /> 8.4%
               </span>
             </div>
@@ -453,7 +480,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="p-5 flex flex-col justify-between border-b sm:border-b-0 lg:border-r border-border-default">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-text-muted">Total Pemasukan</span>
-              <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-semibold bg-semantic-green-soft text-semantic-green">
+              <span className="inline-flex items-center gap-0.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-semantic-green-soft text-semantic-green border border-semantic-green/20">
                 <ArrowUpRight className="w-3.5 h-3.5" /> 18.4%
               </span>
             </div>
@@ -471,7 +498,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="p-5 flex flex-col justify-between border-b sm:border-b-0 sm:border-r border-border-default">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-text-muted">Total Pengeluaran</span>
-              <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-semibold bg-semantic-rose-soft text-semantic-rose">
+              <span className="inline-flex items-center gap-0.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-semantic-rose-soft text-semantic-rose border border-semantic-rose/20">
                 <ArrowDownRight className="w-3.5 h-3.5" /> {overallBudgetPercentage}%
               </span>
             </div>
@@ -489,7 +516,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="p-5 flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-text-muted">Tabungan Siklus Ini</span>
-              <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-semibold bg-semantic-green-soft text-semantic-green">
+              <span className="inline-flex items-center gap-0.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-semantic-green-soft text-semantic-green border border-semantic-green/20">
                 <ArrowUpRight className="w-3.5 h-3.5" /> 15.0%
               </span>
             </div>
@@ -504,8 +531,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         </div>
 
-        {/* Bottom Part: Arus Kas Harian SVG Wave Chart (Plotted with Real Database Transactions) */}
-        <div className="p-6 relative">
+        {/* Bottom Part: Arus Kas Harian Interactive Wave Chart with Live Hover Tooltip */}
+        <div className="p-6 relative select-none">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <span className="text-base font-bold text-text-primary tracking-tight">Arus Kas Harian</span>
@@ -513,18 +540,28 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 {new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(cycleInfo.startDate)}
               </span>
             </div>
-            <div className="flex items-center gap-2 text-xs">
-              <span className="flex items-center gap-1.5 text-text-secondary font-medium">
-                <span className="w-2.5 h-0.5 bg-primary-600 rounded-full" />
-                Pengeluaran Harian
-              </span>
+
+            <div className="flex items-center gap-3 text-xs">
+              {activeHoveredPoint ? (
+                <span className="font-semibold text-primary-600 bg-primary-50 px-2.5 py-0.5 rounded-full border border-primary-200 animate-in fade-in duration-100">
+                  {activeHoveredPoint.dayLabel}: {formatCurrency(activeHoveredPoint.expense)}
+                </span>
+              ) : (
+                <span className="flex items-center gap-1.5 text-text-secondary font-medium">
+                  <span className="w-2.5 h-0.5 bg-primary-600 rounded-full" />
+                  Pengeluaran Harian (Hover untuk detail)
+                </span>
+              )}
             </div>
           </div>
 
           {/* Dotted Grid & Glowing Wave Curve */}
           <div className="w-full overflow-x-auto">
             <svg
-              className="w-full h-48 overflow-visible min-w-[650px]"
+              ref={svgWaveRef}
+              onMouseMove={handleSvgMouseMove}
+              onMouseLeave={() => setHoveredPointIndex(null)}
+              className="w-full h-48 overflow-visible min-w-[650px] cursor-crosshair"
               preserveAspectRatio="none"
               viewBox="0 0 900 180"
             >
@@ -533,7 +570,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   <circle cx="25" cy="15" r="1" fill="#cbd5e1" opacity="0.5" />
                 </pattern>
                 <linearGradient id="lineGlow" x1="0%" x2="0%" y1="0%" y2="100%">
-                  <stop offset="0%" stopColor="#6366f1" stopOpacity="0.18" />
+                  <stop offset="0%" stopColor="#6366f1" stopOpacity="0.2" />
                   <stop offset="100%" stopColor="#6366f1" stopOpacity="0.0" />
                 </linearGradient>
               </defs>
@@ -588,6 +625,64 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 />
               ))}
 
+              {/* Interactive Hover Point & Floating Tooltip */}
+              {activeHoveredPoint && (
+                <g>
+                  {/* Vertical Guideline */}
+                  <line
+                    x1={activeHoveredPoint.x}
+                    x2={activeHoveredPoint.x}
+                    y1={15}
+                    y2={155}
+                    stroke="#6366f1"
+                    strokeDasharray="3,3"
+                    strokeWidth="1.5"
+                  />
+                  {/* Active Point Circle */}
+                  <circle
+                    cx={activeHoveredPoint.x}
+                    cy={activeHoveredPoint.y}
+                    r="6.5"
+                    fill="#6366f1"
+                    stroke="#ffffff"
+                    strokeWidth="2.5"
+                  />
+                  {/* Tooltip Card */}
+                  <g transform={`translate(${Math.max(75, Math.min(825, activeHoveredPoint.x))}, ${Math.max(40, activeHoveredPoint.y - 18)})`}>
+                    <rect
+                      x="-70"
+                      y="-36"
+                      width="140"
+                      height="34"
+                      rx="8"
+                      fill="#0f172a"
+                      opacity="0.95"
+                    />
+                    <text
+                      x="0"
+                      y="-21"
+                      fill="#ffffff"
+                      fontSize="10.5"
+                      fontWeight="bold"
+                      textAnchor="middle"
+                      fontFamily="Inter, sans-serif"
+                    >
+                      {formatCurrency(activeHoveredPoint.expense)}
+                    </text>
+                    <text
+                      x="0"
+                      y="-9"
+                      fill="#94a3b8"
+                      fontSize="9"
+                      textAnchor="middle"
+                      fontFamily="Inter, sans-serif"
+                    >
+                      {activeHoveredPoint.dayLabel} • {activeHoveredPoint.isSpike ? 'Overpace' : 'Aman'}
+                    </text>
+                  </g>
+                </g>
+              )}
+
               {/* X-Axis Dates Along the Bottom */}
               <g fill="#94a3b8" fontSize="10" textAnchor="middle" fontFamily="Inter, sans-serif">
                 {cashFlowChartData.xLabels.map((p, idx) => (
@@ -601,7 +696,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </section>
 
-      {/* 4. 2-Column Content Grid: Left (Span 8) vs Right (Span 4) (Stitch Exact: lines 66-365) */}
+      {/* 4. 2-Column Content Grid: Left (Span 8) vs Right (Span 4) (Stitch Exact) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* LEFT COLUMN (Span 8) */}
         <div className="lg:col-span-8 flex flex-col gap-6">
@@ -927,8 +1022,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           </div>
 
-          {/* Kategori Pengeluaran Donut Chart (Exact SVG Donut matching Real Database) */}
-          <div className="bg-surface rounded-[14px] p-6 shadow-sm border border-border-default">
+          {/* Kategori Pengeluaran Donut Chart (Interactive SVG Donut with Live Hover Effect) */}
+          <div className="bg-surface rounded-[14px] p-6 shadow-sm border border-border-default select-none">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-lg font-bold text-text-primary">Kategori Pengeluaran</h3>
               <span className="text-xs text-text-muted font-medium bg-bg-secondary px-2.5 py-1 rounded-full">
@@ -936,10 +1031,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </span>
             </div>
 
-            {/* Circular SVG Donut Chart */}
+            {/* Circular SVG Donut Chart with Hover Interaction */}
             <div className="flex flex-col items-center my-4">
-              <div className="relative w-44 h-44 flex items-center justify-center">
-                <svg className="w-full h-full -rotate-90" viewBox="0 0 160 160">
+              <div className="relative w-48 h-48 flex items-center justify-center">
+                <svg className="w-full h-full -rotate-90 overflow-visible" viewBox="0 0 160 160">
                   {/* Background neutral ring */}
                   <circle
                     cx="80"
@@ -950,53 +1045,78 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     strokeWidth="16"
                   />
                   {/* Real Database Category Slices */}
-                  {donutSlices.map((slice) => (
-                    <circle
-                      key={slice.id}
-                      cx="80"
-                      cy="80"
-                      r="62"
-                      fill="none"
-                      stroke={slice.color}
-                      strokeWidth="16"
-                      strokeDasharray={slice.strokeDasharray}
-                      strokeDashoffset={slice.strokeDashoffset}
-                      strokeLinecap="round"
-                    />
-                  ))}
+                  {donutSlices.map((slice, idx) => {
+                    const isHovered = hoveredCategoryIndex === idx;
+                    return (
+                      <circle
+                        key={slice.id}
+                        cx="80"
+                        cy="80"
+                        r="62"
+                        fill="none"
+                        stroke={slice.color}
+                        strokeWidth={isHovered ? 22 : 16}
+                        strokeDasharray={slice.strokeDasharray}
+                        strokeDashoffset={slice.strokeDashoffset}
+                        strokeLinecap="round"
+                        onMouseEnter={() => setHoveredCategoryIndex(idx)}
+                        onMouseLeave={() => setHoveredCategoryIndex(null)}
+                        className="transition-all duration-200 cursor-pointer"
+                        style={{
+                          filter: isHovered ? 'drop-shadow(0 0 6px rgba(99, 102, 241, 0.4))' : undefined,
+                        }}
+                      />
+                    );
+                  })}
                 </svg>
 
-                {/* Donut Center Label (Real Database Amount) */}
-                <div className="absolute flex flex-col items-center justify-center text-center">
-                  <span className="text-xs text-text-muted leading-tight">Total Terpakai</span>
-                  <span className="text-[20px] font-bold text-text-primary tracking-tight tabular-nums mt-0.5">
-                    {totalCycleExpense > 0
+                {/* Donut Center Label (Dynamically updates on Hover) */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none px-2">
+                  <span className="text-[11px] text-text-muted leading-tight truncate max-w-[110px]">
+                    {activeHoveredCategory ? activeHoveredCategory.name : 'Total Terpakai'}
+                  </span>
+                  <span className="text-[18px] sm:text-[20px] font-bold text-text-primary tracking-tight tabular-nums mt-0.5 truncate max-w-[130px]">
+                    {activeHoveredCategory
+                      ? formatCompactCurrency(activeHoveredCategory.value).replace('Rp ', '')
+                      : totalCycleExpense > 0
                       ? formatCompactCurrency(totalCycleExpense).replace('Rp ', '')
                       : '0'}
                   </span>
-                  <span className="text-xs text-semantic-green font-medium">
-                    {overallBudgetPercentage}%
+                  <span className="text-[11px] text-semantic-green font-medium">
+                    {activeHoveredCategory
+                      ? `${(activeHoveredCategory.ratio * 100).toFixed(1)}%`
+                      : `${overallBudgetPercentage}%`}
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Categories Legend List (Real Database Categories & Amounts) */}
-            <div className="flex flex-col gap-2 pt-1">
-              {categorySpending.slice(0, 5).map((item) => (
-                <div key={item.id} className="flex items-center justify-between text-sm py-1">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="w-2.5 h-2.5 rounded-full shrink-0"
-                      style={{ backgroundColor: item.color }}
-                    />
-                    <span className="text-sm text-text-primary">{item.name}</span>
+            {/* Categories Legend List (Interactive on Hover) */}
+            <div className="flex flex-col gap-1.5 pt-1">
+              {categorySpending.slice(0, 5).map((item, idx) => {
+                const isHovered = hoveredCategoryIndex === idx;
+                return (
+                  <div
+                    key={item.id}
+                    onMouseEnter={() => setHoveredCategoryIndex(idx)}
+                    onMouseLeave={() => setHoveredCategoryIndex(null)}
+                    className={`flex items-center justify-between text-sm py-1.5 px-2 rounded-lg transition-colors cursor-pointer ${
+                      isHovered ? 'bg-surface-container-low font-semibold' : 'hover:bg-surface-container-low/60'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span
+                        className="w-2.5 h-2.5 rounded-full shrink-0"
+                        style={{ backgroundColor: item.color }}
+                      />
+                      <span className="text-xs sm:text-sm text-text-primary truncate">{item.name}</span>
+                    </div>
+                    <span className="text-xs text-text-secondary tabular-nums shrink-0 ml-2">
+                      {formatCurrency(item.value)}
+                    </span>
                   </div>
-                  <span className="text-xs text-text-secondary tabular-nums">
-                    {formatCurrency(item.value)}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>

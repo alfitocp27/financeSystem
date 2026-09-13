@@ -85,6 +85,148 @@ const DEFAULT_COMMITMENTS: RecurringCommitment[] = [
   { id: 'rec-3', user_id: 'demo', category_id: 'cat-5', name: 'Spotify / YouTube Music', amount: 25000, due_day: 15, is_paid: true, created_at: '' },
 ];
 
+function generateStarterTransactions(cycleStartDate: Date, userId: string = 'demo'): Transaction[] {
+  const start = new Date(cycleStartDate);
+  const formatDate = (dayOffset: number) => {
+    const d = new Date(start);
+    d.setDate(d.getDate() + dayOffset);
+    return d.toISOString().split('T')[0];
+  };
+
+  return [
+    {
+      id: 'tx-1',
+      user_id: userId,
+      wallet_id: 'w-2',
+      category_id: 'cat-7',
+      goal_id: null,
+      type: 'income',
+      amount: 3500000,
+      transaction_date: formatDate(0),
+      destination_wallet_id: null,
+      note: 'Uang Saku Bulanan dari Ortu',
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: 'tx-2',
+      user_id: userId,
+      wallet_id: 'w-2',
+      category_id: 'cat-2',
+      goal_id: null,
+      type: 'expense',
+      amount: 450000,
+      transaction_date: formatDate(1),
+      destination_wallet_id: null,
+      note: 'Sewa Kos & Iuran Kebersihan',
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: 'tx-3',
+      user_id: userId,
+      wallet_id: 'w-3',
+      category_id: 'cat-1',
+      goal_id: null,
+      type: 'expense',
+      amount: 45000,
+      transaction_date: formatDate(3),
+      destination_wallet_id: null,
+      note: 'Makan Siang & Es Teh Kantin',
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: 'tx-4',
+      user_id: userId,
+      wallet_id: 'w-1',
+      category_id: 'cat-3',
+      goal_id: null,
+      type: 'expense',
+      amount: 30000,
+      transaction_date: formatDate(5),
+      destination_wallet_id: null,
+      note: 'Bensin Motor Pertalite',
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: 'tx-5',
+      user_id: userId,
+      wallet_id: 'w-3',
+      category_id: 'cat-1',
+      goal_id: null,
+      type: 'expense',
+      amount: 55000,
+      transaction_date: formatDate(7),
+      destination_wallet_id: null,
+      note: 'Makan Malam Bersama Teman Kost',
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: 'tx-6',
+      user_id: userId,
+      wallet_id: 'w-2',
+      category_id: 'cat-4',
+      goal_id: null,
+      type: 'expense',
+      amount: 85000,
+      transaction_date: formatDate(9),
+      destination_wallet_id: null,
+      note: 'Buku & Modul Kuliah Semester',
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: 'tx-7',
+      user_id: userId,
+      wallet_id: 'w-1',
+      category_id: 'cat-1',
+      goal_id: null,
+      type: 'expense',
+      amount: 22000,
+      transaction_date: formatDate(11),
+      destination_wallet_id: null,
+      note: 'Makan Siang Warteg',
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: 'tx-8',
+      user_id: userId,
+      wallet_id: 'w-3',
+      category_id: 'cat-5',
+      goal_id: null,
+      type: 'expense',
+      amount: 35000,
+      transaction_date: formatDate(13),
+      destination_wallet_id: null,
+      note: 'Kopi & Nugas di Cafe Kampus',
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: 'tx-9',
+      user_id: userId,
+      wallet_id: 'w-2',
+      category_id: 'cat-6',
+      goal_id: null,
+      type: 'expense',
+      amount: 65000,
+      transaction_date: formatDate(15),
+      destination_wallet_id: null,
+      note: 'Belanja Harian & Sabun Cuci',
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: 'tx-10',
+      user_id: userId,
+      wallet_id: 'w-2',
+      category_id: null,
+      goal_id: 'goal-2',
+      type: 'transfer',
+      amount: 200000,
+      transaction_date: formatDate(17),
+      destination_wallet_id: 'w-3',
+      note: 'Transfer ke Tabungan Laptop',
+      created_at: new Date().toISOString(),
+    },
+  ];
+}
+
 export function FinanceProvider({ children }: { children: React.ReactNode }) {
   const { user, profile, isDemoUser, isConfigured } = useAuth();
 
@@ -121,35 +263,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       if (storedTransactions) {
         setTransactions(JSON.parse(storedTransactions));
       } else {
-        const todayStr = new Date().toISOString().split('T')[0];
-        const initialTx: Transaction[] = [
-          {
-            id: 'tx-1',
-            user_id: 'demo',
-            wallet_id: 'w-2',
-            category_id: 'cat-7',
-            goal_id: null,
-            type: 'income',
-            amount: 2500000,
-            transaction_date: todayStr,
-            destination_wallet_id: null,
-            note: 'Kiriman bulanan orang tua',
-            created_at: new Date().toISOString(),
-          },
-          {
-            id: 'tx-2',
-            user_id: 'demo',
-            wallet_id: 'w-1',
-            category_id: 'cat-1',
-            goal_id: null,
-            type: 'expense',
-            amount: 25000,
-            transaction_date: todayStr,
-            destination_wallet_id: null,
-            note: 'Makan siang warteg',
-            created_at: new Date().toISOString(),
-          },
-        ];
+        const initialTx = generateStarterTransactions(cycleInfo.startDate, 'demo');
         setTransactions(initialTx);
         localStorage.setItem('demo_transactions', JSON.stringify(initialTx));
       }
@@ -230,7 +344,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [user, isDemoUser, isConfigured]);
+  }, [user, isDemoUser, isConfigured, cycleInfo.startDate]);
 
   useEffect(() => {
     refreshData();

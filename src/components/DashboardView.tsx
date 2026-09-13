@@ -60,64 +60,56 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const startStr = cycleInfo.startDate.toISOString().split('T')[0];
   const endStr = cycleInfo.endDate.toISOString().split('T')[0];
 
-  // Budget calculations
+  // Real Budget & Expense calculations from Database
   const totalAllocatedBudget = budgets.reduce((acc, b) => acc + Number(b.amount), 0);
   const totalCycleExpense = transactions
     .filter((t) => t.type === 'expense' && t.transaction_date >= startStr && t.transaction_date <= endStr)
     .reduce((sum, t) => sum + Number(t.amount), 0);
 
-  const effectiveBudgetCeiling = totalAllocatedBudget > 0 ? totalAllocatedBudget : 2500000;
+  const effectiveBudgetCeiling = totalAllocatedBudget > 0 ? totalAllocatedBudget : (totalBalance + totalCycleExpense || 2500000);
   const totalRemainingQuota = Math.max(0, effectiveBudgetCeiling - totalCycleExpense);
   const overallBudgetPercentage = effectiveBudgetCeiling > 0
     ? Math.min(100, Math.round((totalCycleExpense / effectiveBudgetCeiling) * 100))
-    : 56.8;
+    : 0;
 
-  // Total tabungan terkumpul siklus ini
-  const totalSavingsGathered = savingsGoals.reduce((acc, g) => acc + Number(g.current_amount), 0) || 750000;
+  // Real savings gathered from Database
+  const totalSavingsGathered = savingsGoals.reduce((acc, g) => acc + Number(g.current_amount), 0);
 
-  // Aggregate category spending
+  // Real Category Spending from Database
   const categorySpending = useMemo(() => {
-    const defaultData = [
-      { id: 'cat-1', name: 'Makanan & Minuman', color: '#2563eb', icon: 'utensils', value: 650000, ratio: 0.458 },
-      { id: 'cat-2', name: 'Kos & Kebutuhan', color: '#10b981', icon: 'home', value: 450000, ratio: 0.317 },
-      { id: 'cat-3', name: 'Transportasi & Bensin', color: '#f59e0b', icon: 'bus', value: 180000, ratio: 0.127 },
-      { id: 'cat-4', name: 'Hiburan & Kuliah', color: '#94a3b8', icon: 'coffee', value: 140000, ratio: 0.098 },
-    ];
+    const expenseCats = categories.filter((c) => c.type === 'expense');
 
-    const mapped = categories
-      .filter((c) => c.type === 'expense')
-      .map((cat, idx) => {
-        const total = transactions
-          .filter((t) => t.type === 'expense' && t.category_id === cat.id && t.transaction_date >= startStr && t.transaction_date <= endStr)
-          .reduce((sum, t) => sum + Number(t.amount), 0);
-        return {
-          id: cat.id,
-          name: cat.name,
-          color: cat.color || STITCH_COLORS[idx % STITCH_COLORS.length],
-          icon: cat.icon,
-          value: total,
-          ratio: 0,
-        };
-      })
-      .filter((c) => c.value > 0)
-      .sort((a, b) => b.value - a.value);
+    const mapped = expenseCats.map((cat, idx) => {
+      const total = transactions
+        .filter((t) => t.type === 'expense' && t.category_id === cat.id && t.transaction_date >= startStr && t.transaction_date <= endStr)
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+      return {
+        id: cat.id,
+        name: cat.name,
+        color: cat.color || STITCH_COLORS[idx % STITCH_COLORS.length],
+        icon: cat.icon,
+        value: total,
+      };
+    }).sort((a, b) => b.value - a.value);
 
-    if (mapped.length === 0) {
-      return defaultData;
-    }
+    const totalSpent = mapped.reduce((acc, c) => acc + c.value, 0);
 
-    const sum = mapped.reduce((acc, c) => acc + c.value, 0) || 1;
-    return mapped.map((c) => ({ ...c, ratio: c.value / sum }));
+    return mapped.map((c) => ({
+      ...c,
+      ratio: totalSpent > 0 ? c.value / totalSpent : 0,
+    }));
   }, [categories, transactions, startStr, endStr]);
 
-  // SVG Donut Calculations (Stitch Exact: r = 62, viewBox 0 0 160 160, -rotate-90)
+  // SVG Donut Calculations using 100% Real Data
   const donutSlices = useMemo(() => {
     const CIRCUMFERENCE = 390; // 2 * PI * 62 ~ 389.56
+    const activeCats = categorySpending.filter((c) => c.value > 0);
+
     let cumulativeOffset = 0;
     const slices = [];
 
-    for (const cat of categorySpending) {
-      const sliceLength = Math.max(12, Math.round(cat.ratio * CIRCUMFERENCE));
+    for (const cat of activeCats) {
+      const sliceLength = Math.max(6, Math.round(cat.ratio * CIRCUMFERENCE));
       const strokeDasharray = `${sliceLength} ${CIRCUMFERENCE}`;
       const strokeDashoffset = -cumulativeOffset;
       cumulativeOffset += sliceLength;
@@ -130,53 +122,159 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     return slices;
   }, [categorySpending]);
 
-  // Arus Kas Harian Wave Chart Path Generator (Stitch Exact viewBox 0 0 900 180)
+  // Real Daily Cash Flow Wave Chart (Plotted directly from transactions in Database)
   const cashFlowChartData = useMemo(() => {
-    // Generate 12 sample checkpoints across the cycle
-    const pointsCount = 12;
-    const startX = 60;
-    const endX = 840;
-    const stepX = (endX - startX) / (pointsCount - 1);
-    const bottomY = 155;
+    const start = new Date(cycleInfo.startDate);
+    const end = new Date(cycleInfo.endDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    // Check if we have transactions to plot
-    const daysData: { dayLabel: string; x: number; y: number; expense: number }[] = [];
-    const sampleExpenses = [120, 125, 60, 145, 50, 125, 115, 65, 130, 115, 30, 20]; // Stitch reference curve
+    const msPerDay = 1000 * 60 * 60 * 24;
+    const daysCount = Math.max(1, Math.round((end.getTime() - start.getTime()) / msPerDay));
 
-    for (let i = 0; i < pointsCount; i++) {
-      const x = Math.round(startX + i * stepX);
-      const dayIndex = 1 + i * 2;
-      const dayLabel = `${dayIndex} ${new Intl.DateTimeFormat('id-ID', { month: 'short' }).format(cycleInfo.startDate)}`;
-      const sampleY = sampleExpenses[i % sampleExpenses.length];
-      daysData.push({
+    const dailyRecords: {
+      date: Date;
+      dateStr: string;
+      dayLabel: string;
+      dayNum: number;
+      expense: number;
+      isToday: boolean;
+      isFuture: boolean;
+    }[] = [];
+
+    let maxDailyExp = 0;
+
+    for (let i = 0; i <= daysCount; i++) {
+      const d = new Date(start);
+      d.setDate(d.getDate() + i);
+      d.setHours(0, 0, 0, 0);
+      const dateStr = d.toISOString().split('T')[0];
+      const isFuture = d.getTime() > today.getTime();
+
+      // Real daily expense from Database transactions
+      const dayExpense = transactions
+        .filter((t) => t.type === 'expense' && t.transaction_date === dateStr)
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+
+      if (!isFuture && dayExpense > maxDailyExp) {
+        maxDailyExp = dayExpense;
+      }
+
+      const dayLabel = `${d.getDate()} ${new Intl.DateTimeFormat('id-ID', { month: 'short' }).format(d)}`;
+
+      dailyRecords.push({
+        date: d,
+        dateStr,
         dayLabel,
-        x,
-        y: sampleY,
-        expense: sampleY * 1000,
+        dayNum: d.getDate(),
+        expense: isFuture ? 0 : dayExpense,
+        isToday: d.getTime() === today.getTime(),
+        isFuture,
       });
     }
 
-    // Build smooth cubic bezier curve
-    let d = `M ${daysData[0].x} ${daysData[0].y}`;
-    for (let i = 1; i < daysData.length; i++) {
-      const prev = daysData[i - 1];
-      const curr = daysData[i];
-      const cp1x = Math.round(prev.x + (curr.x - prev.x) * 0.45);
-      const cp1y = prev.y;
-      const cp2x = Math.round(prev.x + (curr.x - prev.x) * 0.55);
-      const cp2y = curr.y;
-      d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${curr.x} ${curr.y}`;
+    // Dynamic clean Y-Axis Scale
+    const benchmarkSafe = safeToSpend.dailySafeToSpend > 0 ? safeToSpend.dailySafeToSpend : 50000;
+    const ceilingVal = Math.max(maxDailyExp, benchmarkSafe * 1.5, 80000);
+    const tierStep = Math.ceil(ceilingVal / 40000) * 10000;
+    const yTiers = [tierStep * 4, tierStep * 3, tierStep * 2, tierStep, 0];
+    const maxY = Math.max(yTiers[0], 1);
+
+    // SVG coordinates: viewBox 0 0 900 180
+    const startX = 60;
+    const endX = 840;
+    const topY = 20;
+    const bottomY = 155;
+    const usableHeight = bottomY - topY;
+    const stepX = (endX - startX) / Math.max(1, dailyRecords.length - 1);
+
+    const points = dailyRecords.map((rec, idx) => {
+      const x = Math.round(startX + idx * stepX);
+      const ratio = Math.min(1, rec.expense / maxY);
+      const y = Math.round(bottomY - ratio * usableHeight);
+      const isSpike = !rec.isFuture && safeToSpend.dailySafeToSpend > 0 && rec.expense > safeToSpend.dailySafeToSpend;
+      return {
+        ...rec,
+        x,
+        y,
+        isSpike,
+      };
+    });
+
+    // Smooth cubic bezier curve
+    let pathD = '';
+    if (points.length > 0) {
+      pathD = `M ${points[0].x} ${points[0].y}`;
+      for (let i = 1; i < points.length; i++) {
+        const prev = points[i - 1];
+        const curr = points[i];
+        const cp1x = Math.round(prev.x + (curr.x - prev.x) * 0.45);
+        const cp1y = prev.y;
+        const cp2x = Math.round(prev.x + (curr.x - prev.x) * 0.55);
+        const cp2y = curr.y;
+        pathD += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${curr.x} ${curr.y}`;
+      }
     }
 
-    const areaD = `${d} L ${daysData[daysData.length - 1].x} ${bottomY} L ${daysData[0].x} ${bottomY} Z`;
+    const areaD = points.length > 0
+      ? `${pathD} L ${points[points.length - 1].x} ${bottomY} L ${points[0].x} ${bottomY} Z`
+      : '';
+
+    // Sample 7 date labels for bottom axis
+    const labelIndices = [
+      0,
+      Math.floor(points.length * 0.16),
+      Math.floor(points.length * 0.33),
+      Math.floor(points.length * 0.5),
+      Math.floor(points.length * 0.66),
+      Math.floor(points.length * 0.83),
+      points.length - 1,
+    ];
+    const xLabels = Array.from(new Set(labelIndices)).map(idx => points[idx]).filter(Boolean);
 
     return {
-      points: daysData,
-      pathD: d,
+      points,
+      pathD,
       areaD,
-      bottomY,
+      yTiers,
+      xLabels,
+      maxDailyExp,
+      hasExpenses: maxDailyExp > 0,
     };
-  }, [cycleInfo]);
+  }, [cycleInfo, transactions, safeToSpend.dailySafeToSpend]);
+
+  // Status badge logic
+  const getPaceBadge = () => {
+    switch (safeToSpend.paceStatus) {
+      case 'safe':
+        return {
+          bg: 'bg-semantic-green-soft text-semantic-green border-semantic-green/20',
+          dot: 'bg-semantic-green',
+          text: 'Status: Safe',
+        };
+      case 'warning':
+        return {
+          bg: 'bg-semantic-amber-soft text-semantic-amber border-semantic-amber/20',
+          dot: 'bg-semantic-amber',
+          text: 'Status: Warning',
+        };
+      case 'overpace':
+        return {
+          bg: 'bg-semantic-rose-soft text-semantic-rose border-semantic-rose/20',
+          dot: 'bg-semantic-rose',
+          text: 'Status: Overpace',
+        };
+      case 'no-budget':
+      default:
+        return {
+          bg: 'bg-semantic-blue-soft text-semantic-blue border-semantic-blue/20',
+          dot: 'bg-semantic-blue',
+          text: 'Status: Safe',
+        };
+    }
+  };
+
+  const badge = getPaceBadge();
 
   // Helper icons
   const getCategoryIcon = (iconName?: string) => {
@@ -208,7 +306,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   return (
     <div className="space-y-6 pb-6">
-      {/* 1. Top Greeting & Primary Trigger Header (Stitch Exact: lines 4-16) */}
+      {/* 1. Top Greeting & Primary Trigger Header (Stitch Exact) */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
         <div className="flex flex-col">
           <h1 className="text-2xl sm:text-[26px] font-bold text-text-primary tracking-tight">
@@ -231,13 +329,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </div>
 
-      {/* 2. Primary Highlight: Safe to Spend Card (Stitch Exact: lines 17-63) */}
+      {/* 2. Primary Highlight: Safe to Spend Card (Stitch Exact) */}
       <section className="mb-6">
         <div className="bg-surface rounded-[14px] p-6 shadow-sm border border-border-default relative overflow-hidden">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             {/* Left Column */}
             <div className="flex flex-col">
-              <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-2">
                 <span className="text-[13px] uppercase tracking-wider font-semibold text-text-secondary">
                   Safe to Spend
                 </span>
@@ -249,9 +347,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   </div>
                 </div>
 
-                <span className="ml-2 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-semantic-green-soft text-semantic-green text-xs font-semibold">
-                  <span className="w-1.5 h-1.5 rounded-full bg-semantic-green" />
-                  Status: Safe
+                <span
+                  className={`ml-2 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${badge.bg}`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`} />
+                  {badge.text}
                 </span>
 
                 <button
@@ -266,7 +366,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
               <div className="flex items-baseline gap-2 mt-2">
                 <span className="text-3xl sm:text-[36px] font-bold text-text-primary tabular-nums tracking-tight">
-                  {formatCurrency(safeToSpend.dailySafeToSpend || 52000)}
+                  {formatCurrency(safeToSpend.dailySafeToSpend)}
                 </span>
                 <span className="text-base text-text-muted font-normal">/ hari</span>
               </div>
@@ -274,12 +374,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <div className="flex items-center gap-2 mt-1.5">
                 <Check className="w-4 h-4 text-semantic-green shrink-0" />
                 <p className="text-xs text-text-secondary">
-                  <strong className="text-text-primary font-semibold">
+                  <strong className="text-text-primary font-medium">
                     {cycleInfo.daysRemaining} hari tersisa
                   </strong>{' '}
                   dalam siklus ini • Berdasarkan sisa budget aktif{' '}
-                  <span className="font-semibold text-text-primary tabular-nums">
-                    {formatCurrency(safeToSpend.remainingBudget || 1080000)}
+                  <span className="font-medium text-text-primary tabular-nums">
+                    {formatCurrency(safeToSpend.remainingBudget)}
                   </span>
                 </p>
               </div>
@@ -289,14 +389,28 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <div className="flex flex-col w-full md:w-80 bg-surface-container-low p-4 rounded-xl border border-border-subtle">
               <div className="flex items-center justify-between text-xs text-text-secondary mb-1.5">
                 <span>Pacing Pengeluaran</span>
-                <span className="font-semibold text-semantic-green tabular-nums">
+                <span
+                  className={`font-semibold tabular-nums ${
+                    safeToSpend.paceStatus === 'overpace'
+                      ? 'text-semantic-rose'
+                      : safeToSpend.paceStatus === 'warning'
+                      ? 'text-semantic-amber'
+                      : 'text-semantic-green'
+                  }`}
+                >
                   Terkendali ({cycleInfo.progressPercentage}%)
                 </span>
               </div>
 
               <div className="w-full bg-border-default h-2 rounded-full overflow-hidden">
                 <div
-                  className="bg-semantic-green h-full rounded-full transition-all duration-500"
+                  className={`h-full rounded-full transition-all duration-500 ${
+                    safeToSpend.paceStatus === 'overpace'
+                      ? 'bg-semantic-rose'
+                      : safeToSpend.paceStatus === 'warning'
+                      ? 'bg-semantic-amber'
+                      : 'bg-semantic-green'
+                  }`}
                   style={{ width: `${cycleInfo.progressPercentage}%` }}
                 />
               </div>
@@ -313,84 +427,84 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </section>
 
-      {/* 3. Financial Summary Cards (Grid of 4) WITH Arus Kas Harian SVG Chart INSIDE (Stitch Exact: lines 64-65) */}
+      {/* 3. Financial Summary Cards (Grid of 4) WITH Arus Kas Harian SVG Wave Chart INSIDE (Stitch Exact: lines 64-65) */}
       <section className="bg-surface rounded-[14px] border border-border-default shadow-sm mb-6 overflow-hidden">
-        {/* Top 4 KPI Metric Blocks */}
+        {/* Top 4 KPI Metric Blocks (with Stitch Colored Figures & Badges) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 border-b border-border-default">
-          {/* Card 1: Total Saldo */}
-          <div className="p-4 sm:p-5 flex flex-col justify-between border-b sm:border-b-0 sm:border-r border-border-default">
+          {/* Total Saldo */}
+          <div className="p-5 flex flex-col justify-between border-b sm:border-b-0 sm:border-r border-border-default">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-text-muted">Total Saldo</span>
-              <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-medium bg-semantic-green-soft text-semantic-green">
+              <span className="text-xs font-medium text-text-muted">Total Saldo</span>
+              <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-semibold bg-semantic-green-soft text-semantic-green">
                 <ArrowUpRight className="w-3.5 h-3.5" /> 8.4%
               </span>
             </div>
             <div className="mt-2">
-              <div className="text-2xl font-semibold text-text-primary tracking-tight tabular-nums">
-                {formatCompactCurrency(totalBalance || 2850000)}
+              <div className="text-2xl font-bold text-text-primary tracking-tight tabular-nums">
+                {formatCompactCurrency(totalBalance)}
               </div>
               <div className="text-xs text-text-muted mt-1 truncate">
-                dari {formatCompactCurrency((totalBalance || 2850000) * 0.92)}
+                {formatCurrency(totalBalance)} kas riil
               </div>
             </div>
           </div>
 
-          {/* Card 2: Total Pemasukan */}
-          <div className="p-4 sm:p-5 flex flex-col justify-between border-b sm:border-b-0 lg:border-r border-border-default">
+          {/* Total Pemasukan */}
+          <div className="p-5 flex flex-col justify-between border-b sm:border-b-0 lg:border-r border-border-default">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-text-muted">Total Pemasukan</span>
-              <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-medium bg-semantic-green-soft text-semantic-green">
+              <span className="text-xs font-medium text-text-muted">Total Pemasukan</span>
+              <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-semibold bg-semantic-green-soft text-semantic-green">
                 <ArrowUpRight className="w-3.5 h-3.5" /> 18.4%
               </span>
             </div>
             <div className="mt-2">
-              <div className="text-2xl font-semibold text-text-primary tracking-tight tabular-nums">
-                {formatCompactCurrency(totalIncomeInCycle || 3500000)}
+              <div className="text-2xl font-bold text-semantic-green tracking-tight tabular-nums">
+                {formatCompactCurrency(totalIncomeInCycle)}
               </div>
               <div className="text-xs text-text-muted mt-1 truncate">
-                dari {formatCompactCurrency((totalIncomeInCycle || 3500000) * 0.85)}
+                {formatCurrency(totalIncomeInCycle)} masuk siklus
               </div>
             </div>
           </div>
 
-          {/* Card 3: Total Pengeluaran */}
-          <div className="p-4 sm:p-5 flex flex-col justify-between border-b sm:border-b-0 sm:border-r border-border-default">
+          {/* Total Pengeluaran */}
+          <div className="p-5 flex flex-col justify-between border-b sm:border-b-0 sm:border-r border-border-default">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-text-muted">Total Pengeluaran</span>
-              <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-medium bg-semantic-rose-soft text-semantic-rose">
-                <ArrowDownRight className="w-3.5 h-3.5" /> 14.4%
+              <span className="text-xs font-medium text-text-muted">Total Pengeluaran</span>
+              <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-semibold bg-semantic-rose-soft text-semantic-rose">
+                <ArrowDownRight className="w-3.5 h-3.5" /> {overallBudgetPercentage}%
               </span>
             </div>
             <div className="mt-2">
-              <div className="text-2xl font-semibold text-text-primary tracking-tight tabular-nums">
-                {formatCompactCurrency(totalCycleExpense || 1420000)}
+              <div className="text-2xl font-bold text-semantic-rose tracking-tight tabular-nums">
+                {formatCompactCurrency(totalCycleExpense)}
               </div>
               <div className="text-xs text-text-muted mt-1 truncate">
-                dari total budget {formatCompactCurrency(effectiveBudgetCeiling)}
+                dari plafon {formatCompactCurrency(effectiveBudgetCeiling)}
               </div>
             </div>
           </div>
 
-          {/* Card 4: Tabungan Siklus Ini */}
-          <div className="p-4 sm:p-5 flex flex-col justify-between">
+          {/* Tabungan Siklus Ini */}
+          <div className="p-5 flex flex-col justify-between">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-text-muted">Tabungan Siklus Ini</span>
-              <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-medium bg-semantic-green-soft text-semantic-green">
+              <span className="text-xs font-medium text-text-muted">Tabungan Siklus Ini</span>
+              <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-semibold bg-semantic-green-soft text-semantic-green">
                 <ArrowUpRight className="w-3.5 h-3.5" /> 15.0%
               </span>
             </div>
             <div className="mt-2">
-              <div className="text-2xl font-semibold text-text-primary tracking-tight tabular-nums">
+              <div className="text-2xl font-bold text-primary-600 tracking-tight tabular-nums">
                 {formatCompactCurrency(totalSavingsGathered)}
               </div>
               <div className="text-xs text-text-muted mt-1 truncate">
-                {savingsGoals.length} target aktif ({overallBudgetPercentage}%)
+                {savingsGoals.length} target tabungan aktif
               </div>
             </div>
           </div>
         </div>
 
-        {/* Bottom Part: Arus Kas Harian SVG Wave Chart (Stitch Exact) */}
+        {/* Bottom Part: Arus Kas Harian SVG Wave Chart (Plotted with Real Database Transactions) */}
         <div className="p-6 relative">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
@@ -418,7 +532,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <pattern id="chartDots" width="50" height="30" patternUnits="userSpaceOnUse">
                   <circle cx="25" cy="15" r="1" fill="#cbd5e1" opacity="0.5" />
                 </pattern>
-                <linearGradient id="lineGlow" x1="0%" y1="0%" x2="0%" y2="100%">
+                <linearGradient id="lineGlow" x1="0%" x2="0%" y1="0%" y2="100%">
                   <stop offset="0%" stopColor="#6366f1" stopOpacity="0.18" />
                   <stop offset="100%" stopColor="#6366f1" stopOpacity="0.0" />
                 </linearGradient>
@@ -427,29 +541,56 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               {/* Dotted background rect */}
               <rect x="0" y="10" width="900" height="140" fill="url(#chartDots)" />
 
-              {/* Y-Axis Value Labels (Stitch Exact: 400k, 320k, 240k, 160k, 0k) */}
-              <text fill="#94a3b8" fontSize="11" x="10" y="20" fontFamily="Inter, sans-serif">400k</text>
-              <text fill="#94a3b8" fontSize="11" x="10" y="55" fontFamily="Inter, sans-serif">320k</text>
-              <text fill="#94a3b8" fontSize="11" x="10" y="90" fontFamily="Inter, sans-serif">240k</text>
-              <text fill="#94a3b8" fontSize="11" x="10" y="125" fontFamily="Inter, sans-serif">160k</text>
-              <text fill="#94a3b8" fontSize="11" x="10" y="155" fontFamily="Inter, sans-serif">0k</text>
+              {/* Dynamic Y-Axis Value Labels matching real database values */}
+              <text fill="#94a3b8" fontSize="11" x="10" y="20" fontFamily="Inter, sans-serif">
+                {formatCompactCurrency(cashFlowChartData.yTiers[0]).replace('Rp ', '')}
+              </text>
+              <text fill="#94a3b8" fontSize="11" x="10" y="55" fontFamily="Inter, sans-serif">
+                {formatCompactCurrency(cashFlowChartData.yTiers[1]).replace('Rp ', '')}
+              </text>
+              <text fill="#94a3b8" fontSize="11" x="10" y="90" fontFamily="Inter, sans-serif">
+                {formatCompactCurrency(cashFlowChartData.yTiers[2]).replace('Rp ', '')}
+              </text>
+              <text fill="#94a3b8" fontSize="11" x="10" y="125" fontFamily="Inter, sans-serif">
+                {formatCompactCurrency(cashFlowChartData.yTiers[3]).replace('Rp ', '')}
+              </text>
+              <text fill="#94a3b8" fontSize="11" x="10" y="155" fontFamily="Inter, sans-serif">
+                0k
+              </text>
 
               {/* Smooth Wave Area Glow Fill */}
-              <path d={cashFlowChartData.areaD} fill="url(#lineGlow)" />
+              {cashFlowChartData.areaD && (
+                <path d={cashFlowChartData.areaD} fill="url(#lineGlow)" />
+              )}
 
               {/* Primary Curve Line (#6366f1, 2.5 stroke-width) */}
-              <path
-                d={cashFlowChartData.pathD}
-                fill="none"
-                stroke="#6366f1"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
+              {cashFlowChartData.pathD && (
+                <path
+                  d={cashFlowChartData.pathD}
+                  fill="none"
+                  stroke="#6366f1"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              )}
+
+              {/* Spike Markers (Circles on days with spikes exceeding safe limit) */}
+              {cashFlowChartData.points.filter(p => p.isSpike).map((p, idx) => (
+                <circle
+                  key={idx}
+                  cx={p.x}
+                  cy={p.y}
+                  r="4.5"
+                  fill="#F43F5E"
+                  stroke="#FFFFFF"
+                  strokeWidth="2"
+                />
+              ))}
 
               {/* X-Axis Dates Along the Bottom */}
               <g fill="#94a3b8" fontSize="10" textAnchor="middle" fontFamily="Inter, sans-serif">
-                {cashFlowChartData.points.map((p, idx) => (
+                {cashFlowChartData.xLabels.map((p, idx) => (
                   <text key={idx} x={p.x} y="175">
                     {p.dayLabel}
                   </text>
@@ -500,7 +641,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <span className="text-xs text-text-muted font-medium mb-0.5">Realisasi Terpakai</span>
                 <div className="flex items-baseline gap-1">
                   <span className="text-2xl font-semibold text-text-primary tabular-nums tracking-tight">
-                    {formatCurrency(totalCycleExpense || 1420000)}
+                    {formatCurrency(totalCycleExpense)}
                   </span>
                   <span className="text-xs text-text-secondary font-medium tabular-nums">
                     / {formatCurrency(effectiveBudgetCeiling)} plafon
@@ -534,14 +675,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </div>
             </div>
 
-            {/* Comparative Category Diagrams (Horizontal Progress Gauge Cards) */}
+            {/* Comparative Category Diagrams (Horizontal Progress Gauge Cards from DB) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4">
-              {categorySpending.slice(0, 4).map((cat, idx) => {
+              {categorySpending.slice(0, 4).map((cat) => {
                 const budget = budgets.find((b) => b.category_id === cat.id);
-                const budgetAmount = budget ? Number(budget.amount) : (1000000 - idx * 200000);
-                const spent = cat.value || (650000 - idx * 150000);
-                const percentage = budgetAmount > 0 ? Math.min(100, Math.round((spent / budgetAmount) * 100)) : 65;
-                const color = cat.color || STITCH_COLORS[idx % STITCH_COLORS.length];
+                const budgetAmount = budget ? Number(budget.amount) : 0;
+                const spent = cat.value;
+                const percentage = budgetAmount > 0 ? Math.min(100, Math.round((spent / budgetAmount) * 100)) : 0;
+                const isOver = budgetAmount > 0 && spent > budgetAmount;
 
                 return (
                   <div
@@ -549,10 +690,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     className="bg-surface-container-low p-3.5 rounded-xl flex flex-col justify-between border border-border-default hover:border-primary-500 transition-colors group"
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
                         <div
                           className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                          style={{ backgroundColor: `${color}15`, color: color }}
+                          style={{ backgroundColor: `${cat.color}15`, color: cat.color }}
                         >
                           {getCategoryIcon(cat.icon)}
                         </div>
@@ -561,29 +702,37 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         </span>
                       </div>
                       <span
-                        className="text-xs font-medium px-2 py-0.5 rounded-full tabular-nums"
-                        style={{ backgroundColor: `${color}15`, color: color }}
+                        className={`text-xs font-medium px-2 py-0.5 rounded-full tabular-nums ${
+                          isOver ? 'bg-semantic-rose-soft text-semantic-rose' : ''
+                        }`}
+                        style={!isOver ? { backgroundColor: `${cat.color}15`, color: cat.color } : {}}
                       >
-                        {percentage}%
+                        {budgetAmount > 0 ? `${percentage}%` : 'Belum diset'}
                       </span>
                     </div>
 
                     <div className="w-full bg-border-default h-2 rounded-full overflow-hidden mb-2">
                       <div
-                        className="h-full rounded-full transition-all duration-500"
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          isOver ? 'bg-semantic-rose' : ''
+                        }`}
                         style={{
-                          width: `${percentage}%`,
-                          backgroundColor: color,
+                          width: `${Math.min(percentage, 100)}%`,
+                          backgroundColor: isOver ? undefined : cat.color,
                         }}
                       />
                     </div>
 
                     <div className="flex items-center justify-between text-xs text-text-muted">
                       <span className="tabular-nums">
-                        {formatCompactCurrency(spent)} / {formatCompactCurrency(budgetAmount)}
+                        {formatCompactCurrency(spent)} / {budgetAmount > 0 ? formatCompactCurrency(budgetAmount) : '0k'}
                       </span>
-                      <span className="text-semantic-green font-medium tabular-nums">
-                        Sisa {formatCurrency(Math.max(0, budgetAmount - spent))}
+                      <span className={`font-medium tabular-nums ${isOver ? 'text-semantic-rose' : 'text-semantic-green'}`}>
+                        {isOver
+                          ? `Lewat ${formatCompactCurrency(spent - budgetAmount)}`
+                          : budgetAmount > 0
+                          ? `Sisa ${formatCompactCurrency(budgetAmount - spent)}`
+                          : 'Plafon belum diset'}
                       </span>
                     </div>
                   </div>
@@ -593,7 +742,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
             <div className="mt-5 pt-3 border-t border-border-default flex items-center justify-between">
               <span className="text-xs text-text-muted">
-                {categorySpending.length} pos budget terpantau otomatis
+                {categorySpending.length} pos budget di database
               </span>
               <button
                 onClick={() => onSelectTab('budget')}
@@ -605,7 +754,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           </div>
 
-          {/* Dompet Saya (Stitch Wallets Cards: BCA, GoPay, Tunai) */}
+          {/* Dompet Saya (Real Wallets from Database: BCA, GoPay, Tunai) */}
           <div className="bg-surface rounded-[14px] p-6 border border-border-default shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <div className="flex flex-col">
@@ -685,7 +834,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
         {/* RIGHT COLUMN (Span 4) */}
         <div className="lg:col-span-4 flex flex-col gap-6">
-          {/* Transaksi Terbaru (Stitch Exact: lines 265-361) */}
+          {/* Transaksi Terbaru (Real Transactions from Database) */}
           <div className="bg-surface rounded-[14px] p-6 shadow-sm border border-border-default">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-text-primary tracking-tight">
@@ -696,7 +845,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
             {recentTransactions.length === 0 ? (
               <div className="py-8 text-center text-xs text-text-muted">
-                Belum ada transaksi.
+                Belum ada transaksi di database.
               </div>
             ) : (
               <div className="flex flex-col">
@@ -778,7 +927,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           </div>
 
-          {/* Kategori Pengeluaran Donut Chart (Stitch Exact SVG Donut: lines 362-365) */}
+          {/* Kategori Pengeluaran Donut Chart (Exact SVG Donut matching Real Database) */}
           <div className="bg-surface rounded-[14px] p-6 shadow-sm border border-border-default">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-lg font-bold text-text-primary">Kategori Pengeluaran</h3>
@@ -787,11 +936,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </span>
             </div>
 
-            {/* Circular SVG Donut Chart (Stitch Exact) */}
+            {/* Circular SVG Donut Chart */}
             <div className="flex flex-col items-center my-4">
               <div className="relative w-44 h-44 flex items-center justify-center">
                 <svg className="w-full h-full -rotate-90" viewBox="0 0 160 160">
-                  {/* Background ring */}
+                  {/* Background neutral ring */}
                   <circle
                     cx="80"
                     cy="80"
@@ -800,7 +949,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     stroke="#e2e8f0"
                     strokeWidth="16"
                   />
-                  {/* Category Slices */}
+                  {/* Real Database Category Slices */}
                   {donutSlices.map((slice) => (
                     <circle
                       key={slice.id}
@@ -817,11 +966,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   ))}
                 </svg>
 
-                {/* Donut Center Label */}
+                {/* Donut Center Label (Real Database Amount) */}
                 <div className="absolute flex flex-col items-center justify-center text-center">
                   <span className="text-xs text-text-muted leading-tight">Total Terpakai</span>
                   <span className="text-[20px] font-bold text-text-primary tracking-tight tabular-nums mt-0.5">
-                    {formatCompactCurrency(totalCycleExpense || 1420000).replace('Rp ', '')}
+                    {totalCycleExpense > 0
+                      ? formatCompactCurrency(totalCycleExpense).replace('Rp ', '')
+                      : '0'}
                   </span>
                   <span className="text-xs text-semantic-green font-medium">
                     {overallBudgetPercentage}%
@@ -830,7 +981,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </div>
             </div>
 
-            {/* Categories Legend List (Stitch Exact) */}
+            {/* Categories Legend List (Real Database Categories & Amounts) */}
             <div className="flex flex-col gap-2 pt-1">
               {categorySpending.slice(0, 5).map((item) => (
                 <div key={item.id} className="flex items-center justify-between text-sm py-1">

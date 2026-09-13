@@ -214,8 +214,8 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
           setCategories(DEFAULT_CATEGORIES);
         }
       } else {
-        setWallets(wData && wData.length > 0 ? (wData as Wallet[]) : DEFAULT_WALLETS);
-        setCategories(cData && cData.length > 0 ? (cData as Category[]) : DEFAULT_CATEGORIES);
+        setWallets((wData as Wallet[]) || []);
+        setCategories((cData as Category[]) || []);
       }
 
       setTransactions((tData as Transaction[]) || []);

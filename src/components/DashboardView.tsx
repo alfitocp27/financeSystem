@@ -23,7 +23,7 @@ import {
 import { useFinance } from '../context/FinanceContext';
 import { formatCurrency, formatCompactCurrency, formatDateIndo, formatRelativeDate, getLocalDateString } from '../lib/formatters';
 
-const STITCH_COLORS = ['#2563eb', '#10b981', '#f59e0b', '#94a3b8', '#8b5cf6', '#ec4899', '#06b6d4'];
+const STITCH_COLORS = ['#2563eb', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
 
 interface DashboardViewProps {
   studentName: string;
@@ -71,7 +71,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     .filter((t) => t.type === 'expense' && t.transaction_date >= startStr && t.transaction_date <= endStr)
     .reduce((sum, t) => sum + Number(t.amount), 0);
 
-  const effectiveBudgetCeiling = totalAllocatedBudget > 0 ? totalAllocatedBudget : (totalBalance + totalCycleExpense || 2500000);
+  const effectiveBudgetCeiling = totalAllocatedBudget > 0 ? totalAllocatedBudget : 2500000;
   const totalRemainingQuota = Math.max(0, effectiveBudgetCeiling - totalCycleExpense);
   const overallBudgetPercentage = effectiveBudgetCeiling > 0
     ? Math.min(100, Math.round((totalCycleExpense / effectiveBudgetCeiling) * 100))
@@ -106,28 +106,27 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   }, [categories, transactions, startStr, endStr]);
 
   // SVG Donut Calculations using 100% Real Data
-  const donutSlices = useMemo(() => {
-    const CIRCUMFERENCE = 390; // 2 * PI * 62 ~ 389.56
-    const activeCats = categorySpending.filter((c) => c.value > 0);
+  const CIRCUMFERENCE = 389.56; // 2 * PI * 62
+  const activeSlices = useMemo(() => {
+    const active = categorySpending.filter((c) => c.value > 0);
+    if (active.length === 0 || totalCycleExpense === 0) return [];
 
     let cumulativeOffset = 0;
-    const slices = [];
-
-    for (const cat of activeCats) {
-      const sliceLength = Math.max(6, Math.round(cat.ratio * CIRCUMFERENCE));
-      const strokeDasharray = `${sliceLength} ${CIRCUMFERENCE}`;
+    return active.map((cat) => {
+      const dash = (cat.value / totalCycleExpense) * CIRCUMFERENCE;
+      const gap = CIRCUMFERENCE - dash;
+      const strokeDasharray = `${dash.toFixed(1)} ${gap.toFixed(1)}`;
       const strokeDashoffset = -cumulativeOffset;
-      cumulativeOffset += sliceLength;
-      slices.push({
+      cumulativeOffset += dash;
+      return {
         ...cat,
         strokeDasharray,
         strokeDashoffset,
-      });
-    }
-    return slices;
-  }, [categorySpending]);
+      };
+    });
+  }, [categorySpending, totalCycleExpense]);
 
-  // Real Daily Cash Flow Wave Chart (Plotted directly from transactions in Database)
+  // Real Daily Cash Flow Wave Chart (Comfortable Height, NO Red Dots, Beautiful Hover)
   const cashFlowChartData = useMemo(() => {
     const start = new Date(cycleInfo.startDate);
     const end = new Date(cycleInfo.endDate);
@@ -156,7 +155,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       const dateStr = getLocalDateString(d);
       const isFuture = d.getTime() > today.getTime();
 
-      // Real daily expense from Database transactions
       const dayExpense = transactions
         .filter((t) => t.type === 'expense' && t.transaction_date === dateStr)
         .reduce((sum, t) => sum + Number(t.amount), 0);
@@ -178,18 +176,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       });
     }
 
-    // Dynamic clean Y-Axis Scale
+    // Comfortable Height Scale: viewBox 0 0 900 230
     const benchmarkSafe = safeToSpend.dailySafeToSpend > 0 ? safeToSpend.dailySafeToSpend : 50000;
     const ceilingVal = Math.max(maxDailyExp, benchmarkSafe * 1.5, 80000);
     const tierStep = Math.ceil(ceilingVal / 40000) * 10000;
     const yTiers = [tierStep * 4, tierStep * 3, tierStep * 2, tierStep, 0];
     const maxY = Math.max(yTiers[0], 1);
 
-    // SVG coordinates: viewBox 0 0 900 180
     const startX = 60;
     const endX = 840;
-    const topY = 20;
-    const bottomY = 155;
+    const topY = 30;
+    const bottomY = 195;
     const usableHeight = bottomY - topY;
     const stepX = (endX - startX) / Math.max(1, dailyRecords.length - 1);
 
@@ -225,7 +222,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       ? `${pathD} L ${points[points.length - 1].x} ${bottomY} L ${points[0].x} ${bottomY} Z`
       : '';
 
-    // Sample 7 date labels for bottom axis
+    // Sample 7 date labels along X-axis
     const labelIndices = [
       0,
       Math.floor(points.length * 0.16),
@@ -244,18 +241,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       yTiers,
       xLabels,
       maxDailyExp,
-      hasExpenses: maxDailyExp > 0,
+      bottomY,
     };
   }, [cycleInfo, transactions, safeToSpend.dailySafeToSpend]);
 
-  // Handle hover along SVG wave chart
+  // Handle smooth scrubbing along SVG wave chart
   const handleSvgMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
     if (!svgWaveRef.current || cashFlowChartData.points.length === 0) return;
     const rect = svgWaveRef.current.getBoundingClientRect();
     const clientX = e.clientX - rect.left;
     const svgX = (clientX / rect.width) * 900;
 
-    // Find nearest point
     let nearestIdx = 0;
     let minDiff = Infinity;
     cashFlowChartData.points.forEach((p, idx) => {
@@ -454,24 +450,26 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </section>
 
-      {/* 3. Financial Summary Cards (Grid of 4) WITH Arus Kas Harian SVG Wave Chart INSIDE (Stitch Exact: lines 64-65) */}
+      {/* 3. Financial Summary Cards (Grid of 4) WITH Arus Kas Harian SVG Wave Chart INSIDE */}
       <section className="bg-surface rounded-[14px] border border-border-default shadow-sm mb-6 overflow-hidden">
-        {/* Top 4 KPI Metric Blocks (Colored Numbers & Badges exactly as Stitch) */}
+        {/* Top 4 KPI Metric Blocks (Total Saldo Menjol + Warna Angka & Badge) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 border-b border-border-default">
-          {/* Total Saldo */}
-          <div className="p-5 flex flex-col justify-between border-b sm:border-b-0 sm:border-r border-border-default">
+          {/* Total Saldo - TAMPILAN MENONJOL & HIGHLIGHTED */}
+          <div className="p-5 flex flex-col justify-between border-b sm:border-b-0 sm:border-r border-border-default bg-gradient-to-br from-primary-50/60 via-white to-white">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-text-muted">Total Saldo</span>
-              <span className="inline-flex items-center gap-0.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-semantic-green-soft text-semantic-green border border-semantic-green/20">
+              <span className="text-xs font-bold text-primary-900 uppercase tracking-wide">
+                Sisa Total Saldo Kas
+              </span>
+              <span className="inline-flex items-center gap-0.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#ecfdf5] text-[#10b981] border border-[#10b981]/20">
                 <ArrowUpRight className="w-3.5 h-3.5" /> 8.4%
               </span>
             </div>
-            <div className="mt-2">
-              <div className="text-2xl font-bold text-text-primary tracking-tight tabular-nums">
+            <div className="mt-2.5">
+              <div className="text-3xl sm:text-[32px] font-extrabold text-primary-600 tracking-tight tabular-nums">
                 {formatCompactCurrency(totalBalance)}
               </div>
-              <div className="text-xs text-text-muted mt-1 truncate">
-                {formatCurrency(totalBalance)} kas riil
+              <div className="text-xs font-semibold text-text-secondary mt-1 truncate">
+                {formatCurrency(totalBalance)} saldo kas aktif
               </div>
             </div>
           </div>
@@ -480,7 +478,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="p-5 flex flex-col justify-between border-b sm:border-b-0 lg:border-r border-border-default">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-text-muted">Total Pemasukan</span>
-              <span className="inline-flex items-center gap-0.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-semantic-green-soft text-semantic-green border border-semantic-green/20">
+              <span className="inline-flex items-center gap-0.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#ecfdf5] text-[#10b981] border border-[#10b981]/20">
                 <ArrowUpRight className="w-3.5 h-3.5" /> 18.4%
               </span>
             </div>
@@ -498,7 +496,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="p-5 flex flex-col justify-between border-b sm:border-b-0 sm:border-r border-border-default">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-text-muted">Total Pengeluaran</span>
-              <span className="inline-flex items-center gap-0.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-semantic-rose-soft text-semantic-rose border border-semantic-rose/20">
+              <span className="inline-flex items-center gap-0.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#fff1f2] text-[#f43f5e] border border-[#f43f5e]/20">
                 <ArrowDownRight className="w-3.5 h-3.5" /> {overallBudgetPercentage}%
               </span>
             </div>
@@ -516,7 +514,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="p-5 flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-text-muted">Tabungan Siklus Ini</span>
-              <span className="inline-flex items-center gap-0.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-semantic-green-soft text-semantic-green border border-semantic-green/20">
+              <span className="inline-flex items-center gap-0.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#ecfdf5] text-[#10b981] border border-[#10b981]/20">
                 <ArrowUpRight className="w-3.5 h-3.5" /> 15.0%
               </span>
             </div>
@@ -531,7 +529,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         </div>
 
-        {/* Bottom Part: Arus Kas Harian Interactive Wave Chart with Live Hover Tooltip */}
+        {/* Bottom Part: Arus Kas Harian SVG Wave Chart (NORMAL HEIGHT, NO RED DOTS, SMOOTH HOVER) */}
         <div className="p-6 relative select-none">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
@@ -543,7 +541,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
             <div className="flex items-center gap-3 text-xs">
               {activeHoveredPoint ? (
-                <span className="font-semibold text-primary-600 bg-primary-50 px-2.5 py-0.5 rounded-full border border-primary-200 animate-in fade-in duration-100">
+                <span className="font-semibold text-primary-600 bg-primary-50 px-2.5 py-1 rounded-full border border-primary-200 animate-in fade-in duration-100">
                   {activeHoveredPoint.dayLabel}: {formatCurrency(activeHoveredPoint.expense)}
                 </span>
               ) : (
@@ -555,114 +553,114 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           </div>
 
-          {/* Dotted Grid & Glowing Wave Curve */}
+          {/* Dotted Grid & Glowing Wave Curve with Normal Height (h-64 sm:h-72) */}
           <div className="w-full overflow-x-auto">
             <svg
               ref={svgWaveRef}
               onMouseMove={handleSvgMouseMove}
               onMouseLeave={() => setHoveredPointIndex(null)}
-              className="w-full h-48 overflow-visible min-w-[650px] cursor-crosshair"
+              className="w-full h-64 sm:h-72 overflow-visible min-w-[700px] cursor-crosshair transition-all"
               preserveAspectRatio="none"
-              viewBox="0 0 900 180"
+              viewBox="0 0 900 230"
             >
               <defs>
                 <pattern id="chartDots" width="50" height="30" patternUnits="userSpaceOnUse">
-                  <circle cx="25" cy="15" r="1" fill="#cbd5e1" opacity="0.5" />
+                  <circle cx="25" cy="15" r="1" fill="#cbd5e1" opacity="0.6" />
                 </pattern>
                 <linearGradient id="lineGlow" x1="0%" x2="0%" y1="0%" y2="100%">
-                  <stop offset="0%" stopColor="#6366f1" stopOpacity="0.2" />
+                  <stop offset="0%" stopColor="#6366f1" stopOpacity="0.25" />
                   <stop offset="100%" stopColor="#6366f1" stopOpacity="0.0" />
                 </linearGradient>
               </defs>
 
               {/* Dotted background rect */}
-              <rect x="0" y="10" width="900" height="140" fill="url(#chartDots)" />
+              <rect x="0" y="15" width="900" height="180" fill="url(#chartDots)" />
 
               {/* Dynamic Y-Axis Value Labels matching real database values */}
-              <text fill="#94a3b8" fontSize="11" x="10" y="20" fontFamily="Inter, sans-serif">
+              <text fill="#94a3b8" fontSize="11" x="10" y="30" fontFamily="Inter, sans-serif">
                 {formatCompactCurrency(cashFlowChartData.yTiers[0]).replace('Rp ', '')}
               </text>
-              <text fill="#94a3b8" fontSize="11" x="10" y="55" fontFamily="Inter, sans-serif">
+              <text fill="#94a3b8" fontSize="11" x="10" y="72" fontFamily="Inter, sans-serif">
                 {formatCompactCurrency(cashFlowChartData.yTiers[1]).replace('Rp ', '')}
               </text>
-              <text fill="#94a3b8" fontSize="11" x="10" y="90" fontFamily="Inter, sans-serif">
+              <text fill="#94a3b8" fontSize="11" x="10" y="115" fontFamily="Inter, sans-serif">
                 {formatCompactCurrency(cashFlowChartData.yTiers[2]).replace('Rp ', '')}
               </text>
-              <text fill="#94a3b8" fontSize="11" x="10" y="125" fontFamily="Inter, sans-serif">
+              <text fill="#94a3b8" fontSize="11" x="10" y="157" fontFamily="Inter, sans-serif">
                 {formatCompactCurrency(cashFlowChartData.yTiers[3]).replace('Rp ', '')}
               </text>
-              <text fill="#94a3b8" fontSize="11" x="10" y="155" fontFamily="Inter, sans-serif">
+              <text fill="#94a3b8" fontSize="11" x="10" y="195" fontFamily="Inter, sans-serif">
                 0k
               </text>
 
+              {/* Baseline axis line */}
+              <line x1="50" x2="860" y1={cashFlowChartData.bottomY} y2={cashFlowChartData.bottomY} stroke="#e2e8f0" strokeWidth="1" />
+
               {/* Smooth Wave Area Glow Fill */}
               {cashFlowChartData.areaD && (
-                <path d={cashFlowChartData.areaD} fill="url(#lineGlow)" />
+                <path d={cashFlowChartData.areaD} fill="url(#lineGlow)" className="transition-all duration-300" />
               )}
 
-              {/* Primary Curve Line (#6366f1, 2.5 stroke-width) */}
+              {/* Primary Curve Line (#6366f1, NO RED DOTS) */}
               {cashFlowChartData.pathD && (
                 <path
                   d={cashFlowChartData.pathD}
                   fill="none"
                   stroke="#6366f1"
-                  strokeWidth="2.5"
+                  strokeWidth="3"
                   strokeLinecap="round"
                   strokeLinejoin="round"
+                  className="transition-all duration-300"
                 />
               )}
 
-              {/* Spike Markers (Circles on days with spikes exceeding safe limit) */}
-              {cashFlowChartData.points.filter(p => p.isSpike).map((p, idx) => (
-                <circle
-                  key={idx}
-                  cx={p.x}
-                  cy={p.y}
-                  r="4.5"
-                  fill="#F43F5E"
-                  stroke="#FFFFFF"
-                  strokeWidth="2"
-                />
-              ))}
-
-              {/* Interactive Hover Point & Floating Tooltip */}
+              {/* Interactive Smooth Hover Crosshair & Tooltip */}
               {activeHoveredPoint && (
-                <g>
+                <g className="transition-opacity duration-150">
                   {/* Vertical Guideline */}
                   <line
                     x1={activeHoveredPoint.x}
                     x2={activeHoveredPoint.x}
-                    y1={15}
-                    y2={155}
+                    y1={20}
+                    y2={cashFlowChartData.bottomY}
                     stroke="#6366f1"
-                    strokeDasharray="3,3"
+                    strokeDasharray="4,4"
                     strokeWidth="1.5"
+                    opacity="0.85"
                   />
-                  {/* Active Point Circle */}
+                  {/* Glowing Hover Circle Pulse */}
                   <circle
                     cx={activeHoveredPoint.x}
                     cy={activeHoveredPoint.y}
-                    r="6.5"
+                    r="9"
+                    fill="#6366f1"
+                    fillOpacity="0.25"
+                  />
+                  <circle
+                    cx={activeHoveredPoint.x}
+                    cy={activeHoveredPoint.y}
+                    r="5"
                     fill="#6366f1"
                     stroke="#ffffff"
                     strokeWidth="2.5"
                   />
-                  {/* Tooltip Card */}
-                  <g transform={`translate(${Math.max(75, Math.min(825, activeHoveredPoint.x))}, ${Math.max(40, activeHoveredPoint.y - 18)})`}>
+
+                  {/* Floating Tooltip Card */}
+                  <g transform={`translate(${Math.max(85, Math.min(815, activeHoveredPoint.x))}, ${Math.max(45, activeHoveredPoint.y - 20)})`}>
                     <rect
-                      x="-70"
-                      y="-36"
-                      width="140"
-                      height="34"
-                      rx="8"
+                      x="-75"
+                      y="-42"
+                      width="150"
+                      height="40"
+                      rx="10"
                       fill="#0f172a"
-                      opacity="0.95"
+                      opacity="0.96"
                     />
                     <text
                       x="0"
-                      y="-21"
+                      y="-25"
                       fill="#ffffff"
-                      fontSize="10.5"
+                      fontSize="11"
                       fontWeight="bold"
                       textAnchor="middle"
                       fontFamily="Inter, sans-serif"
@@ -671,22 +669,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     </text>
                     <text
                       x="0"
-                      y="-9"
+                      y="-11"
                       fill="#94a3b8"
-                      fontSize="9"
+                      fontSize="9.5"
                       textAnchor="middle"
                       fontFamily="Inter, sans-serif"
                     >
-                      {activeHoveredPoint.dayLabel} • {activeHoveredPoint.isSpike ? 'Overpace' : 'Aman'}
+                      {activeHoveredPoint.dayLabel} • {activeHoveredPoint.expense > safeToSpend.dailySafeToSpend && safeToSpend.dailySafeToSpend > 0 ? 'Overpace' : 'Aman'}
                     </text>
                   </g>
                 </g>
               )}
 
               {/* X-Axis Dates Along the Bottom */}
-              <g fill="#94a3b8" fontSize="10" textAnchor="middle" fontFamily="Inter, sans-serif">
+              <g fill="#94a3b8" fontSize="10.5" textAnchor="middle" fontFamily="Inter, sans-serif">
                 {cashFlowChartData.xLabels.map((p, idx) => (
-                  <text key={idx} x={p.x} y="175">
+                  <text key={idx} x={p.x} y="218">
                     {p.dayLabel}
                   </text>
                 ))}
@@ -755,7 +753,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 </span>
               </div>
               <div className="h-3 w-full bg-bg-secondary rounded-full flex overflow-hidden p-0.5 gap-0.5">
-                {donutSlices.map((slice) => (
+                {activeSlices.map((slice) => (
                   <div
                     key={slice.id}
                     className="h-full transition-all duration-500 rounded-full"
@@ -929,7 +927,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
         {/* RIGHT COLUMN (Span 4) */}
         <div className="lg:col-span-4 flex flex-col gap-6">
-          {/* Transaksi Terbaru (Real Transactions from Database) */}
+          {/* Transaksi Terbaru DENGAN LABEL WARNA PEMASUKAN / PENGELUARAN */}
           <div className="bg-surface rounded-[14px] p-6 shadow-sm border border-border-default">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-text-primary tracking-tight">
@@ -950,7 +948,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
                   return (
                     <React.Fragment key={tx.id}>
-                      <div className="py-2 flex items-center justify-between hover:bg-surface-container-low px-1.5 rounded-lg transition-colors group">
+                      <div className="py-2.5 flex items-center justify-between hover:bg-surface-container-low px-1.5 rounded-lg transition-colors group">
                         <div className="flex items-center gap-2.5 min-w-0">
                           <div
                             className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
@@ -967,10 +965,28 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                           </div>
 
                           <div className="flex flex-col min-w-0">
-                            <span className="text-sm font-medium text-text-primary truncate">
-                              {tx.note || cat?.name || (tx.type === 'transfer' ? 'Transfer Saldo' : 'Transaksi')}
-                            </span>
-                            <span className="text-xs text-text-muted truncate">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-xs font-semibold text-text-primary truncate">
+                                {tx.note || cat?.name || (tx.type === 'transfer' ? 'Transfer Saldo' : 'Transaksi')}
+                              </span>
+                              {/* Label Warna Pemasukan / Pengeluaran / Transfer */}
+                              {tx.type === 'income' && (
+                                <span className="px-1.5 py-0.2 rounded-full text-[9.5px] font-bold bg-[#ecfdf5] text-[#10b981] border border-[#10b981]/20">
+                                  Pemasukan
+                                </span>
+                              )}
+                              {tx.type === 'expense' && (
+                                <span className="px-1.5 py-0.2 rounded-full text-[9.5px] font-bold bg-[#fff1f2] text-[#f43f5e] border border-[#f43f5e]/20">
+                                  Pengeluaran
+                                </span>
+                              )}
+                              {tx.type === 'transfer' && (
+                                <span className="px-1.5 py-0.2 rounded-full text-[9.5px] font-bold bg-primary-50 text-primary-600 border border-primary-100">
+                                  Transfer
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[11px] text-text-muted truncate mt-0.5">
                               {walletObj?.name || 'Dompet'} • {formatRelativeDate(tx.transaction_date)}
                             </span>
                           </div>
@@ -978,7 +994,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
                         <div className="flex items-center gap-2 shrink-0 ml-2">
                           <span
-                            className={`text-xs font-medium tabular-nums ${
+                            className={`text-xs font-bold tabular-nums ${
                               tx.type === 'income'
                                 ? 'text-semantic-green'
                                 : tx.type === 'expense'
@@ -1022,7 +1038,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           </div>
 
-          {/* Kategori Pengeluaran Donut Chart (Interactive SVG Donut with Live Hover Effect) */}
+          {/* Kategori Pengeluaran Donut Chart (REAL DATABASE SLICES, ANIMATED HOVER & VIBRANT COLORS) */}
           <div className="bg-surface rounded-[14px] p-6 shadow-sm border border-border-default select-none">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-lg font-bold text-text-primary">Kategori Pengeluaran</h3>
@@ -1031,7 +1047,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </span>
             </div>
 
-            {/* Circular SVG Donut Chart with Hover Interaction */}
+            {/* Circular SVG Donut Chart with Vibrant Colors & Live Hover */}
             <div className="flex flex-col items-center my-4">
               <div className="relative w-48 h-48 flex items-center justify-center">
                 <svg className="w-full h-full -rotate-90 overflow-visible" viewBox="0 0 160 160">
@@ -1044,8 +1060,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     stroke="#e2e8f0"
                     strokeWidth="16"
                   />
-                  {/* Real Database Category Slices */}
-                  {donutSlices.map((slice, idx) => {
+
+                  {/* Real Database Category Slices with Vivid Colors */}
+                  {activeSlices.map((slice, idx) => {
                     const isHovered = hoveredCategoryIndex === idx;
                     return (
                       <circle
@@ -1055,15 +1072,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         r="62"
                         fill="none"
                         stroke={slice.color}
-                        strokeWidth={isHovered ? 22 : 16}
+                        strokeWidth={isHovered ? 24 : 16}
                         strokeDasharray={slice.strokeDasharray}
                         strokeDashoffset={slice.strokeDashoffset}
-                        strokeLinecap="round"
                         onMouseEnter={() => setHoveredCategoryIndex(idx)}
                         onMouseLeave={() => setHoveredCategoryIndex(null)}
-                        className="transition-all duration-200 cursor-pointer"
+                        className="transition-all duration-300 cursor-pointer"
                         style={{
-                          filter: isHovered ? 'drop-shadow(0 0 6px rgba(99, 102, 241, 0.4))' : undefined,
+                          filter: isHovered ? 'drop-shadow(0 0 8px rgba(99, 102, 241, 0.5))' : undefined,
                         }}
                       />
                     );
@@ -1073,28 +1089,32 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 {/* Donut Center Label (Dynamically updates on Hover) */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none px-2">
                   <span className="text-[11px] text-text-muted leading-tight truncate max-w-[110px]">
-                    {activeHoveredCategory ? activeHoveredCategory.name : 'Total Terpakai'}
+                    {activeHoveredCategory ? activeHoveredCategory.name : totalCycleExpense > 0 ? 'Total Terpakai' : 'Belum Ada'}
                   </span>
                   <span className="text-[18px] sm:text-[20px] font-bold text-text-primary tracking-tight tabular-nums mt-0.5 truncate max-w-[130px]">
                     {activeHoveredCategory
                       ? formatCompactCurrency(activeHoveredCategory.value).replace('Rp ', '')
                       : totalCycleExpense > 0
                       ? formatCompactCurrency(totalCycleExpense).replace('Rp ', '')
-                      : '0'}
+                      : 'Rp 0'}
                   </span>
-                  <span className="text-[11px] text-semantic-green font-medium">
+                  <span className="text-[11px] text-semantic-green font-semibold">
                     {activeHoveredCategory
                       ? `${(activeHoveredCategory.ratio * 100).toFixed(1)}%`
-                      : `${overallBudgetPercentage}%`}
+                      : totalCycleExpense > 0
+                      ? `${overallBudgetPercentage}%`
+                      : '0%'}
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Categories Legend List (Interactive on Hover) */}
+            {/* Categories Legend List (Interactive on Hover & Real Database Categories) */}
             <div className="flex flex-col gap-1.5 pt-1">
               {categorySpending.slice(0, 5).map((item, idx) => {
                 const isHovered = hoveredCategoryIndex === idx;
+                const pct = totalCycleExpense > 0 ? (item.ratio * 100).toFixed(1) : '0';
+
                 return (
                   <div
                     key={item.id}
@@ -1111,9 +1131,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       />
                       <span className="text-xs sm:text-sm text-text-primary truncate">{item.name}</span>
                     </div>
-                    <span className="text-xs text-text-secondary tabular-nums shrink-0 ml-2">
-                      {formatCurrency(item.value)}
-                    </span>
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                      <span className="text-xs text-text-secondary tabular-nums">
+                        {formatCurrency(item.value)}
+                      </span>
+                      <span className="text-[11px] text-text-muted tabular-nums w-10 text-right font-medium">
+                        {pct}%
+                      </span>
+                    </div>
                   </div>
                 );
               })}

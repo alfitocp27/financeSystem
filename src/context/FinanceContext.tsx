@@ -68,165 +68,11 @@ const DEFAULT_CATEGORIES: Category[] = [
   { id: 'c9999999-9999-4999-8999-999999999999', user_id: 'demo', name: 'Beasiswa & Lomba', type: 'income', icon: 'award', color: '#f59e0b', created_at: '' },
 ];
 
-const DEFAULT_GOALS: SavingsGoal[] = [
-  { id: 'g1111111-1111-4111-8111-111111111111', user_id: 'demo', name: 'Dana Darurat Kost', target_amount: 1500000, current_amount: 600000, target_date: '2026-12-31', icon: 'shield-alert', color: '#10b981', created_at: '', updated_at: '' },
-  { id: 'g2222222-2222-4222-8222-222222222222', user_id: 'demo', name: 'Upgrade Laptop / Gadget', target_amount: 5000000, current_amount: 1200000, target_date: '2027-02-01', icon: 'laptop', color: '#6366f1', created_at: '', updated_at: '' },
-];
+const DEFAULT_GOALS: SavingsGoal[] = [];
 
-const DEFAULT_BUDGETS: Budget[] = [
-  { id: 'b1111111-1111-4111-8111-111111111111', user_id: 'demo', category_id: 'c1111111-1111-4111-8111-111111111111', amount: 1000000, period_month: new Date().getMonth() + 1, period_year: new Date().getFullYear(), created_at: '' },
-  { id: 'b2222222-2222-4222-8222-222222222222', user_id: 'demo', category_id: 'c2222222-2222-4222-8222-222222222222', amount: 500000, period_month: new Date().getMonth() + 1, period_year: new Date().getFullYear(), created_at: '' },
-  { id: 'b3333333-3333-4333-8333-333333333333', user_id: 'demo', category_id: 'c3333333-3333-4333-8333-333333333333', amount: 400000, period_month: new Date().getMonth() + 1, period_year: new Date().getFullYear(), created_at: '' },
-  { id: 'b4444444-4444-4444-8444-444444444444', user_id: 'demo', category_id: 'c5555555-5555-4555-8555-555555555555', amount: 600000, period_month: new Date().getMonth() + 1, period_year: new Date().getFullYear(), created_at: '' },
-];
+const DEFAULT_BUDGETS: Budget[] = [];
 
-const DEFAULT_COMMITMENTS: RecurringCommitment[] = [
-  { id: 'rec-1', user_id: 'demo', category_id: 'c2222222-2222-4222-8222-222222222222', name: 'Sewa Kost Bulanan', amount: 650000, due_day: 1, is_paid: false, created_at: '' },
-  { id: 'rec-2', user_id: 'demo', category_id: 'c2222222-2222-4222-8222-222222222222', name: 'Wifi & Kuota Kampus', amount: 75000, due_day: 10, is_paid: false, created_at: '' },
-  { id: 'rec-3', user_id: 'demo', category_id: 'c5555555-5555-4555-8555-555555555555', name: 'Spotify / YouTube Music', amount: 25000, due_day: 15, is_paid: true, created_at: '' },
-];
-
-function generateStarterTransactions(cycleStartDate: Date, userId: string = 'demo'): Transaction[] {
-  const start = new Date(cycleStartDate);
-  const formatDate = (dayOffset: number) => {
-    const d = new Date(start);
-    d.setDate(d.getDate() + dayOffset);
-    return getLocalDateString(d);
-  };
-
-  return [
-    {
-      id: 'tx-1',
-      user_id: userId,
-      wallet_id: '22222222-2222-4222-8222-222222222222',
-      category_id: 'c7777777-7777-4777-8777-777777777777',
-      goal_id: null,
-      type: 'income',
-      amount: 3500000,
-      transaction_date: formatDate(0),
-      destination_wallet_id: null,
-      note: 'Uang Saku Bulanan dari Ortu',
-      created_at: new Date().toISOString(),
-    },
-    {
-      id: 'tx-2',
-      user_id: userId,
-      wallet_id: '22222222-2222-4222-8222-222222222222',
-      category_id: 'c2222222-2222-4222-8222-222222222222',
-      goal_id: null,
-      type: 'expense',
-      amount: 450000,
-      transaction_date: formatDate(1),
-      destination_wallet_id: null,
-      note: 'Sewa Kos & Iuran Kebersihan',
-      created_at: new Date().toISOString(),
-    },
-    {
-      id: 'tx-3',
-      user_id: userId,
-      wallet_id: '33333333-3333-4333-8333-333333333333',
-      category_id: 'c1111111-1111-4111-8111-111111111111',
-      goal_id: null,
-      type: 'expense',
-      amount: 45000,
-      transaction_date: formatDate(3),
-      destination_wallet_id: null,
-      note: 'Makan Siang & Es Teh Kantin',
-      created_at: new Date().toISOString(),
-    },
-    {
-      id: 'tx-4',
-      user_id: userId,
-      wallet_id: '11111111-1111-4111-8111-111111111111',
-      category_id: 'c3333333-3333-4333-8333-333333333333',
-      goal_id: null,
-      type: 'expense',
-      amount: 30000,
-      transaction_date: formatDate(5),
-      destination_wallet_id: null,
-      note: 'Bensin Motor Pertalite',
-      created_at: new Date().toISOString(),
-    },
-    {
-      id: 'tx-5',
-      user_id: userId,
-      wallet_id: '33333333-3333-4333-8333-333333333333',
-      category_id: 'c1111111-1111-4111-8111-111111111111',
-      goal_id: null,
-      type: 'expense',
-      amount: 55000,
-      transaction_date: formatDate(7),
-      destination_wallet_id: null,
-      note: 'Makan Malam Bersama Teman Kost',
-      created_at: new Date().toISOString(),
-    },
-    {
-      id: 'tx-6',
-      user_id: userId,
-      wallet_id: '22222222-2222-4222-8222-222222222222',
-      category_id: 'c4444444-4444-4444-8444-444444444444',
-      goal_id: null,
-      type: 'expense',
-      amount: 85000,
-      transaction_date: formatDate(9),
-      destination_wallet_id: null,
-      note: 'Buku & Modul Kuliah Semester',
-      created_at: new Date().toISOString(),
-    },
-    {
-      id: 'tx-7',
-      user_id: userId,
-      wallet_id: '11111111-1111-4111-8111-111111111111',
-      category_id: 'c1111111-1111-4111-8111-111111111111',
-      goal_id: null,
-      type: 'expense',
-      amount: 22000,
-      transaction_date: formatDate(11),
-      destination_wallet_id: null,
-      note: 'Makan Siang Warteg',
-      created_at: new Date().toISOString(),
-    },
-    {
-      id: 'tx-8',
-      user_id: userId,
-      wallet_id: '33333333-3333-4333-8333-333333333333',
-      category_id: 'c5555555-5555-4555-8555-555555555555',
-      goal_id: null,
-      type: 'expense',
-      amount: 35000,
-      transaction_date: formatDate(13),
-      destination_wallet_id: null,
-      note: 'Kopi & Nugas di Cafe Kampus',
-      created_at: new Date().toISOString(),
-    },
-    {
-      id: 'tx-9',
-      user_id: userId,
-      wallet_id: '22222222-2222-4222-8222-222222222222',
-      category_id: 'c6666666-6666-4666-8666-666666666666',
-      goal_id: null,
-      type: 'expense',
-      amount: 65000,
-      transaction_date: formatDate(15),
-      destination_wallet_id: null,
-      note: 'Belanja Harian & Sabun Cuci',
-      created_at: new Date().toISOString(),
-    },
-    {
-      id: 'tx-10',
-      user_id: userId,
-      wallet_id: '22222222-2222-4222-8222-222222222222',
-      category_id: null,
-      goal_id: 'g2222222-2222-4222-8222-222222222222',
-      type: 'transfer',
-      amount: 200000,
-      transaction_date: formatDate(17),
-      destination_wallet_id: '33333333-3333-4333-8333-333333333333',
-      note: 'Transfer ke Tabungan Laptop',
-      created_at: new Date().toISOString(),
-    },
-  ];
-}
+const DEFAULT_COMMITMENTS: RecurringCommitment[] = [];
 
 export function FinanceProvider({ children }: { children: React.ReactNode }) {
   const { user, profile, isDemoUser, isConfigured } = useAuth();
@@ -264,9 +110,8 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       if (storedTransactions) {
         setTransactions(JSON.parse(storedTransactions));
       } else {
-        const initialTx = generateStarterTransactions(cycleInfo.startDate, 'demo');
-        setTransactions(initialTx);
-        localStorage.setItem('demo_transactions', JSON.stringify(initialTx));
+        setTransactions([]);
+        localStorage.setItem('demo_transactions', JSON.stringify([]));
       }
       setIsLoading(false);
       return;
@@ -294,7 +139,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
         console.warn('Supabase query note:', wErr || cErr);
       }
 
-      // If user has Supabase data, load it; if tables are empty/new, initialize them gracefully
+      // Load user data strictly from database
       if (wData && wData.length > 0) {
         setWallets(wData as Wallet[]);
       } else {
@@ -307,27 +152,22 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
         setCategories(DEFAULT_CATEGORIES);
       }
 
-      if (tData && tData.length > 0) {
-        setTransactions(tData as Transaction[]);
-      } else {
-        setTransactions(generateStarterTransactions(cycleInfo.startDate, user.id));
-      }
-
-      setBudgets((bData as Budget[]) || DEFAULT_BUDGETS);
-      setSavingsGoals((gData as SavingsGoal[]) || DEFAULT_GOALS);
-      setCommitments((rData as RecurringCommitment[]) || DEFAULT_COMMITMENTS);
+      setTransactions((tData as Transaction[]) || []);
+      setBudgets((bData as Budget[]) || []);
+      setSavingsGoals((gData as SavingsGoal[]) || []);
+      setCommitments((rData as RecurringCommitment[]) || []);
     } catch (err) {
-      console.error('Failed to load finance data from Supabase, falling back to starter data:', err);
+      console.error('Failed to load finance data from Supabase:', err);
       setWallets(DEFAULT_WALLETS);
       setCategories(DEFAULT_CATEGORIES);
-      setTransactions(generateStarterTransactions(cycleInfo.startDate));
-      setBudgets(DEFAULT_BUDGETS);
-      setSavingsGoals(DEFAULT_GOALS);
-      setCommitments(DEFAULT_COMMITMENTS);
+      setTransactions([]);
+      setBudgets([]);
+      setSavingsGoals([]);
+      setCommitments([]);
     } finally {
       setIsLoading(false);
     }
-  }, [user, isDemoUser, isConfigured, cycleInfo.startDate]);
+  }, [user, isDemoUser, isConfigured]);
 
   useEffect(() => {
     refreshData();

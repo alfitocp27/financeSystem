@@ -21,7 +21,7 @@ import {
   Check,
 } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
-import { formatCurrency, formatCompactCurrency, formatDateIndo, formatRelativeDate } from '../lib/formatters';
+import { formatCurrency, formatCompactCurrency, formatDateIndo, formatRelativeDate, getLocalDateString } from '../lib/formatters';
 
 const STITCH_COLORS = ['#2563eb', '#10b981', '#f59e0b', '#94a3b8', '#8b5cf6', '#ec4899', '#06b6d4'];
 
@@ -62,8 +62,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const [hoveredCategoryIndex, setHoveredCategoryIndex] = useState<number | null>(null);
   const svgWaveRef = useRef<SVGSVGElement | null>(null);
 
-  const startStr = cycleInfo.startDate.toISOString().split('T')[0];
-  const endStr = cycleInfo.endDate.toISOString().split('T')[0];
+  const startStr = getLocalDateString(cycleInfo.startDate);
+  const endStr = getLocalDateString(cycleInfo.endDate);
 
   // Real Budget & Expense calculations from Database
   const totalAllocatedBudget = budgets.reduce((acc, b) => acc + Number(b.amount), 0);
@@ -153,7 +153,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       const d = new Date(start);
       d.setDate(d.getDate() + i);
       d.setHours(0, 0, 0, 0);
-      const dateStr = d.toISOString().split('T')[0];
+      const dateStr = getLocalDateString(d);
       const isFuture = d.getTime() > today.getTime();
 
       // Real daily expense from Database transactions

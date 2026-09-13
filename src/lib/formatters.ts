@@ -39,11 +39,21 @@ export function formatDateIndo(dateInput: string | Date): string {
 }
 
 /**
+ * Mengambil string tanggal lokal YYYY-MM-DD tanpa pergeseran timezone UTC
+ */
+export function getLocalDateString(d: Date = new Date()): string {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
  * Format tanggal relatif (Hari Ini, Kemarin, dsb)
  */
 export function formatRelativeDate(dateStr: string): string {
-  const today = new Date().toISOString().split('T')[0];
-  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+  const today = getLocalDateString(new Date());
+  const yesterday = getLocalDateString(new Date(Date.now() - 86400000));
 
   if (dateStr === today) return 'Hari ini';
   if (dateStr === yesterday) return 'Kemarin';

@@ -298,8 +298,9 @@ export const TransactionList: React.FC<TransactionListProps> = ({ onShowToast })
 
                   <button
                     onClick={() => handleDelete(tx.id)}
-                    className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-300 hover:text-rose-500 rounded-lg transition-all"
+                    className="opacity-70 sm:opacity-0 sm:group-hover:opacity-100 p-1.5 text-slate-300 hover:text-rose-500 rounded-lg transition-all active:scale-95"
                     title="Hapus transaksi"
+                    aria-label="Hapus transaksi"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>

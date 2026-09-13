@@ -82,7 +82,7 @@ function DashboardContent() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col text-slate-900 pb-24 sm:pb-12">
+    <div className="min-h-screen bg-slate-50 flex flex-col text-slate-900 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:pb-12">
       {/* Toast Notification */}
       <Toast message={toastMessage} onClose={() => setToastMessage(null)} />
 

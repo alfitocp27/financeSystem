@@ -180,8 +180,9 @@ export const RecurringBillsSection: React.FC<RecurringBillsSectionProps> = ({ on
 
                   <button
                     onClick={() => handleDelete(bill.id, bill.name)}
-                    className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-300 hover:text-rose-500 rounded-lg transition-all"
+                    className="opacity-70 sm:opacity-0 sm:group-hover:opacity-100 p-1.5 text-slate-300 hover:text-rose-500 rounded-lg transition-all active:scale-95"
                     title="Hapus Tagihan"
+                    aria-label="Hapus Tagihan"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>

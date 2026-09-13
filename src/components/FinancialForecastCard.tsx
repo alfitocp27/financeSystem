@@ -24,7 +24,7 @@ export const FinancialForecastCard: React.FC = () => {
   const runsOutEarly = estimatedDaysRunway < cycleInfo.daysRemaining;
 
   return (
-    <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden">
+    <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-1.5">
           <Compass className="w-4 h-4 text-indigo-600" />

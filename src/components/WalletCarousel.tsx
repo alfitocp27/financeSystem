@@ -72,8 +72,9 @@ export const WalletCarousel: React.FC<WalletCarouselProps> = ({
                 </span>
                 <button
                   onClick={() => onEditWallet(wallet)}
-                  className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-slate-700 rounded-md transition-opacity"
+                  className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 p-1 text-slate-400 hover:text-slate-700 rounded-md transition-opacity"
                   title="Edit Dompet"
+                  aria-label="Edit Dompet"
                 >
                   <MoreVertical className="w-3.5 h-3.5" />
                 </button>

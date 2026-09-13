@@ -59,7 +59,7 @@ export const AnalyticsSection: React.FC = () => {
       </div>
 
       {/* Daily Spending vs Safe to Spend Benchmark */}
-      <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
           <div>
             <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wide flex items-center gap-1.5">
@@ -115,7 +115,7 @@ export const AnalyticsSection: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Category Breakdown Chart */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
           <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wide mb-3">
             Porsi Pengeluaran per Kategori
           </h3>
@@ -181,7 +181,7 @@ export const AnalyticsSection: React.FC = () => {
         </div>
 
         {/* Cash Flow Summary & Student Tip */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
           <div>
             <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wide mb-3">
               Ringkasan Arus Kas Siklus ({cycleInfo.daysPassed}/{cycleInfo.totalDays} Hari)

@@ -1,0 +1,227 @@
+<!DOCTYPE html><html lang="id"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>SakuMhs - Daftar Transaksi</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+    @layer base {
+      html, body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+      body { overscroll-behavior: none; }
+    }
+    ::-webkit-scrollbar { display: none; }
+  </style>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#6366F1",
+            "primary-600": "#4f46e5",
+            "primary-700": "#4338ca",
+            "primary-50": "#eef2ff",
+            "primary-100": "#e0e7ff",
+            "bg-primary": "#f8fafc",
+            "bg-secondary": "#f1f5f9",
+            "surface": "#ffffff",
+            "surface-container": "#eceef0",
+            "surface-container-low": "#f8fafc",
+            "border-default": "#e2e8f0",
+            "border-subtle": "#f1f5f9",
+            "border-strong": "#cbd5e1",
+            "text-primary": "#0f172a",
+            "text-secondary": "#475569",
+            "text-muted": "#94a3b8",
+            "semantic-green": "#10b981",
+            "semantic-green-soft": "#ecfdf5",
+            "semantic-rose": "#f43f5e",
+            "semantic-rose-soft": "#fff1f2",
+            "semantic-amber": "#f59e0b",
+            "semantic-amber-soft": "#fffbeb",
+            "semantic-blue": "#2563eb",
+            "semantic-blue-soft": "#eff6ff",
+            "semantic-purple": "#9333ea",
+            "semantic-purple-soft": "#faf5ff"
+          }
+        }
+      }
+    };
+  </script>
+</head>
+<body class="bg-bg-primary text-text-primary antialiased font-normal selection:bg-primary-50 selection:text-primary-600">
+<!-- Sidebar Navigasi -->
+<aside class="fixed top-0 left-0 h-screen w-[240px] bg-surface border-r border-border-default z-50 flex flex-col justify-between py-6 px-4">
+<div class="flex flex-col gap-6">
+<!-- Logo Branding -->
+<div class="flex items-center gap-3 px-2">
+<div class="w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center text-primary-600 shrink-0">
+<span class="material-symbols-outlined text-[20px]">account_balance_wallet</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[16px] font-bold text-text-primary tracking-tight leading-snug">SakuMhs</span>
+<span class="text-[11px] text-text-muted font-normal">Finansial Mahasiswa</span>
+</div>
+</div>
+<!-- Nav Items -->
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-secondary hover:bg-bg-secondary hover:text-text-primary transition-colors text-[14px] font-medium" data-path="dashboard" href="#">
+<span class="material-symbols-outlined text-[20px] text-text-muted">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a aria-current="page" class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary-50 text-primary-600 text-[14px] font-semibold transition-colors" data-path="transactions" href="#">
+<span class="material-symbols-outlined text-[20px] text-primary-600">receipt_long</span>
+<span>Transactions</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-secondary hover:bg-bg-secondary hover:text-text-primary transition-colors text-[14px] font-medium" data-path="wallets" href="#">
+<span class="material-symbols-outlined text-[20px] text-text-muted">account_balance</span>
+<span>Wallets</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-secondary hover:bg-bg-secondary hover:text-text-primary transition-colors text-[14px] font-medium" data-path="budget" href="#">
+<span class="material-symbols-outlined text-[20px] text-text-muted">pie_chart</span>
+<span>Budget</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-secondary hover:bg-bg-secondary hover:text-text-primary transition-colors text-[14px] font-medium" data-path="savings" href="#">
+<span class="material-symbols-outlined text-[20px] text-text-muted">savings</span>
+<span>Savings</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-secondary hover:bg-bg-secondary hover:text-text-primary transition-colors text-[14px] font-medium" data-path="reports-and-analytics" href="#">
+<span class="material-symbols-outlined text-[20px] text-text-muted">monitoring</span>
+<span>Reports &amp; Analytics</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-secondary hover:bg-bg-secondary hover:text-text-primary transition-colors text-[14px] font-medium" data-path="settings" href="#">
+<span class="material-symbols-outlined text-[20px] text-text-muted">settings</span>
+<span>Settings</span>
+</a>
+</nav>
+</div>
+<!-- Sidebar Footer -->
+<div class="px-2 py-3 border-t border-border-default flex items-center justify-between text-text-muted">
+<span class="text-[11px]">v1.2.0 • Mahasiswa Edition</span>
+<span class="w-2 h-2 rounded-full bg-semantic-green ring-2 ring-semantic-green/20"></span>
+</div>
+</aside>
+<!-- Shell Wrapper -->
+<div class="pl-[240px] flex flex-col min-h-screen">
+<!-- Topbar (Identik dengan Dashboard SCREEN_4) -->
+<header class="fixed top-0 left-[240px] right-0 h-16 bg-surface border-b border-border-default z-40 px-8 flex items-center justify-between"><div class="flex items-center gap-3"><span class="text-lg font-semibold text-text-primary tracking-tight">Halo, Dimas</span></div><div class="flex items-center gap-4"><div class="flex items-center gap-2 bg-surface-container-low border border-border-default px-3.5 py-1.5 rounded-full text-text-secondary"><span class="material-symbols-outlined text-[16px] text-text-muted">date_range</span><span class="text-xs font-medium">Siklus 1 - 31 Mar 2025</span></div><button aria-label="Notifikasi" class="relative p-2 text-text-secondary hover:text-text-primary hover:bg-surface-container-low rounded-xl transition-all"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-semantic-rose"></span></button><div class="h-5 w-[1px] bg-border-default"></div><div class="flex items-center gap-2.5 cursor-pointer"><div class="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center shadow-xs"><span class="material-symbols-outlined text-white text-[17px]">person</span></div><div class="hidden md:flex flex-col text-left"><span class="text-xs font-semibold text-text-primary leading-tight">Dimas Pratama</span><span class="text-[11px] text-text-muted">Mahasiswa</span></div></div><button class="bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-all shadow-xs ml-2 cursor-pointer" onclick="document.getElementById('modal-tambah-transaksi').classList.remove('hidden')" type="button"><span class="material-symbols-outlined text-[16px]">add</span><span>Tambah Transaksi</span></button></div></header>
+<!-- Main Content Body -->
+<main class="w-full pt-16 px-8 pb-12 min-h-screen bg-bg-primary">
+<div class="flex flex-col w-full max-w-[1400px] mx-auto">
+<!-- Header Area Halaman -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-6 pb-5"><div class="flex flex-col gap-0.5"><div class="flex items-center gap-1.5 text-xs text-text-muted mb-0.5"><a class="hover:text-text-primary transition-colors" href="#">SakuMhs</a><span class="text-text-muted/60">/</span><span class="text-text-secondary font-medium">Transaksi</span></div><h1 class="text-2xl font-bold text-text-primary tracking-tight">Daftar Transaksi</h1><p class="text-sm text-text-muted">Kelola dan pantau seluruh catatan pemasukan serta pengeluaran mahasiswa.</p></div><div class="flex items-center gap-2.5"><button class="h-9 px-4 bg-surface text-text-secondary hover:text-text-primary border border-border-default hover:border-border-strong rounded-xl flex items-center gap-2 text-xs font-semibold transition-colors shadow-xs" type="button"><span class="material-symbols-outlined text-[17px] text-text-muted">download</span><span>Export Data</span></button><button class="h-9 px-4 bg-primary-50 text-primary-600 hover:bg-primary-100 rounded-xl flex items-center gap-1.5 text-xs font-semibold transition-colors border border-primary-100 shadow-xs" onclick="document.getElementById('modal-tambah-transaksi').classList.remove('hidden')" type="button"><span class="material-symbols-outlined text-[17px]">add_circle</span><span>Catat Cepat</span></button></div></div>
+<!-- Segmented Contiguous Modern Metric Summary (Selaras 100% dengan Dashboard SCREEN_4) -->
+<section class="bg-surface rounded-2xl border border-border-default shadow-sm overflow-hidden mb-6"><div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-border-default"><div class="p-5 flex flex-col justify-between gap-2"><div class="flex items-center justify-between"><span class="text-xs font-medium text-text-secondary">Total Pemasukan</span><span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-semibold bg-semantic-green-soft text-semantic-green"><span class="material-symbols-outlined text-[13px]">arrow_upward</span> 18.4%</span></div><div><div class="text-2xl font-bold text-text-primary tracking-tight tabular-nums">Rp 3.500.000</div><div class="flex items-center gap-1.5 text-xs text-text-muted mt-0.5"><span class="w-1.5 h-1.5 rounded-full bg-semantic-green"></span><span>dari siklus lalu Rp 2.95M</span></div></div></div><div class="p-5 flex flex-col justify-between gap-2"><div class="flex items-center justify-between"><span class="text-xs font-medium text-text-secondary">Total Pengeluaran</span><span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-semibold bg-semantic-rose-soft text-semantic-rose"><span class="material-symbols-outlined text-[13px]">arrow_downward</span> 14.4%</span></div><div><div class="text-2xl font-bold text-text-primary tracking-tight tabular-nums">Rp 1.420.000</div><div class="flex items-center gap-1.5 text-xs text-text-muted mt-0.5"><span class="w-1.5 h-1.5 rounded-full bg-semantic-rose"></span><span>56.8% dari batas budget Rp 2.5M</span></div></div></div><div class="p-5 flex flex-col justify-between gap-2"><div class="flex items-center justify-between"><span class="text-xs font-medium text-text-secondary">Arus Kas Bersih (Net)</span><span class="inline-flex items-center px-2 py-0.5 rounded-full bg-semantic-green-soft text-semantic-green text-xs font-semibold">Surplus Sehat</span></div><div><div class="text-2xl font-bold text-semantic-green tracking-tight tabular-nums">+Rp 2.080.000</div><div class="flex items-center gap-1.5 text-xs text-text-muted mt-0.5"><span class="material-symbols-outlined text-[14px] text-semantic-green">check_circle</span><span>Penyangga aman sisa 14 hari</span></div></div></div><div class="p-5 flex flex-col justify-between gap-2"><div class="flex items-center justify-between"><div class="flex items-center gap-1.5"><span class="text-xs font-medium text-text-secondary">Safe to Spend</span><span class="material-symbols-outlined text-text-muted text-[15px]">info</span></div><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-semantic-green-soft text-semantic-green text-xs font-semibold"><span class="w-1.5 h-1.5 rounded-full bg-semantic-green animate-pulse"></span>Aman</span></div><div><div class="text-2xl font-bold text-text-primary tracking-tight tabular-nums">Rp 52.000 <span class="text-xs font-normal text-text-muted">/ hari</span></div><div class="flex items-center gap-1.5 text-xs text-text-muted mt-0.5"><span class="w-1.5 h-1.5 rounded-full bg-semantic-green"></span><span>Batas harian agar tidak defisit</span></div></div></div></div></section>
+<!-- Filter & Search Controls Bar -->
+<div class="bg-surface rounded-2xl border border-border-default p-4 mb-6 flex flex-col gap-3.5 shadow-sm"><div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3"><div class="relative flex-1 max-w-md"><span class="material-symbols-outlined absolute left-3.5 top-2.5 text-text-muted text-[18px]">search</span><input class="w-full h-10 pl-10 pr-4 bg-surface-container-low hover:bg-surface focus:bg-surface text-text-primary placeholder:text-text-muted rounded-xl border border-border-default focus:border-primary-500 text-xs font-medium transition-all outline-none" id="search-input" placeholder="Cari transaksi, merchant, keterangan..." type="text"></div><div class="flex flex-wrap items-center gap-2"><div class="relative"><select class="h-10 pl-3 pr-8 bg-surface-container-low hover:bg-surface border border-border-default text-text-secondary rounded-xl text-xs font-medium appearance-none cursor-pointer focus:outline-none focus:border-primary-500 transition-all" id="filter-type"><option value="semua">Semua Tipe</option><option value="pemasukan">Pemasukan (+)</option><option value="pengeluaran">Pengeluaran (-)</option></select><span class="material-symbols-outlined absolute right-2.5 top-3 text-text-muted pointer-events-none text-[16px]">expand_more</span></div><div class="relative"><select class="h-10 pl-3 pr-8 bg-surface-container-low hover:bg-surface border border-border-default text-text-secondary rounded-xl text-xs font-medium appearance-none cursor-pointer focus:outline-none focus:border-primary-500 transition-all" id="filter-category"><option value="semua">Semua Kategori</option><option value="makanan">Makanan &amp; Minuman</option><option value="kos">Kos &amp; Kebutuhan</option><option value="transportasi">Transportasi &amp; Bensin</option><option value="kuliah">Kuliah &amp; Hiburan</option><option value="pemasukan">Pemasukan Kampus / Honor</option></select><span class="material-symbols-outlined absolute right-2.5 top-3 text-text-muted pointer-events-none text-[16px]">expand_more</span></div><div class="relative"><select class="h-10 pl-3 pr-8 bg-surface-container-low hover:bg-surface border border-border-default text-text-secondary rounded-xl text-xs font-medium appearance-none cursor-pointer focus:outline-none focus:border-primary-500 transition-all" id="filter-wallet"><option value="semua">Semua Dompet</option><option value="bca">Bank BCA</option><option value="gopay">GoPay</option><option value="tunai">Uang Tunai</option></select><span class="material-symbols-outlined absolute right-2.5 top-3 text-text-muted pointer-events-none text-[16px]">expand_more</span></div><button class="h-10 px-3.5 bg-surface-container-low hover:bg-surface border border-border-default text-text-secondary rounded-xl flex items-center gap-1.5 text-xs font-medium transition-all" type="button"><span class="material-symbols-outlined text-[16px] text-text-muted">date_range</span><span>1 - 31 Mar 2025</span></button><button class="h-10 px-3 text-text-muted hover:text-text-primary rounded-xl flex items-center gap-1 text-xs font-medium transition-colors hover:bg-surface-container-low" id="btn-reset-filter" type="button"><span class="material-symbols-outlined text-[16px]">refresh</span><span>Reset</span></button></div></div><div class="flex items-center justify-between pt-2 text-xs border-t border-border-subtle"><div class="flex items-center gap-2 text-text-muted"><span>Menampilkan <strong class="font-semibold text-text-primary">8</strong> dari 24 transaksi</span><span>•</span><span class="text-semantic-green inline-flex items-center gap-1.5 font-medium"><span class="w-1.5 h-1.5 rounded-full bg-semantic-green"></span>Data tersinkron otomatis</span></div><div class="flex items-center gap-1.5 text-text-muted"><span>Urutan:</span><button class="font-medium text-text-primary flex items-center gap-0.5 hover:text-primary-600 transition-colors">Terbaru (Waktu)<span class="material-symbols-outlined text-[14px]">arrow_drop_down</span></button></div></div></div>
+<!-- Tabel Transaksi Container (Rapi, Terang, No Right Clipping) -->
+<div class="bg-surface rounded-2xl border border-border-default shadow-sm overflow-hidden"><div class="overflow-x-auto"><table class="w-full text-left min-w-[900px] border-collapse"><thead><tr class="bg-surface-container-low border-b border-border-default text-text-secondary text-[11px] font-bold uppercase tracking-wider"><th class="py-3.5 px-6">Transaksi &amp; Catatan</th><th class="py-3.5 px-4">Kategori</th><th class="py-3.5 px-4">Dompet / Metode</th><th class="py-3.5 px-4">Tanggal &amp; Waktu</th><th class="py-3.5 px-4">Tipe</th><th class="py-3.5 px-6 text-right min-w-[150px]">Nominal</th><th class="py-3.5 px-6 text-center w-24">Aksi</th></tr></thead><tbody class="divide-y divide-border-default/60 text-xs" id="transactions-body"><tr class="hover:bg-surface-container-low transition-colors group"><td class="py-4 px-6"><div class="flex items-center gap-3"><div class="w-9 h-9 rounded-xl bg-surface-container flex items-center justify-center text-text-secondary shrink-0"><span class="material-symbols-outlined text-[18px]">lunch_dining</span></div><div class="flex flex-col min-w-0"><span class="font-semibold text-text-primary truncate">Makan Siang Kantin Teknik</span><span class="text-[11px] text-text-muted truncate">Nasi ayam bakar + es teh</span></div></div></td><td class="py-4 px-4 whitespace-nowrap"><div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-semantic-blue shrink-0"></span><span class="font-medium text-text-primary">Makanan &amp; Minuman</span></div></td><td class="py-4 px-4 whitespace-nowrap"><div class="flex items-center gap-1.5 text-text-secondary"><span class="w-2 h-2 rounded-full bg-semantic-green"></span><span class="font-medium">GoPay</span></div></td><td class="py-4 px-4 whitespace-nowrap text-text-secondary"><div class="flex flex-col tabular-nums"><span class="font-semibold text-text-primary">Hari ini</span><span class="text-[11px] text-text-muted">12:30 WIB</span></div></td><td class="py-4 px-4 whitespace-nowrap"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-semantic-rose-soft text-semantic-rose text-xs font-medium">Pengeluaran</span></td><td class="py-4 px-6 text-right whitespace-nowrap"><span class="font-bold text-sm text-semantic-rose tabular-nums">-Rp 22.000</span></td><td class="py-4 px-6 text-center whitespace-nowrap"><div class="flex items-center justify-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity"><button class="p-1.5 rounded-lg hover:bg-surface-container text-text-muted hover:text-text-primary transition-colors" title="Edit Transaksi"><span class="material-symbols-outlined text-[17px]">edit</span></button><button class="p-1.5 rounded-lg hover:bg-semantic-rose-soft text-text-muted hover:text-semantic-rose transition-colors" title="Hapus"><span class="material-symbols-outlined text-[17px]">delete</span></button></div></td></tr><tr class="hover:bg-surface-container-low transition-colors group"><td class="py-4 px-6"><div class="flex items-center gap-3"><div class="w-9 h-9 rounded-xl bg-semantic-green-soft flex items-center justify-center text-semantic-green shrink-0"><span class="material-symbols-outlined text-[18px]">payments</span></div><div class="flex flex-col min-w-0"><span class="font-semibold text-text-primary truncate">Transfer Uang Saku Bulanan</span><span class="text-[11px] text-text-muted truncate">Kiriman dari Ayah (Maret)</span></div></div></td><td class="py-4 px-4 whitespace-nowrap"><div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-semantic-green shrink-0"></span><span class="font-medium text-text-primary">Pemasukan Orang Tua</span></div></td><td class="py-4 px-4 whitespace-nowrap"><div class="flex items-center gap-1.5 text-text-secondary"><span class="w-2 h-2 rounded-full bg-primary-600"></span><span class="font-medium">Bank BCA</span></div></td><td class="py-4 px-4 whitespace-nowrap text-text-secondary"><div class="flex flex-col tabular-nums"><span class="font-semibold text-text-primary">28 Mar 2025</span><span class="text-[11px] text-text-muted">09:00 WIB</span></div></td><td class="py-4 px-4 whitespace-nowrap"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-semantic-green-soft text-semantic-green text-xs font-medium">Pemasukan</span></td><td class="py-4 px-6 text-right whitespace-nowrap"><span class="font-bold text-sm text-semantic-green tabular-nums">+Rp 2.000.000</span></td><td class="py-4 px-6 text-center whitespace-nowrap"><div class="flex items-center justify-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity"><button class="p-1.5 rounded-lg hover:bg-surface-container text-text-muted hover:text-text-primary transition-colors" title="Edit Transaksi"><span class="material-symbols-outlined text-[17px]">edit</span></button><button class="p-1.5 rounded-lg hover:bg-semantic-rose-soft text-text-muted hover:text-semantic-rose transition-colors" title="Hapus"><span class="material-symbols-outlined text-[17px]">delete</span></button></div></td></tr><tr class="hover:bg-surface-container-low transition-colors group"><td class="py-4 px-6"><div class="flex items-center gap-3"><div class="w-9 h-9 rounded-xl bg-surface-container flex items-center justify-center text-text-secondary shrink-0"><span class="material-symbols-outlined text-[18px]">home</span></div><div class="flex flex-col min-w-0"><span class="font-semibold text-text-primary truncate">Bayar Kosan Bulan April</span><span class="text-[11px] text-text-muted truncate">Kamar No. 12 + air &amp; WiFi</span></div></div></td><td class="py-4 px-4 whitespace-nowrap"><div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-semantic-amber shrink-0"></span><span class="font-medium text-text-primary">Kos &amp; Kebutuhan</span></div></td><td class="py-4 px-4 whitespace-nowrap"><div class="flex items-center gap-1.5 text-text-secondary"><span class="w-2 h-2 rounded-full bg-primary-600"></span><span class="font-medium">Bank BCA</span></div></td><td class="py-4 px-4 whitespace-nowrap text-text-secondary"><div class="flex flex-col tabular-nums"><span class="font-semibold text-text-primary">27 Mar 2025</span><span class="text-[11px] text-text-muted">14:20 WIB</span></div></td><td class="py-4 px-4 whitespace-nowrap"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-semantic-rose-soft text-semantic-rose text-xs font-medium">Pengeluaran</span></td><td class="py-4 px-6 text-right whitespace-nowrap"><span class="font-bold text-sm text-semantic-rose tabular-nums">-Rp 850.000</span></td><td class="py-4 px-6 text-center whitespace-nowrap"><div class="flex items-center justify-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity"><button class="p-1.5 rounded-lg hover:bg-surface-container text-text-muted hover:text-text-primary transition-colors" title="Edit Transaksi"><span class="material-symbols-outlined text-[17px]">edit</span></button><button class="p-1.5 rounded-lg hover:bg-semantic-rose-soft text-text-muted hover:text-semantic-rose transition-colors" title="Hapus"><span class="material-symbols-outlined text-[17px]">delete</span></button></div></td></tr><tr class="hover:bg-surface-container-low transition-colors group"><td class="py-4 px-6"><div class="flex items-center gap-3"><div class="w-9 h-9 rounded-xl bg-surface-container flex items-center justify-center text-text-secondary shrink-0"><span class="material-symbols-outlined text-[18px]">local_gas_station</span></div><div class="flex flex-col min-w-0"><span class="font-semibold text-text-primary truncate">Bensin Motor Beat</span><span class="text-[11px] text-text-muted truncate">SPBU Kaliurang KM 5</span></div></div></td><td class="py-4 px-4 whitespace-nowrap"><div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-semantic-green shrink-0"></span><span class="font-medium text-text-primary">Transportasi &amp; Bensin</span></div></td><td class="py-4 px-4 whitespace-nowrap"><div class="flex items-center gap-1.5 text-text-secondary"><span class="w-2 h-2 rounded-full bg-semantic-green"></span><span class="font-medium">GoPay</span></div></td><td class="py-4 px-4 whitespace-nowrap text-text-secondary"><div class="flex flex-col tabular-nums"><span class="font-semibold text-text-primary">26 Mar 2025</span><span class="text-[11px] text-text-muted">17:45 WIB</span></div></td><td class="py-4 px-4 whitespace-nowrap"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-semantic-rose-soft text-semantic-rose text-xs font-medium">Pengeluaran</span></td><td class="py-4 px-6 text-right whitespace-nowrap"><span class="font-bold text-sm text-semantic-rose tabular-nums">-Rp 30.000</span></td><td class="py-4 px-6 text-center whitespace-nowrap"><div class="flex items-center justify-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity"><button class="p-1.5 rounded-lg hover:bg-surface-container text-text-muted hover:text-text-primary transition-colors" title="Edit Transaksi"><span class="material-symbols-outlined text-[17px]">edit</span></button><button class="p-1.5 rounded-lg hover:bg-semantic-rose-soft text-text-muted hover:text-semantic-rose transition-colors" title="Hapus"><span class="material-symbols-outlined text-[17px]">delete</span></button></div></td></tr><tr class="hover:bg-surface-container-low transition-colors group"><td class="py-4 px-6"><div class="flex items-center gap-3"><div class="w-9 h-9 rounded-xl bg-surface-container flex items-center justify-center text-text-secondary shrink-0"><span class="material-symbols-outlined text-[18px]">print</span></div><div class="flex flex-col min-w-0"><span class="font-semibold text-text-primary truncate">Fotokopi Makalah Kuliah</span><span class="text-[11px] text-text-muted truncate">Rental Berkah Kampus</span></div></div></td><td class="py-4 px-4 whitespace-nowrap"><div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-text-muted shrink-0"></span><span class="font-medium text-text-primary">Hiburan &amp; Kuliah</span></div></td><td class="py-4 px-4 whitespace-nowrap"><div class="flex items-center gap-1.5 text-text-secondary"><span class="w-2 h-2 rounded-full bg-text-muted"></span><span class="font-medium">Uang Tunai</span></div></td><td class="py-4 px-4 whitespace-nowrap text-text-secondary"><div class="flex flex-col tabular-nums"><span class="font-semibold text-text-primary">25 Mar 2025</span><span class="text-[11px] text-text-muted">10:15 WIB</span></div></td><td class="py-4 px-4 whitespace-nowrap"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-semantic-rose-soft text-semantic-rose text-xs font-medium">Pengeluaran</span></td><td class="py-4 px-6 text-right whitespace-nowrap"><span class="font-bold text-sm text-semantic-rose tabular-nums">-Rp 15.000</span></td><td class="py-4 px-6 text-center whitespace-nowrap"><div class="flex items-center justify-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity"><button class="p-1.5 rounded-lg hover:bg-surface-container text-text-muted hover:text-text-primary transition-colors" title="Edit Transaksi"><span class="material-symbols-outlined text-[17px]">edit</span></button><button class="p-1.5 rounded-lg hover:bg-semantic-rose-soft text-text-muted hover:text-semantic-rose transition-colors" title="Hapus"><span class="material-symbols-outlined text-[17px]">delete</span></button></div></td></tr><tr class="hover:bg-surface-container-low transition-colors group"><td class="py-4 px-6"><div class="flex items-center gap-3"><div class="w-9 h-9 rounded-xl bg-semantic-green-soft flex items-center justify-center text-semantic-green shrink-0"><span class="material-symbols-outlined text-[18px]">school</span></div><div class="flex flex-col min-w-0"><span class="font-semibold text-text-primary truncate">Honor Asisten Praktikum</span><span class="text-[11px] text-text-muted truncate">Term 1 Struktur Data</span></div></div></td><td class="py-4 px-4 whitespace-nowrap"><div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-semantic-green shrink-0"></span><span class="font-medium text-text-primary">Pemasukan Kampus</span></div></td><td class="py-4 px-4 whitespace-nowrap"><div class="flex items-center gap-1.5 text-text-secondary"><span class="w-2 h-2 rounded-full bg-primary-600"></span><span class="font-medium">Bank BCA</span></div></td><td class="py-4 px-4 whitespace-nowrap text-text-secondary"><div class="flex flex-col tabular-nums"><span class="font-semibold text-text-primary">24 Mar 2025</span><span class="text-[11px] text-text-muted">16:00 WIB</span></div></td><td class="py-4 px-4 whitespace-nowrap"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-semantic-green-soft text-semantic-green text-xs font-medium">Pemasukan</span></td><td class="py-4 px-6 text-right whitespace-nowrap"><span class="font-bold text-sm text-semantic-green tabular-nums">+Rp 450.000</span></td><td class="py-4 px-6 text-center whitespace-nowrap"><div class="flex items-center justify-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity"><button class="p-1.5 rounded-lg hover:bg-surface-container text-text-muted hover:text-text-primary transition-colors" title="Edit Transaksi"><span class="material-symbols-outlined text-[17px]">edit</span></button><button class="p-1.5 rounded-lg hover:bg-semantic-rose-soft text-text-muted hover:text-semantic-rose transition-colors" title="Hapus"><span class="material-symbols-outlined text-[17px]">delete</span></button></div></td></tr><tr class="hover:bg-surface-container-low transition-colors group"><td class="py-4 px-6"><div class="flex items-center gap-3"><div class="w-9 h-9 rounded-xl bg-surface-container flex items-center justify-center text-text-secondary shrink-0"><span class="material-symbols-outlined text-[18px]">sync_alt</span></div><div class="flex flex-col min-w-0"><span class="font-semibold text-text-primary truncate">Transfer ke Tabungan Laptop</span><span class="text-[11px] text-text-muted truncate">BCA ke Tabungan • 27 Mar</span></div></div></td><td class="py-4 px-4 whitespace-nowrap"><div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-primary-600 shrink-0"></span><span class="font-medium text-text-primary">Tabungan &amp; Investasi</span></div></td><td class="py-4 px-4 whitespace-nowrap"><div class="flex items-center gap-1.5 text-text-secondary"><span class="w-2 h-2 rounded-full bg-primary-600"></span><span class="font-medium">Bank BCA</span></div></td><td class="py-4 px-4 whitespace-nowrap text-text-secondary"><div class="flex flex-col tabular-nums"><span class="font-semibold text-text-primary">22 Mar 2025</span><span class="text-[11px] text-text-muted">08:30 WIB</span></div></td><td class="py-4 px-4 whitespace-nowrap"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-primary-50 text-primary-600 text-xs font-medium">Transfer</span></td><td class="py-4 px-6 text-right whitespace-nowrap"><span class="font-bold text-sm text-text-primary tabular-nums">Rp 200.000</span></td><td class="py-4 px-6 text-center whitespace-nowrap"><div class="flex items-center justify-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity"><button class="p-1.5 rounded-lg hover:bg-surface-container text-text-muted hover:text-text-primary transition-colors" title="Edit Transaksi"><span class="material-symbols-outlined text-[17px]">edit</span></button><button class="p-1.5 rounded-lg hover:bg-semantic-rose-soft text-text-muted hover:text-semantic-rose transition-colors" title="Hapus"><span class="material-symbols-outlined text-[17px]">delete</span></button></div></td></tr><tr class="hover:bg-surface-container-low transition-colors group"><td class="py-4 px-6"><div class="flex items-center gap-3"><div class="w-9 h-9 rounded-xl bg-surface-container flex items-center justify-center text-text-secondary shrink-0"><span class="material-symbols-outlined text-[18px]">shopping_cart</span></div><div class="flex flex-col min-w-0"><span class="font-semibold text-text-primary truncate">Belanja Bulanan Supermarket</span><span class="text-[11px] text-text-muted truncate">Deterjen, sabun, galon, snack</span></div></div></td><td class="py-4 px-4 whitespace-nowrap"><div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-semantic-amber shrink-0"></span><span class="font-medium text-text-primary">Kos &amp; Kebutuhan</span></div></td><td class="py-4 px-4 whitespace-nowrap"><div class="flex items-center gap-1.5 text-text-secondary"><span class="w-2 h-2 rounded-full bg-primary-600"></span><span class="font-medium">Bank BCA</span></div></td><td class="py-4 px-4 whitespace-nowrap text-text-secondary"><div class="flex flex-col tabular-nums"><span class="font-semibold text-text-primary">20 Mar 2025</span><span class="text-[11px] text-text-muted">19:10 WIB</span></div></td><td class="py-4 px-4 whitespace-nowrap"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-semantic-rose-soft text-semantic-rose text-xs font-medium">Pengeluaran</span></td><td class="py-4 px-6 text-right whitespace-nowrap"><span class="font-bold text-sm text-semantic-rose tabular-nums">-Rp 185.000</span></td><td class="py-4 px-6 text-center whitespace-nowrap"><div class="flex items-center justify-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity"><button class="p-1.5 rounded-lg hover:bg-surface-container text-text-muted hover:text-text-primary transition-colors" title="Edit Transaksi"><span class="material-symbols-outlined text-[17px]">edit</span></button><button class="p-1.5 rounded-lg hover:bg-semantic-rose-soft text-text-muted hover:text-semantic-rose transition-colors" title="Hapus"><span class="material-symbols-outlined text-[17px]">delete</span></button></div></td></tr></tbody></table></div><div class="px-6 py-4 bg-surface border-t border-border-default flex flex-col sm:flex-row items-center justify-between gap-3 text-xs"><div class="text-text-muted">Menampilkan <span class="font-semibold text-text-primary">1 - 8</span> dari <span class="font-semibold text-text-primary">24</span> transaksi</div><div class="flex items-center gap-1.5"><button class="w-8 h-8 rounded-lg flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-surface-container transition-colors disabled:opacity-40" disabled=""><span class="material-symbols-outlined text-[18px]">chevron_left</span></button><button class="w-8 h-8 rounded-lg flex items-center justify-center bg-primary-600 text-white font-semibold text-xs shadow-xs">1</button><button class="w-8 h-8 rounded-lg flex items-center justify-center text-text-secondary hover:bg-surface-container font-medium text-xs transition-colors">2</button><button class="w-8 h-8 rounded-lg flex items-center justify-center text-text-secondary hover:bg-surface-container font-medium text-xs transition-colors">3</button><button class="w-8 h-8 rounded-lg flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-surface-container transition-colors"><span class="material-symbols-outlined text-[18px]">chevron_right</span></button></div></div></div>
+</div>
+</main>
+</div>
+<!-- Modal: Tambah Transaksi Cepat (<5 Detik) -->
+<div class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" id="modal-tambah-transaksi">
+<div class="bg-surface rounded-xl border border-border-default shadow-xl w-full max-w-md p-6 relative flex flex-col gap-4">
+<!-- Modal Header -->
+<div class="flex items-center justify-between pb-3 border-b border-border-default">
+<div>
+<h3 class="text-[17px] font-bold text-text-primary tracking-tight">Catat Transaksi Cepat</h3>
+<p class="text-[12px] text-text-muted">Perbarui riwayat belanja atau pemasukan baru</p>
+</div>
+<button class="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-bg-secondary transition-colors" onclick="document.getElementById('modal-tambah-transaksi').classList.add('hidden')" type="button">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<!-- Form Inputs -->
+<form class="flex flex-col gap-4" onsubmit="event.preventDefault(); document.getElementById('modal-tambah-transaksi').classList.add('hidden');">
+<!-- Type Switcher -->
+<div class="grid grid-cols-2 p-1 bg-bg-secondary rounded-lg gap-1">
+<button class="py-1.5 rounded-md bg-surface text-semantic-rose font-medium text-[13px] shadow-sm" type="button">Pengeluaran (-)</button>
+<button class="py-1.5 rounded-md text-text-muted hover:text-text-primary font-medium text-[13px] transition-colors" type="button">Pemasukan (+)</button>
+</div>
+<!-- Input Nominal -->
+<div class="flex flex-col gap-1.5">
+<label class="text-[12px] font-medium text-text-secondary">Nominal (Rp)</label>
+<div class="relative">
+<span class="absolute left-3.5 top-2.5 text-[14px] font-medium text-text-muted">Rp</span>
+<input class="w-full h-11 pl-11 pr-3 bg-surface border border-border-default focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-lg text-[18px] font-bold text-text-primary tabular-nums outline-none transition-all" placeholder="0" type="text" value="25.000">
+</div>
+<!-- Quick Amount Chips -->
+<div class="flex items-center gap-1.5 pt-1">
+<button class="px-2.5 py-1 rounded bg-bg-secondary hover:bg-border-default text-[11px] font-medium text-text-secondary transition-colors" type="button">+10rb</button>
+<button class="px-2.5 py-1 rounded bg-bg-secondary hover:bg-border-default text-[11px] font-medium text-text-secondary transition-colors" type="button">+20rb</button>
+<button class="px-2.5 py-1 rounded bg-bg-secondary hover:bg-border-default text-[11px] font-medium text-text-secondary transition-colors" type="button">+50rb</button>
+<button class="px-2.5 py-1 rounded bg-bg-secondary hover:bg-border-default text-[11px] font-medium text-text-secondary transition-colors" type="button">+100rb</button>
+</div>
+</div>
+<!-- Nama Merchant / Transaksi -->
+<div class="flex flex-col gap-1.5">
+<label class="text-[12px] font-medium text-text-secondary">Nama Merchant / Keterangan</label>
+<input class="w-full h-10 px-3 bg-surface border border-border-default focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-lg text-[13px] text-text-primary outline-none transition-all" placeholder="Contoh: Makan Siang Warteg Berkah" type="text">
+</div>
+<!-- Kategori & Dompet -->
+<div class="grid grid-cols-2 gap-3">
+<div class="flex flex-col gap-1.5">
+<label class="text-[12px] font-medium text-text-secondary">Kategori</label>
+<select class="w-full h-10 px-3 bg-surface border border-border-default focus:border-primary rounded-lg text-[13px] text-text-primary outline-none">
+<option>Makanan &amp; Minuman</option>
+<option>Kos &amp; Kebutuhan</option>
+<option>Transportasi &amp; Bensin</option>
+<option>Kuliah &amp; Hiburan</option>
+</select>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="text-[12px] font-medium text-text-secondary">Dompet</label>
+<select class="w-full h-10 px-3 bg-surface border border-border-default focus:border-primary rounded-lg text-[13px] text-text-primary outline-none">
+<option>GoPay</option>
+<option>Bank BCA</option>
+<option>Uang Tunai</option>
+</select>
+</div>
+</div>
+<!-- Actions -->
+<div class="flex items-center justify-end gap-2.5 pt-3 border-t border-border-default mt-1">
+<button class="h-9 px-4 rounded-lg text-text-secondary hover:bg-bg-secondary text-[13px] font-medium transition-colors" onclick="document.getElementById('modal-tambah-transaksi').classList.add('hidden')" type="button">Batal</button>
+<button class="h-9 px-4 bg-primary hover:bg-primary-600 text-white rounded-lg text-[13px] font-medium shadow-sm transition-all active:scale-[0.98]" type="submit">Simpan Transaksi</button>
+</div>
+</form>
+</div>
+</div>
+<!-- Interactive Client-side Filter Script -->
+<script>
+    const searchInput = document.getElementById('search-input');
+    const tableBody = document.getElementById('transactions-body');
+    const resetBtn = document.getElementById('btn-reset-filter');
+    const typeFilter = document.getElementById('filter-type');
+    const catFilter = document.getElementById('filter-category');
+    const walletFilter = document.getElementById('filter-wallet');
+
+    function filterRows() {
+      const q = searchInput.value.toLowerCase().trim();
+      const rows = tableBody.querySelectorAll('tr');
+      rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        if (text.includes(q)) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    }
+
+    if (searchInput) {
+      searchInput.addEventListener('input', filterRows);
+    }
+
+    if (resetBtn) {
+      resetBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        typeFilter.value = 'semua';
+        catFilter.value = 'semua';
+        walletFilter.value = 'semua';
+        filterRows();
+      });
+    }
+  </script>
+</body></html>

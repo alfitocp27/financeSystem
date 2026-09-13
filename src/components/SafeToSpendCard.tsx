@@ -48,7 +48,7 @@ export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({ onOpenSimulato
   const IconComponent = badge.icon;
 
   return (
-    <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 relative overflow-hidden">
+    <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm border border-slate-100 relative overflow-hidden">
       {/* Decorative gradient overlay */}
       <div className="absolute top-0 right-0 -mt-8 -mr-8 w-44 h-44 bg-indigo-50/80 rounded-full blur-2xl pointer-events-none" />
 

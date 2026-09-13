@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+
+<html lang="id" style="height: 100vh; min-height: 100vh; width: 100%; margin: 0; padding: 0; box-sizing: border-box; overflow: hidden;"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Daftar Akun - SakuMhs</title>
+<!-- Google Fonts: Inter -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Lucide Icons -->
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+  </style>
+</head>
+<body class="min-h-screen w-full bg-[#F8FAFC] flex items-center justify-center selection:bg-indigo-100 selection:text-indigo-900" style="height: 100vh; min-height: 100vh; width: 100%; display: flex; align-items: center; justify-content: center; margin: 0; padding: 0; box-sizing: border-box; background-color: #F8FAFC; overflow: hidden;">
+<!-- Minimalist Centered Card matching Reference Image 2 -->
+<div class="w-full max-w-[420px] bg-white rounded-[20px] border border-[#E2E8F0] shadow-sm overflow-hidden">
+<!-- Top & Body Content -->
+<div class="pt-10 pb-8 px-7 sm:px-8">
+<!-- Central Geometric Burst Icon -->
+<div class="flex justify-center mb-5">
+<svg class="w-9 h-9 text-[#18181B]" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2.3" viewbox="0 0 24 24">
+<line x1="12" x2="12" y1="2" y2="5"></line>
+<line x1="12" x2="12" y1="19" y2="22"></line>
+<line x1="4.93" x2="7.05" y1="4.93" y2="7.05"></line>
+<line x1="16.95" x2="19.07" y1="16.95" y2="19.07"></line>
+<line x1="2" x2="5" y1="12" y2="12"></line>
+<line x1="19" x2="22" y1="12" y2="12"></line>
+<line x1="4.93" x2="7.05" y1="19.07" y2="16.95"></line>
+<line x1="16.95" x2="19.07" y1="7.05" y2="4.93"></line>
+</svg>
+</div>
+<!-- Title & Subtitle -->
+<div class="text-center mb-7"><h1 class="text-[22px] font-bold text-[#111827] tracking-tight">Daftar Akun SakuMhs</h1>
+<p class="text-[13px] text-[#6B7280] mt-1.5 leading-snug">Mulai kelola keuangan kuliahmu dengan lebih teratur dan tenang.</p></div>
+<!-- Login Form -->
+<form action="#" class="space-y-4" method="POST" onsubmit="event.preventDefault();"><!-- Nama Lengkap Input -->
+<div>
+<label class="block text-[13px] font-semibold text-[#1F2937] mb-1.5" for="fullname">
+    Nama Lengkap Mahasiswa
+  </label>
+<input class="w-full h-10 px-3.5 rounded-xl border border-[#E5E7EB] text-[13px] text-[#111827] placeholder-[#9CA3AF] focus:outline-none focus:border-[#111827] focus:ring-1 focus:ring-[#111827] transition-all" id="fullname" name="fullname" placeholder="Contoh: Dimas Pratama" required="" type="text"/>
+</div>
+<!-- Email Input -->
+<div>
+<label class="block text-[13px] font-semibold text-[#1F2937] mb-1.5" for="email">
+    Email Mahasiswa
+  </label>
+<input class="w-full h-10 px-3.5 rounded-xl border border-[#E5E7EB] text-[13px] text-[#111827] placeholder-[#9CA3AF] focus:outline-none focus:border-[#111827] focus:ring-1 focus:ring-[#111827] transition-all" id="email" name="email" placeholder="nama@mail.ugm.ac.id" required="" type="email"/>
+</div>
+<!-- Password Input -->
+<div>
+<label class="block text-[13px] font-semibold text-[#1F2937] mb-1.5" for="password">
+    Kata Sandi
+  </label>
+<div class="relative">
+<input class="w-full h-10 pl-3.5 pr-10 rounded-xl border border-[#E5E7EB] text-[13px] text-[#111827] placeholder-[#9CA3AF] focus:outline-none focus:border-[#111827] focus:ring-1 focus:ring-[#111827] transition-all" id="password" name="password" placeholder="Minimal 8 karakter" required="" type="password"/>
+<button class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#9CA3AF] hover:text-[#4B5563] transition-colors focus:outline-none" type="button">
+<svg aria-hidden="true" class="lucide lucide-eye w-4 h-4" data-lucide="eye" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"></path><circle cx="12" cy="12" r="3"></circle></svg>
+</button>
+</div>
+</div>
+<!-- Sign Up Button -->
+<div class="pt-2">
+<button class="w-full h-10 rounded-xl bg-[#6366F1] hover:bg-[#4F46E5] active:scale-[0.99] text-white text-[13px] font-medium transition-all shadow-sm flex items-center justify-center cursor-pointer" type="submit">
+    Daftar Akun
+  </button>
+</div></form>
+</div>
+<!-- Bottom Footer Strip -->
+<div class="py-4 px-7 border-t border-[#F1F3F5] text-center bg-white"><p class="text-[13px] text-[#4B5563]">
+  Sudah punya akun? 
+  <a class="font-medium text-[#111827] hover:underline ml-0.5" href="#">
+    Masuk
+  </a>
+</p></div>
+</div>
+<script>
+    // Initialize Lucide icons
+    lucide.createIcons();
+  </script>
+</body></html>

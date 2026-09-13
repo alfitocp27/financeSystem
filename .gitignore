@@ -24,6 +24,7 @@ dist-ssr
 *.sln
 *.sw?
 
-# Environment
+# Environment & Secrets
 .env
 .env.production
+opencode.json

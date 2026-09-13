@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import { formatCurrency, formatCompactCurrency, formatDateIndo, formatRelativeDate } from '../lib/formatters';
+import { DailyCashFlowChart } from './DailyCashFlowChart';
 
 interface DashboardViewProps {
   studentName: string;
@@ -381,6 +382,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         </div>
       </section>
+
+      {/* 3.5 Daily Cash Flow Trendline & Safe to Spend (Stitch 2.2 Exact) */}
+      <DailyCashFlowChart />
 
       {/* 4. 2-Column Content Grid (Stitch Exact: Span 8 Left vs Span 4 Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">

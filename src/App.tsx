@@ -3,7 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { FinanceProvider } from './context/FinanceContext';
 import { Sidebar, type ActiveTab } from './components/Sidebar';
 import { Navbar } from './components/Navbar';
-import { OnboardingGuide } from './components/OnboardingGuide';
+import { DashboardView } from './components/DashboardView';
 import { SafeToSpendCard } from './components/SafeToSpendCard';
 import { FinancialForecastCard } from './components/FinancialForecastCard';
 import { WalletCarousel } from './components/WalletCarousel';
@@ -111,74 +111,20 @@ function DashboardContent() {
 
         {/* Main Content View Container */}
         <main className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-5 space-y-6 flex-1">
-          {/* Dashboard Tab (Stitch 2-Column Layout) */}
+          {/* Dashboard Tab (Stitch Exact Layout) */}
           {activeTab === 'dashboard' && (
-            <>
-              {/* Top Greeting Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1">
-                <div>
-                  <h1 className="text-xl sm:text-2xl font-bold text-text-primary tracking-tight">
-                    Halo, {studentName} 👋
-                  </h1>
-                  <p className="text-xs sm:text-sm text-text-muted mt-0.5">
-                    Berikut ringkasan kondisi keuangan dan batas aman belanja harianmu.
-                  </p>
-                </div>
-              </div>
-
-              {/* Onboarding Guide Card for first steps */}
-              <OnboardingGuide
-                onOpenSettings={() => setIsSettingsOpen(true)}
-                onOpenAddWallet={() => setIsAddWalletOpen(true)}
-                onOpenQuickAdd={() => {
-                  setQuickAddInitialAmount(undefined);
-                  setIsQuickAddOpen(true);
-                }}
-              />
-
-              {/* Safe to Spend Hero + 4 Summary Cards */}
-              <SafeToSpendCard onOpenSimulator={() => setIsSimulatorOpen(true)} />
-
-              {/* Financial Forecast & Burn Rate Card */}
-              <FinancialForecastCard />
-
-              {/* 2-Column Responsive Layout (Span 8 Left vs Span 4 Right) */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                {/* Left Column (Span 8 on desktop) */}
-                <div className="lg:col-span-8 space-y-6">
-                  {/* Budget Usage Breakdown Gauge */}
-                  <BudgetManager
-                    onShowToast={showToast}
-                    onOpenAddCategory={() => setIsAddCategoryOpen(true)}
-                  />
-
-                  {/* Wallets Overview Carousel */}
-                  <WalletCarousel
-                    onOpenTransfer={() => setIsTransferOpen(true)}
-                    onOpenAddWallet={() => setIsAddWalletOpen(true)}
-                    onEditWallet={(w) => setEditingWallet(w)}
-                  />
-                </div>
-
-                {/* Right Column (Span 4 on desktop) */}
-                <div className="lg:col-span-4 space-y-6">
-                  {/* Transaksi Terbaru */}
-                  <TransactionList
-                    onShowToast={showToast}
-                    onOpenQuickAdd={() => {
-                      setQuickAddInitialAmount(undefined);
-                      setIsQuickAddOpen(true);
-                    }}
-                  />
-
-                  {/* Pengeluaran Tetap Bulanan */}
-                  <RecurringBillsSection onShowToast={showToast} />
-
-                  {/* Target Tabungan */}
-                  <SavingsGoalSection onShowToast={showToast} />
-                </div>
-              </div>
-            </>
+            <DashboardView
+              studentName={studentName}
+              onOpenQuickAdd={() => {
+                setQuickAddInitialAmount(undefined);
+                setIsQuickAddOpen(true);
+              }}
+              onOpenSimulator={() => setIsSimulatorOpen(true)}
+              onOpenTransfer={() => setIsTransferOpen(true)}
+              onOpenAddWallet={() => setIsAddWalletOpen(true)}
+              onSelectTab={setActiveTab}
+              onShowToast={showToast}
+            />
           )}
 
           {/* Transactions Tab */}

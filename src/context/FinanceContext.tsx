@@ -109,7 +109,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       ] = await Promise.all([
         supabase.from('wallets').select('*').order('created_at', { ascending: true }),
         supabase.from('categories').select('*').order('name', { ascending: true }),
-        supabase.from('transactions').select('*, wallet:wallets(*), category:categories(*), destination_wallet:wallets!destination_wallet_id(*)').order('transaction_date', { ascending: false }).order('created_at', { ascending: false }),
+        supabase.from('transactions').select('*').order('transaction_date', { ascending: false }).order('created_at', { ascending: false }),
         supabase.from('budgets').select('*'),
         supabase.from('savings_goals').select('*').order('created_at', { ascending: true }),
         supabase.from('recurring_commitments').select('*').order('due_day', { ascending: true }),
@@ -122,6 +122,16 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       // Load user data strictly from database
       if (wData && wData.length > 0) {
         setWallets(wData as Wallet[]);
+      } else if (user) {
+        // Create initial wallets for user in Supabase with 0 balance
+        const defaultStarter = [
+          { user_id: user.id, name: 'Uang Tunai (Cash)', wallet_type: 'cash', balance: 0, icon: 'banknote', color: '#10b981' },
+          { user_id: user.id, name: 'Rekening Bank', wallet_type: 'bank', balance: 0, icon: 'landmark', color: '#3b82f6' },
+          { user_id: user.id, name: 'E-Wallet (GoPay/ShopeePay)', wallet_type: 'ewallet', balance: 0, icon: 'smartphone', color: '#8b5cf6' },
+        ];
+        await supabase.from('wallets').insert(defaultStarter as any);
+        const { data: createdW } = await supabase.from('wallets').select('*').order('created_at', { ascending: true });
+        setWallets((createdW as Wallet[]) || []);
       } else {
         setWallets(DEFAULT_WALLETS);
       }
@@ -260,7 +270,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
         const { data: insertedTx, error: insertError } = await supabase
           .from('transactions')
           .insert(payload)
-          .select('*, wallet:wallets(*), category:categories(*), destination_wallet:wallets!destination_wallet_id(*)')
+          .select()
           .single();
 
         if (insertError) {
@@ -273,7 +283,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
 
           // Sync updated wallet balances from PostgreSQL trigger
           const { data: updatedW } = await supabase.from('wallets').select('*').order('created_at', { ascending: true });
-          if (updatedW) {
+          if (updatedW && updatedW.length > 0) {
             setWallets(updatedW as Wallet[]);
           }
 
@@ -348,6 +358,33 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
   };
 
   const deleteTransaction = async (id: string) => {
+    const tx = transactions.find((t) => t.id === id);
+
+    // 1. Optimistic rollback in local state immediately: saldo dikembalikan sesuai alur proses bisnis!
+    setTransactions((prev) => prev.filter((t) => t.id !== id));
+
+    if (tx) {
+      setWallets((prev) =>
+        prev.map((w) => {
+          if (w.id === tx.wallet_id) {
+            if (tx.type === 'income') return { ...w, balance: Math.max(0, Number(w.balance) - Number(tx.amount)) };
+            if (tx.type === 'expense' || tx.type === 'transfer') return { ...w, balance: Number(w.balance) + Number(tx.amount) }; // Saldo dikembalikan!
+          }
+          if (tx.type === 'transfer' && w.id === tx.destination_wallet_id) {
+            return { ...w, balance: Math.max(0, Number(w.balance) - Number(tx.amount)) };
+          }
+          return w;
+        })
+      );
+
+      if (tx.goal_id) {
+        setSavingsGoals((prev) =>
+          prev.map((g) => (g.id === tx.goal_id ? { ...g, current_amount: Math.max(0, Number(g.current_amount) - Number(tx.amount)) } : g))
+        );
+      }
+    }
+
+    // 2. Database Sync: Delete from Supabase & Re-fetch updated wallets
     if (user && isConfigured) {
       try {
         const { error: delError } = await supabase.from('transactions').delete().eq('id', id);
@@ -355,37 +392,27 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
           console.error('Delete transaction error:', delError);
           return { error: delError };
         }
-        setTransactions((prev) => prev.filter((t) => t.id !== id));
-        const { data: updatedW } = await supabase.from('wallets').select('*').order('created_at', { ascending: true });
-        if (updatedW) {
+
+        const [{ data: updatedW }, { data: updatedG }] = await Promise.all([
+          supabase.from('wallets').select('*').order('created_at', { ascending: true }),
+          supabase.from('savings_goals').select('*').order('created_at', { ascending: true }),
+        ]);
+
+        if (updatedW && updatedW.length > 0) {
           setWallets(updatedW as Wallet[]);
+        }
+        if (updatedG) {
+          setSavingsGoals(updatedG as SavingsGoal[]);
         }
         return { error: null };
       } catch (err: any) {
+        console.error('Delete transaction DB error:', err);
         return { error: err };
       }
     }
 
-    // Demo Mode delete
-    const tx = transactions.find((t) => t.id === id);
-    if (tx) {
-      setWallets((prev) =>
-        prev.map((w) => {
-          if (w.id === tx.wallet_id) {
-            if (tx.type === 'income') return { ...w, balance: Number(w.balance) - Number(tx.amount) };
-            if (tx.type === 'expense' || tx.type === 'transfer') return { ...w, balance: Number(w.balance) + Number(tx.amount) };
-          }
-          if (tx.type === 'transfer' && w.id === tx.destination_wallet_id) {
-            return { ...w, balance: Number(w.balance) - Number(tx.amount) };
-          }
-          return w;
-        })
-      );
-    }
-    const updated = transactions.filter((t) => t.id !== id);
-    setTransactions(updated);
     try {
-      localStorage.setItem('demo_transactions', JSON.stringify(updated));
+      localStorage.setItem('demo_transactions', JSON.stringify(transactions.filter((t) => t.id !== id)));
     } catch {
       // ignore
     }

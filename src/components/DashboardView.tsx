@@ -68,7 +68,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   // Real Budget & Expense calculations from Database
   const totalAllocatedBudget = budgets.reduce((acc, b) => acc + Number(b.amount), 0);
   const totalCycleExpense = transactions
-    .filter((t) => t.type === 'expense' && t.transaction_date >= startStr && t.transaction_date <= endStr)
+    .filter((t) => {
+      const d = t.transaction_date ? t.transaction_date.slice(0, 10) : '';
+      return t.type === 'expense' && d >= startStr && d <= endStr;
+    })
     .reduce((sum, t) => sum + Number(t.amount), 0);
 
   const effectiveBudgetCeiling = totalAllocatedBudget > 0 ? totalAllocatedBudget : 2500000;
@@ -83,9 +86,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   // Real Category Spending from Database
   const categorySpending = useMemo(() => {
     const expenseCats = categories.filter((c) => c.type === 'expense');
-    const inCycleExpenses = transactions.filter(
-      (t) => t.type === 'expense' && t.transaction_date >= startStr && t.transaction_date <= endStr
-    );
+    const inCycleExpenses = transactions.filter((t) => {
+      const d = t.transaction_date ? t.transaction_date.slice(0, 10) : '';
+      return t.type === 'expense' && d >= startStr && d <= endStr;
+    });
 
     const mapped = expenseCats.map((cat, idx) => {
       const total = inCycleExpenses
@@ -128,22 +132,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const CIRCUMFERENCE = 389.56; // 2 * PI * 62
   const activeSlices = useMemo(() => {
     const active = categorySpending.filter((c) => c.value > 0);
-    if (active.length === 0 || totalCycleExpense === 0) return [];
+    const totalSpent = active.reduce((acc, c) => acc + c.value, 0);
+    if (active.length === 0 || totalSpent === 0) return [];
 
     let cumulativeOffset = 0;
     return active.map((cat) => {
-      const dash = (cat.value / totalCycleExpense) * CIRCUMFERENCE;
-      const gap = CIRCUMFERENCE - dash;
-      const strokeDasharray = `${dash.toFixed(1)} ${gap.toFixed(1)}`;
+      const dash = Math.max(10, (cat.value / totalSpent) * CIRCUMFERENCE);
+      const strokeDasharray = `${dash.toFixed(1)} ${CIRCUMFERENCE.toFixed(1)}`;
       const strokeDashoffset = -cumulativeOffset;
-      cumulativeOffset += dash;
+      cumulativeOffset += (cat.value / totalSpent) * CIRCUMFERENCE;
       return {
         ...cat,
         strokeDasharray,
         strokeDashoffset,
       };
     });
-  }, [categorySpending, totalCycleExpense]);
+  }, [categorySpending]);
 
   // Real Daily Cash Flow Wave Chart (Comfortable Height, NO Red Dots, Beautiful Hover)
   const cashFlowChartData = useMemo(() => {
@@ -485,10 +489,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
             <div className="mt-2.5">
               <div className="text-3xl sm:text-[32px] font-extrabold text-primary-600 tracking-tight tabular-nums">
-                {formatCompactCurrency(totalBalance)}
+                {formatCurrency(totalBalance)}
               </div>
               <div className="text-xs font-semibold text-text-secondary mt-1 truncate">
-                {formatCurrency(totalBalance)} saldo kas aktif
+                Total pemasukan: {formatCurrency(totalIncomeInCycle)}
               </div>
             </div>
           </div>
@@ -1130,37 +1134,43 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
             {/* Categories Legend List (Interactive on Hover & Real Database Categories) */}
             <div className="flex flex-col gap-1.5 pt-1">
-              {categorySpending.slice(0, 5).map((item, idx) => {
-                const isHovered = hoveredCategoryIndex === idx;
-                const pct = totalCycleExpense > 0 ? (item.ratio * 100).toFixed(1) : '0';
+              {categorySpending.filter(c => c.value > 0).length === 0 ? (
+                <div className="py-4 text-center text-xs text-text-muted">
+                  Belum ada pengeluaran yang dicatat pada siklus ini.
+                </div>
+              ) : (
+                categorySpending.filter(c => c.value > 0).slice(0, 5).map((item, idx) => {
+                  const isHovered = hoveredCategoryIndex === idx;
+                  const pct = totalCycleExpense > 0 ? (item.ratio * 100).toFixed(1) : '0';
 
-                return (
-                  <div
-                    key={item.id}
-                    onMouseEnter={() => setHoveredCategoryIndex(idx)}
-                    onMouseLeave={() => setHoveredCategoryIndex(null)}
-                    className={`flex items-center justify-between text-sm py-1.5 px-2 rounded-lg transition-colors cursor-pointer ${
-                      isHovered ? 'bg-surface-container-low font-semibold' : 'hover:bg-surface-container-low/60'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span
-                        className="w-2.5 h-2.5 rounded-full shrink-0"
-                        style={{ backgroundColor: item.color }}
-                      />
-                      <span className="text-xs sm:text-sm text-text-primary truncate">{item.name}</span>
+                  return (
+                    <div
+                      key={item.id}
+                      onMouseEnter={() => setHoveredCategoryIndex(idx)}
+                      onMouseLeave={() => setHoveredCategoryIndex(null)}
+                      className={`flex items-center justify-between text-sm py-1.5 px-2 rounded-lg transition-colors cursor-pointer ${
+                        isHovered ? 'bg-surface-container-low font-semibold' : 'hover:bg-surface-container-low/60'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span
+                          className="w-2.5 h-2.5 rounded-full shrink-0"
+                          style={{ backgroundColor: item.color }}
+                        />
+                        <span className="text-xs sm:text-sm text-text-primary truncate">{item.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0 ml-2">
+                        <span className="text-xs text-text-secondary tabular-nums">
+                          {formatCurrency(item.value)}
+                        </span>
+                        <span className="text-[11px] text-text-muted tabular-nums w-10 text-right font-medium">
+                          {pct}%
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0 ml-2">
-                      <span className="text-xs text-text-secondary tabular-nums">
-                        {formatCurrency(item.value)}
-                      </span>
-                      <span className="text-[11px] text-text-muted tabular-nums w-10 text-right font-medium">
-                        {pct}%
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           </div>
         </div>

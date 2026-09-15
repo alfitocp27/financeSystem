@@ -24,7 +24,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const getPageTitle = (tab: ActiveTab) => {
     switch (tab) {
       case 'dashboard':
-        return 'Dashboard';
+        return 'Beranda';
       case 'transactions':
         return 'Riwayat Transaksi';
       case 'wallets':
@@ -34,7 +34,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       case 'savings':
         return 'Target Tabungan';
       case 'analytics':
-        return 'Laporan & Analitik';
+        return 'Laporan & Analisis';
       case 'settings':
         return 'Pengaturan Sistem';
       default:
@@ -77,14 +77,14 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="flex items-center gap-2.5">
           {/* Sisa Hari Badge */}
           <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary-50 rounded-full text-xs font-semibold text-primary-700">
-            <span className="w-1.5 h-1.5 rounded-full bg-primary-600 animate-pulse" />
+            <span className="w-1.5 h-1.5 rounded-full bg-primary-600" />
             <span>Sisa {cycleInfo.daysRemaining} hari</span>
           </div>
 
           {/* Desktop Quick Add Action Button */}
           <button
             onClick={onOpenQuickAdd}
-            className="hidden sm:inline-flex items-center gap-1.5 bg-primary-500 hover:bg-primary-600 active:scale-95 text-white text-xs font-semibold px-3.5 py-2 rounded-xl transition-all shadow-xs"
+            className="hidden sm:inline-flex items-center gap-1.5 bg-primary-500 hover:bg-primary-600 active:scale-95 text-white text-xs font-semibold px-3.5 py-2 rounded-lg transition-all shadow-xs"
             title="Tekan 'N' atau '+' di keyboard"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
@@ -97,7 +97,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Settings Trigger */}
           <button
             onClick={onOpenSettings}
-            className="p-2 text-text-secondary hover:text-text-primary hover:bg-bg-secondary rounded-xl transition-colors"
+            className="p-2 text-text-secondary hover:text-text-primary hover:bg-bg-secondary rounded-lg transition-colors"
             title="Pengaturan"
             aria-label="Pengaturan"
           >
@@ -109,7 +109,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             {user ? (
               <button
                 onClick={signOut}
-                className="p-2 text-semantic-rose hover:bg-semantic-rose-soft rounded-xl transition-colors"
+                className="p-2 text-semantic-rose hover:bg-semantic-rose-soft rounded-lg transition-colors"
                 title="Keluar"
                 aria-label="Keluar"
               >
@@ -118,7 +118,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             ) : (
               <button
                 onClick={onOpenAuth}
-                className="p-2 text-primary-600 hover:bg-primary-50 rounded-xl transition-colors"
+                className="p-2 text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
                 title="Masuk"
                 aria-label="Masuk"
               >

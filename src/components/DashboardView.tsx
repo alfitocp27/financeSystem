@@ -1,9 +1,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import {
-  HelpCircle,
   Calendar,
   Plus,
-  Calculator,
   Utensils,
   Home,
   Bus,
@@ -16,11 +14,14 @@ import {
   Briefcase,
   Award,
   Wallet as WalletIcon,
-  Check,
+  PiggyBank,
+  CheckCircle2,
+  ArrowRight,
 } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import { formatCurrency, formatCompactCurrency, formatDateIndo, formatRelativeDate, getLocalDateString } from '../lib/formatters';
-import { SpendingLimitCard } from '@/components/ui/card-8';
+import { SafeToSpendCard } from './SafeToSpendCard';
+import type { ToastData } from './Toast';
 
 const STITCH_COLORS = ['#2563eb', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
 
@@ -31,7 +32,7 @@ interface DashboardViewProps {
   onOpenTransfer: () => void;
   onOpenAddWallet: () => void;
   onSelectTab: (tab: any) => void;
-  onShowToast?: (msg: string) => void;
+  onShowToast?: (msg: string | ToastData) => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
@@ -47,18 +48,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     safeToSpend,
     cycleInfo,
     totalBalance,
-    totalIncomeInCycle,
     wallets,
     categories,
     budgets,
     transactions,
     savingsGoals,
     deleteTransaction,
+    addTransaction,
   } = useFinance();
 
   // Chart Interactive Hover States
   const [hoveredPointIndex, setHoveredPointIndex] = useState<number | null>(null);
-  const [hoveredCategoryIndex, setHoveredCategoryIndex] = useState<number | null>(null);
   const svgWaveRef = useRef<SVGSVGElement | null>(null);
 
   const startStr = getLocalDateString(cycleInfo.startDate);
@@ -78,9 +78,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const overallBudgetPercentage = effectiveBudgetCeiling > 0
     ? Math.min(100, Math.round((totalCycleExpense / effectiveBudgetCeiling) * 100))
     : 0;
-
-  // Real savings gathered from Database
-  const totalSavingsGathered = savingsGoals.reduce((acc, g) => acc + Number(g.current_amount), 0);
 
   // Real Category Spending from Database
   const categorySpending = useMemo(() => {
@@ -127,25 +124,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     }));
   }, [categories, transactions, startStr, endStr]);
 
-  // SVG Donut Calculations using 100% Real Data
-  const CIRCUMFERENCE = 389.56; // 2 * PI * 62
+  // Active category slices for proportional breakdown bar
   const activeSlices = useMemo(() => {
-    const active = categorySpending.filter((c) => c.value > 0);
-    const totalSpent = active.reduce((acc, c) => acc + c.value, 0);
-    if (active.length === 0 || totalSpent === 0) return [];
-
-    let cumulativeOffset = 0;
-    return active.map((cat) => {
-      const dash = Math.max(10, (cat.value / totalSpent) * CIRCUMFERENCE);
-      const strokeDasharray = `${dash.toFixed(1)} ${CIRCUMFERENCE.toFixed(1)}`;
-      const strokeDashoffset = -cumulativeOffset;
-      cumulativeOffset += (cat.value / totalSpent) * CIRCUMFERENCE;
-      return {
-        ...cat,
-        strokeDasharray,
-        strokeDashoffset,
-      };
-    });
+    return categorySpending.filter((c) => c.value > 0);
   }, [categorySpending]);
 
   // Real Daily Cash Flow Wave Chart (Comfortable Height, NO Red Dots, Beautiful Hover)
@@ -225,24 +206,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       };
     });
 
-    // Smooth cubic bezier curve
-    let pathD = '';
-    if (points.length > 0) {
-      pathD = `M ${points[0].x} ${points[0].y}`;
-      for (let i = 1; i < points.length; i++) {
-        const prev = points[i - 1];
-        const curr = points[i];
-        const cp1x = Math.round(prev.x + (curr.x - prev.x) * 0.45);
-        const cp1y = prev.y;
-        const cp2x = Math.round(prev.x + (curr.x - prev.x) * 0.55);
-        const cp2y = curr.y;
-        pathD += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${curr.x} ${curr.y}`;
-      }
-    }
-
-    const areaD = points.length > 0
-      ? `${pathD} L ${points[points.length - 1].x} ${bottomY} L ${points[0].x} ${bottomY} Z`
-      : '';
+    // Benchmark Y for daily Safe to Spend limit line
+    const benchmarkY = safeToSpend.dailySafeToSpend > 0
+      ? Math.round(bottomY - Math.min(1, safeToSpend.dailySafeToSpend / maxY) * usableHeight)
+      : null;
 
     // Sample 7 date labels along X-axis
     const labelIndices = [
@@ -258,21 +225,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
     return {
       points,
-      pathD,
-      areaD,
       yTiers,
       xLabels,
       maxDailyExp,
       bottomY,
+      benchmarkY,
+      stepX,
+      maxY,
     };
   }, [cycleInfo, transactions, safeToSpend.dailySafeToSpend]);
 
-  // Handle smooth scrubbing along SVG wave chart
-  const handleSvgMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+  // Handle smooth scrubbing along SVG wave chart (Mouse & Touch & Keyboard)
+  const updateHoveredPointFromClientX = (clientX: number) => {
     if (!svgWaveRef.current || cashFlowChartData.points.length === 0) return;
     const rect = svgWaveRef.current.getBoundingClientRect();
-    const clientX = e.clientX - rect.left;
-    const svgX = (clientX / rect.width) * 900;
+    const relativeX = clientX - rect.left;
+    const svgX = (relativeX / rect.width) * 900;
 
     let nearestIdx = 0;
     let minDiff = Infinity;
@@ -286,38 +254,28 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     setHoveredPointIndex(nearestIdx);
   };
 
-  // Status badge logic
-  const getPaceBadge = () => {
-    switch (safeToSpend.paceStatus) {
-      case 'safe':
-        return {
-          bg: 'bg-semantic-green-soft text-semantic-green border-semantic-green/20',
-          dot: 'bg-semantic-green',
-          text: 'Status: Safe',
-        };
-      case 'warning':
-        return {
-          bg: 'bg-semantic-amber-soft text-semantic-amber border-semantic-amber/20',
-          dot: 'bg-semantic-amber',
-          text: 'Status: Warning',
-        };
-      case 'overpace':
-        return {
-          bg: 'bg-semantic-rose-soft text-semantic-rose border-semantic-rose/20',
-          dot: 'bg-semantic-rose',
-          text: 'Status: Overpace',
-        };
-      case 'no-budget':
-      default:
-        return {
-          bg: 'bg-semantic-blue-soft text-semantic-blue border-semantic-blue/20',
-          dot: 'bg-semantic-blue',
-          text: 'Status: Safe',
-        };
+  const handleSvgMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    updateHoveredPointFromClientX(e.clientX);
+  };
+
+  const handleSvgTouchMove = (e: React.TouchEvent<SVGSVGElement>) => {
+    if (e.touches.length > 0) {
+      updateHoveredPointFromClientX(e.touches[0].clientX);
     }
   };
 
-  const badge = getPaceBadge();
+  const handleChartKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (cashFlowChartData.points.length === 0) return;
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      setHoveredPointIndex((prev) => (prev === null ? 0 : Math.min(cashFlowChartData.points.length - 1, prev + 1)));
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      setHoveredPointIndex((prev) => (prev === null ? 0 : Math.max(0, prev - 1)));
+    } else if (e.key === 'Escape') {
+      setHoveredPointIndex(null);
+    }
+  };
 
   // Helper icons
   const getCategoryIcon = (iconName?: string) => {
@@ -347,14 +305,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   const recentTransactions = transactions.slice(0, 5);
   const activeHoveredPoint = hoveredPointIndex !== null ? cashFlowChartData.points[hoveredPointIndex] : null;
-  const activeHoveredCategory = hoveredCategoryIndex !== null ? categorySpending[hoveredCategoryIndex] : null;
 
   return (
     <div className="space-y-6 pb-6">
       {/* 1. Top Greeting & Primary Trigger Header (Stitch Exact) */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
         <div className="flex flex-col">
-          <h1 className="text-2xl sm:text-[26px] font-bold text-text-primary tracking-tight">
+          <h1 className="text-2xl font-bold text-text-primary tracking-tight">
             Selamat datang kembali, {studentName} 👋
           </h1>
           <p className="text-sm text-text-muted mt-0.5">
@@ -365,7 +322,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <div className="flex items-center gap-2 self-start sm:self-auto">
           <button
             onClick={onOpenQuickAdd}
-            className="bg-primary-500 hover:bg-primary-600 active:scale-95 text-white font-semibold text-sm px-4 py-2.5 rounded-[10px] flex items-center gap-2 transition-all shadow-sm"
+            className="bg-primary-500 hover:bg-primary-600 active:scale-95 text-white font-semibold text-sm px-4 py-2.5 min-h-[44px] rounded-lg flex items-center gap-2 transition-all shadow-sm"
             id="btnQuickAdd"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
@@ -374,175 +331,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </div>
 
-      {/* 2. Primary Highlight: Safe to Spend Card (Stitch Exact) */}
+      {/* 2. Primary Focal Point: Safe to Spend & Financial Summary Ribbon */}
       <section className="mb-6">
-        <div className="bg-surface rounded-[14px] p-4 sm:p-6 shadow-sm border border-border-default relative overflow-hidden">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
-            {/* Left Column */}
-            <div className="flex flex-col">
-              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                <span className="text-[13px] uppercase tracking-wider font-semibold text-text-secondary">
-                  Safe to Spend
-                </span>
-
-                <div className="relative group cursor-pointer flex items-center">
-                  <HelpCircle className="w-4 h-4 text-text-muted hover:text-text-primary transition-colors" />
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col w-64 bg-inverse-surface text-inverse-on-surface p-2.5 rounded-lg text-xs z-30 shadow-lg leading-relaxed">
-                    Batas pengeluaran harian yang aman agar budget bulananmu tetap cukup sampai akhir periode siklus.
-                  </div>
-                </div>
-
-                <span
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${badge.bg}`}
-                >
-                  <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`} />
-                  {badge.text}
-                </span>
-
-                <button
-                  onClick={onOpenSimulator}
-                  className="inline-flex items-center justify-center w-8 h-8 sm:w-auto sm:h-auto sm:px-2.5 sm:py-0.5 sm:rounded-full rounded-lg text-xs font-semibold bg-primary-50 hover:bg-primary-100 text-primary-600 transition-colors ml-auto md:ml-3"
-                  title="Simulasi dampak belanja terhadap jatah hari esok"
-                >
-                  <Calculator className="w-4 h-4" />
-                  <span className="hidden sm:inline ml-1">Simulasi Jajan</span>
-                </button>
-              </div>
-
-              <div className="flex items-baseline gap-1.5 sm:gap-2 mt-2">
-                <span className="text-2xl sm:text-3xl md:text-[36px] font-bold text-text-primary tabular-nums tracking-tight">
-                  {formatCurrency(safeToSpend.dailySafeToSpend)}
-                </span>
-                <span className="text-sm sm:text-base text-text-muted font-normal">/ hari</span>
-              </div>
-
-              <div className="flex items-center gap-2 mt-1.5">
-                <Check className="w-4 h-4 text-semantic-green shrink-0" />
-                <p className="text-xs text-text-secondary">
-                  <strong className="text-text-primary font-medium">
-                    {cycleInfo.daysRemaining} hari tersisa
-                  </strong>{' '}
-                  dalam siklus ini • Berdasarkan sisa budget aktif{' '}
-                  <span className="font-medium text-text-primary tabular-nums">
-                    {formatCurrency(safeToSpend.remainingBudget)}
-                  </span>
-                </p>
-              </div>
-            </div>
-
-            {/* Right Column: Safe-to-Spend Pacing Micro Visualizer */}
-            <div className="flex flex-col w-full md:w-80 bg-surface-container-low p-3 sm:p-4 rounded-xl border border-border-subtle">
-              <div className="flex items-center justify-between text-xs text-text-secondary mb-1.5">
-                <span>Pacing Pengeluaran</span>
-                <span
-                  className={`font-semibold tabular-nums ${
-                    safeToSpend.paceStatus === 'overpace'
-                      ? 'text-semantic-rose'
-                      : safeToSpend.paceStatus === 'warning'
-                      ? 'text-semantic-amber'
-                      : 'text-semantic-green'
-                  }`}
-                >
-                  Terkendali ({cycleInfo.progressPercentage}%)
-                </span>
-              </div>
-
-              <div className="w-full bg-border-default h-2 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all duration-500 ${
-                    safeToSpend.paceStatus === 'overpace'
-                      ? 'bg-semantic-rose'
-                      : safeToSpend.paceStatus === 'warning'
-                      ? 'bg-semantic-amber'
-                      : 'bg-semantic-green'
-                  }`}
-                  style={{ width: `${cycleInfo.progressPercentage}%` }}
-                />
-              </div>
-
-              <div className="flex justify-between items-center mt-2 text-xs text-text-muted">
-                <span className="hidden sm:inline">Mulai ({cycleInfo.startDate.getDate()} {new Intl.DateTimeFormat('id-ID', { month: 'short' }).format(cycleInfo.startDate)})</span>
-                <span className="text-text-secondary font-medium">
-                  Hari ke-{cycleInfo.daysPassed} dari {cycleInfo.totalDays}
-                </span>
-                <span className="hidden sm:inline">Akhir ({cycleInfo.endDate.getDate()} {new Intl.DateTimeFormat('id-ID', { month: 'short' }).format(cycleInfo.endDate)})</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 3. 4 Clean Financial Summary Cards (Grid of 4 with SpendingLimitCard design) */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {/* Card 1: Sisa Total Saldo Kas */}
-        <SpendingLimitCard
-          title="Sisa Total Saldo Kas"
-          dateRange={totalIncomeInCycle > 0 ? `Total masuk: ${formatCompactCurrency(totalIncomeInCycle)}` : "Saldo kas aktif"}
-          buttonText="+8.4%"
-          isIncrease={true}
-          currentSpending={totalBalance}
-          limit={totalIncomeInCycle > 0 ? totalIncomeInCycle : (totalBalance || 1)}
-          currentFormatted={formatCurrency(totalBalance)}
-          limitFormatted={formatCurrency(totalIncomeInCycle > 0 ? totalIncomeInCycle : totalBalance)}
-          limitPrefix="of"
-          segments={5}
-          filledColorClass="bg-primary-500"
-          unfilledColorClass="bg-primary-50"
-        />
-
-        {/* Card 2: Total Pemasukan */}
-        <SpendingLimitCard
-          title="Total Pemasukan"
-          dateRange="Uang masuk siklus ini"
-          buttonText="+18.4%"
-          isIncrease={true}
-          currentSpending={totalIncomeInCycle}
-          limit={totalIncomeInCycle || 1}
-          currentFormatted={formatCurrency(totalIncomeInCycle)}
-          limitFormatted={formatCurrency(totalIncomeInCycle)}
-          limitPrefix="of"
-          segments={5}
-          filledColorClass="bg-semantic-green"
-          unfilledColorClass="bg-semantic-green-soft"
-        />
-
-        {/* Card 3: Total Pengeluaran */}
-        <SpendingLimitCard
-          title="Total Pengeluaran"
-          dateRange={`Plafon: ${formatCompactCurrency(effectiveBudgetCeiling)}`}
-          buttonText={`${overallBudgetPercentage}%`}
-          isIncrease={overallBudgetPercentage > 100 ? false : true}
-          currentSpending={totalCycleExpense}
-          limit={effectiveBudgetCeiling}
-          currentFormatted={formatCurrency(totalCycleExpense)}
-          limitFormatted={formatCurrency(effectiveBudgetCeiling)}
-          limitPrefix="of"
-          segments={5}
-          filledColorClass={overallBudgetPercentage >= 100 ? "bg-semantic-rose" : "bg-semantic-rose"}
-          unfilledColorClass="bg-semantic-rose-soft"
-        />
-
-        {/* Card 4: Tabungan Siklus Ini */}
-        <SpendingLimitCard
-          title="Tabungan Siklus Ini"
-          dateRange={`${savingsGoals.length} target tabungan aktif`}
-          buttonText="+15.0%"
-          isIncrease={true}
-          currentSpending={totalSavingsGathered}
-          limit={Math.max(totalSavingsGathered, 1000000)}
-          currentFormatted={formatCurrency(totalSavingsGathered)}
-          limitFormatted={formatCurrency(Math.max(totalSavingsGathered, 1000000))}
-          limitPrefix="of"
-          segments={5}
-          filledColorClass="bg-primary-600"
-          unfilledColorClass="bg-primary-50"
-        />
+        <SafeToSpendCard onOpenSimulator={onOpenSimulator} />
       </section>
 
       {/* Arus Kas Harian SVG Wave Chart (NORMAL HEIGHT, NO RED DOTS, SMOOTH HOVER) */}
-      <section className="bg-surface rounded-[16px] border border-border-default shadow-xs mb-6 overflow-hidden">
+      <section className="bg-surface rounded-xl border border-border-default shadow-xs mb-6 overflow-hidden">
         <div className="p-6 relative select-none">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
             <div className="flex items-center gap-2">
               <span className="text-base font-bold text-text-primary tracking-tight">Arus Kas Harian</span>
               <span className="text-xs text-text-muted">
@@ -550,80 +347,149 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </span>
             </div>
 
-            <div className="flex items-center gap-3 text-xs">
+            <div className="flex items-center gap-3 text-xs flex-wrap">
               {activeHoveredPoint ? (
-                <span className="font-semibold text-primary-600 bg-primary-50 px-2.5 py-1 rounded-full border border-primary-200 animate-in fade-in duration-100">
+                <span className="font-semibold text-primary-600 bg-primary-50 px-2.5 py-1 rounded-lg border border-primary-200 animate-in fade-in duration-100">
                   {activeHoveredPoint.dayLabel}: {formatCurrency(activeHoveredPoint.expense)}
                 </span>
               ) : (
-                <span className="flex items-center gap-1.5 text-text-secondary font-medium">
-                  <span className="w-2.5 h-0.5 bg-primary-600 rounded-full" />
-                  Pengeluaran Harian (Hover untuk detail)
-                </span>
+                <>
+                  <span className="flex items-center gap-1.5 text-text-muted">
+                    <span className="w-2.5 h-2.5 rounded-xs bg-primary-500" />
+                    <span>Pengeluaran Harian</span>
+                  </span>
+                  {safeToSpend.dailySafeToSpend > 0 && (
+                    <span className="flex items-center gap-1.5 text-text-muted">
+                      <span className="w-3.5 h-0.5 border-t-2 border-dashed border-semantic-amber" />
+                      <span>Batas Harian ({formatCompactCurrency(safeToSpend.dailySafeToSpend)})</span>
+                    </span>
+                  )}
+                </>
               )}
             </div>
           </div>
 
-          {/* Dotted Grid & Glowing Wave Curve with Normal Height (h-64 sm:h-72) */}
-          <div className="w-full overflow-x-auto">
+          {/* Discrete Daily Expense Bars with Safe-to-Spend Benchmark Line */}
+          <div
+            className="w-full overflow-x-auto focus:outline-hidden focus-visible:ring-2 focus-visible:ring-primary-500 rounded-lg"
+            tabIndex={0}
+            role="region"
+            aria-label="Grafik pengeluaran arus kas harian. Gunakan tombol panah kiri dan kanan untuk menjelajah tanggal."
+            onKeyDown={handleChartKeyDown}
+          >
             <svg
               ref={svgWaveRef}
+              role="img"
+              aria-label={`Grafik pengeluaran harian siklus ${new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(cycleInfo.startDate)}. Batas harian aman: ${formatCurrency(safeToSpend.dailySafeToSpend)} per hari.`}
               onMouseMove={handleSvgMouseMove}
+              onTouchMove={handleSvgTouchMove}
               onMouseLeave={() => setHoveredPointIndex(null)}
-              className="w-full h-64 sm:h-72 overflow-visible min-w-[700px] cursor-crosshair transition-all"
+              className="w-full h-64 sm:h-72 overflow-visible min-w-[700px] cursor-crosshair transition-all select-none touch-pan-x"
               preserveAspectRatio="none"
               viewBox="0 0 900 230"
             >
-              <defs>
-                <pattern id="chartDots" width="50" height="30" patternUnits="userSpaceOnUse">
-                  <circle cx="25" cy="15" r="1" fill="#cbd5e1" opacity="0.6" />
-                </pattern>
-                <linearGradient id="lineGlow" x1="0%" x2="0%" y1="0%" y2="100%">
-                  <stop offset="0%" stopColor="#6366f1" stopOpacity="0.25" />
-                  <stop offset="100%" stopColor="#6366f1" stopOpacity="0.0" />
-                </linearGradient>
-              </defs>
-
-              {/* Dotted background rect */}
-              <rect x="0" y="15" width="900" height="180" fill="url(#chartDots)" />
-
-              {/* Dynamic Y-Axis Value Labels matching real database values */}
-              <text fill="#94a3b8" fontSize="11" x="10" y="30" fontFamily="Inter, sans-serif">
-                {formatCompactCurrency(cashFlowChartData.yTiers[0]).replace('Rp ', '')}
-              </text>
-              <text fill="#94a3b8" fontSize="11" x="10" y="72" fontFamily="Inter, sans-serif">
-                {formatCompactCurrency(cashFlowChartData.yTiers[1]).replace('Rp ', '')}
-              </text>
-              <text fill="#94a3b8" fontSize="11" x="10" y="115" fontFamily="Inter, sans-serif">
-                {formatCompactCurrency(cashFlowChartData.yTiers[2]).replace('Rp ', '')}
-              </text>
-              <text fill="#94a3b8" fontSize="11" x="10" y="157" fontFamily="Inter, sans-serif">
-                {formatCompactCurrency(cashFlowChartData.yTiers[3]).replace('Rp ', '')}
-              </text>
-              <text fill="#94a3b8" fontSize="11" x="10" y="195" fontFamily="Inter, sans-serif">
-                0k
-              </text>
+              {/* Horizontal Grid Guidelines */}
+              {cashFlowChartData.yTiers.map((tier, idx) => {
+                const y = Math.round(195 - (tier / cashFlowChartData.maxY) * (195 - 30));
+                return (
+                  <g key={idx}>
+                    <line
+                      x1="50"
+                      x2="860"
+                      y1={y}
+                      y2={y}
+                      className="stroke-border-subtle"
+                      stroke="currentColor"
+                      strokeWidth="1"
+                    />
+                    <text
+                      className="fill-text-muted"
+                      fill="currentColor"
+                      fontSize="11"
+                      x="10"
+                      y={y + 4}
+                      fontFamily="Inter, sans-serif"
+                    >
+                      {tier > 0 ? formatCompactCurrency(tier).replace('Rp ', '') : '0k'}
+                    </text>
+                  </g>
+                );
+              })}
 
               {/* Baseline axis line */}
-              <line x1="50" x2="860" y1={cashFlowChartData.bottomY} y2={cashFlowChartData.bottomY} stroke="#e2e8f0" strokeWidth="1" />
+              <line
+                x1="50"
+                x2="860"
+                y1={cashFlowChartData.bottomY}
+                y2={cashFlowChartData.bottomY}
+                className="stroke-border-default"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              />
 
-              {/* Smooth Wave Area Glow Fill */}
-              {cashFlowChartData.areaD && (
-                <path d={cashFlowChartData.areaD} fill="url(#lineGlow)" className="transition-all duration-300" />
+              {/* Horizontal Benchmark Line: Daily Safe to Spend */}
+              {cashFlowChartData.benchmarkY !== null && (
+                <g>
+                  <line
+                    x1="50"
+                    x2="860"
+                    y1={cashFlowChartData.benchmarkY}
+                    y2={cashFlowChartData.benchmarkY}
+                    className="stroke-semantic-amber"
+                    stroke="currentColor"
+                    strokeDasharray="4,4"
+                    strokeWidth="1.5"
+                    opacity="0.75"
+                  />
+                  <text
+                    x="865"
+                    y={cashFlowChartData.benchmarkY + 3.5}
+                    className="fill-semantic-amber"
+                    fill="currentColor"
+                    fontSize="10"
+                    fontFamily="Inter, sans-serif"
+                    fontWeight="500"
+                  >
+                    Batas {formatCompactCurrency(safeToSpend.dailySafeToSpend).replace('Rp ', '')}
+                  </text>
+                </g>
               )}
 
-              {/* Primary Curve Line (#6366f1, NO RED DOTS) */}
-              {cashFlowChartData.pathD && (
-                <path
-                  d={cashFlowChartData.pathD}
-                  fill="none"
-                  stroke="#6366f1"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="transition-all duration-300"
-                />
-              )}
+              {/* Discrete Daily Expense Bar Stems */}
+              {cashFlowChartData.points.map((p, idx) => {
+                const isHovered = hoveredPointIndex === idx;
+                const barHeight = Math.max(0, cashFlowChartData.bottomY - p.y);
+                const barWidth = Math.max(6, Math.min(14, cashFlowChartData.stepX * 0.55));
+                const isOver = p.isSpike;
+
+                return (
+                  <g key={idx} className="transition-all duration-150">
+                    {p.expense > 0 ? (
+                      <rect
+                        x={p.x - barWidth / 2}
+                        y={p.y}
+                        width={barWidth}
+                        height={barHeight}
+                        rx={Math.min(barWidth / 2, 4)}
+                        className={`cursor-pointer transition-colors ${
+                          isOver ? 'fill-semantic-rose' : isHovered ? 'fill-primary-600' : 'fill-primary-500'
+                        }`}
+                        fill="currentColor"
+                        opacity={p.isFuture ? 0.2 : isHovered ? 1 : 0.85}
+                      />
+                    ) : (
+                      <circle
+                        cx={p.x}
+                        cy={cashFlowChartData.bottomY}
+                        r="2"
+                        className="fill-border-strong"
+                        fill="currentColor"
+                        opacity={p.isFuture ? 0.2 : 0.6}
+                      />
+                    )}
+                  </g>
+                );
+              })}
 
               {/* Interactive Smooth Hover Crosshair & Tooltip */}
               {activeHoveredPoint && (
@@ -634,45 +500,31 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     x2={activeHoveredPoint.x}
                     y1={20}
                     y2={cashFlowChartData.bottomY}
-                    stroke="#6366f1"
+                    className="stroke-primary-500"
+                    stroke="currentColor"
                     strokeDasharray="4,4"
                     strokeWidth="1.5"
                     opacity="0.85"
                   />
-                  {/* Glowing Hover Circle Pulse */}
-                  <circle
-                    cx={activeHoveredPoint.x}
-                    cy={activeHoveredPoint.y}
-                    r="9"
-                    fill="#6366f1"
-                    fillOpacity="0.25"
-                  />
-                  <circle
-                    cx={activeHoveredPoint.x}
-                    cy={activeHoveredPoint.y}
-                    r="5"
-                    fill="#6366f1"
-                    stroke="#ffffff"
-                    strokeWidth="2.5"
-                  />
 
                   {/* Floating Tooltip Card */}
-                  <g transform={`translate(${Math.max(85, Math.min(815, activeHoveredPoint.x))}, ${Math.max(45, activeHoveredPoint.y - 20)})`}>
+                  <g transform={`translate(${Math.max(85, Math.min(815, activeHoveredPoint.x))}, ${Math.max(35, activeHoveredPoint.y - 25)})`}>
                     <rect
-                      x="-75"
-                      y="-42"
-                      width="150"
-                      height="40"
-                      rx="10"
-                      fill="#0f172a"
-                      opacity="0.96"
+                      x="-70"
+                      y="-36"
+                      width="140"
+                      height="36"
+                      rx="8"
+                      className="fill-slate-900"
+                      fill="currentColor"
+                      opacity="0.95"
                     />
                     <text
                       x="0"
-                      y="-25"
+                      y="-20"
                       fill="#ffffff"
                       fontSize="11"
-                      fontWeight="bold"
+                      fontWeight="600"
                       textAnchor="middle"
                       fontFamily="Inter, sans-serif"
                     >
@@ -680,9 +532,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     </text>
                     <text
                       x="0"
-                      y="-11"
+                      y="-7"
                       fill="#94a3b8"
-                      fontSize="9.5"
+                      fontSize="10"
                       textAnchor="middle"
                       fontFamily="Inter, sans-serif"
                     >
@@ -693,7 +545,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               )}
 
               {/* X-Axis Dates Along the Bottom */}
-              <g fill="#94a3b8" fontSize="10.5" textAnchor="middle" fontFamily="Inter, sans-serif">
+              <g className="fill-text-muted" fill="currentColor" fontSize="11" textAnchor="middle" fontFamily="Inter, sans-serif">
                 {cashFlowChartData.xLabels.map((p, idx) => (
                   <text key={idx} x={p.x} y="218">
                     {p.dayLabel}
@@ -710,7 +562,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         {/* LEFT COLUMN (Span 8) */}
         <div className="lg:col-span-8 flex flex-col gap-6">
           {/* Ringkasan Penggunaan Budget (Modern Minimalist Diagram & Breakdown) */}
-          <div className="bg-surface rounded-[14px] p-6 border border-border-default shadow-sm">
+          <div className="bg-surface rounded-xl p-6 border border-border-default shadow-sm">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border-default">
               <div className="flex flex-col gap-1">
                 <div className="flex flex-wrap items-center gap-2.5">
@@ -751,7 +603,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     / {formatCurrency(effectiveBudgetCeiling)} plafon
                   </span>
                 </div>
-                <span className="text-[11px] text-text-muted mt-0.5">dari total plafon alokasi</span>
+                <span className="text-xs text-text-muted mt-0.5">dari total plafon alokasi</span>
               </div>
             </div>
 
@@ -779,59 +631,69 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </div>
             </div>
 
-            {/* Comparative Category Diagrams (Horizontal Progress Gauge Cards from DB) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4">
+            {/* Comparative Category Diagrams: Clean Borderless Progress List */}
+            <div className="divide-y divide-border-subtle pt-3">
               {categorySpending.slice(0, 4).map((cat) => {
                 const budget = budgets.find((b) => b.category_id === cat.id);
                 const budgetAmount = budget ? Number(budget.amount) : 0;
                 const spent = cat.value;
                 const percentage = budgetAmount > 0 ? Math.min(100, Math.round((spent / budgetAmount) * 100)) : 0;
                 const isOver = budgetAmount > 0 && spent > budgetAmount;
+                const isWarning = !isOver && percentage >= 85;
 
                 return (
-                  <div
-                    key={cat.id}
-                    className="bg-surface-container-low p-3.5 rounded-xl flex flex-col justify-between border border-border-default hover:border-primary-500 transition-colors group"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2 min-w-0">
+                  <div key={cat.id} className="py-3.5 first:pt-1 last:pb-1">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-2.5 min-w-0">
                         <div
                           className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
                           style={{ backgroundColor: `${cat.color}15`, color: cat.color }}
                         >
                           {getCategoryIcon(cat.icon)}
                         </div>
-                        <span className="text-sm font-medium text-text-primary truncate">
+                        <span className="text-xs font-semibold text-text-primary truncate">
                           {cat.name}
                         </span>
                       </div>
-                      <span
-                        className={`text-xs font-medium px-2 py-0.5 rounded-full tabular-nums ${
-                          isOver ? 'bg-semantic-rose-soft text-semantic-rose' : ''
-                        }`}
-                        style={!isOver ? { backgroundColor: `${cat.color}15`, color: cat.color } : {}}
-                      >
-                        {budgetAmount > 0 ? `${percentage}%` : 'Belum diset'}
-                      </span>
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="tabular-nums text-text-secondary font-medium">
+                          {formatCompactCurrency(spent)}{' '}
+                          <span className="text-text-muted font-normal">
+                            / {budgetAmount > 0 ? formatCompactCurrency(budgetAmount) : '0k'}
+                          </span>
+                        </span>
+                        <span
+                          className={`tabular-nums font-semibold ${
+                            isOver
+                              ? 'text-semantic-rose'
+                              : isWarning
+                              ? 'text-semantic-amber'
+                              : 'text-text-muted'
+                          }`}
+                        >
+                          ({budgetAmount > 0 ? `${percentage}%` : 'Belum diset'})
+                        </span>
+                      </div>
                     </div>
 
-                    <div className="w-full bg-border-default h-2 rounded-full overflow-hidden mb-2">
+                    <div className="w-full bg-border-subtle h-1.5 rounded-full overflow-hidden mb-1.5">
                       <div
                         className={`h-full rounded-full transition-all duration-500 ${
-                          isOver ? 'bg-semantic-rose' : ''
+                          isOver
+                            ? 'bg-semantic-rose'
+                            : isWarning
+                            ? 'bg-semantic-amber'
+                            : 'bg-primary-500'
                         }`}
                         style={{
                           width: `${Math.min(percentage, 100)}%`,
-                          backgroundColor: isOver ? undefined : cat.color,
                         }}
                       />
                     </div>
 
                     <div className="flex items-center justify-between text-xs text-text-muted">
-                      <span className="tabular-nums">
-                        {formatCompactCurrency(spent)} / {budgetAmount > 0 ? formatCompactCurrency(budgetAmount) : '0k'}
-                      </span>
-                      <span className={`font-medium tabular-nums ${isOver ? 'text-semantic-rose' : 'text-semantic-green'}`}>
+                      <span>{percentage}% terpakai</span>
+                      <span className={`tabular-nums font-medium ${isOver ? 'text-semantic-rose' : 'text-text-secondary'}`}>
                         {isOver
                           ? `Lewat ${formatCompactCurrency(spent - budgetAmount)}`
                           : budgetAmount > 0
@@ -850,17 +712,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </span>
               <button
                 onClick={() => onSelectTab('budget')}
-                className="text-xs text-primary-600 hover:text-primary-700 flex items-center gap-1 font-medium transition-colors"
+                className="text-xs text-primary-600 hover:text-primary-700 inline-flex items-center gap-1.5 font-medium transition-colors py-2 px-2 min-h-[44px] sm:min-h-0 sm:p-0"
               >
                 <span>Lihat Analisis Detail</span>
-                <span>→</span>
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
 
           {/* Dompet Saya (Real Wallets from Database: BCA, GoPay, Tunai) */}
-          <div className="bg-surface rounded-[14px] p-6 border border-border-default shadow-sm">
-            <div className="flex items-center justify-between mb-4">
+          <div className="bg-surface rounded-xl p-6 border border-border-default shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
               <div className="flex flex-col">
                 <h2 className="text-lg font-bold text-text-primary tracking-tight">
                   Dompet &amp; Rekening
@@ -872,14 +734,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <div className="flex items-center gap-2">
                 <button
                   onClick={onOpenTransfer}
-                  className="text-xs text-primary-600 hover:bg-primary-50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 border border-primary-50 font-medium"
+                  className="text-xs text-primary-600 hover:bg-primary-50 px-3.5 py-2 min-h-[44px] sm:min-h-0 sm:py-1.5 rounded-lg transition-colors flex items-center gap-1.5 border border-primary-100 font-medium"
                 >
                   <ArrowRightLeft className="w-3.5 h-3.5" />
                   <span>Transfer</span>
                 </button>
                 <button
                   onClick={onOpenAddWallet}
-                  className="text-xs text-text-secondary hover:bg-bg-secondary px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 border border-border-default font-medium"
+                  className="text-xs text-text-secondary hover:bg-bg-secondary px-3.5 py-2 min-h-[44px] sm:min-h-0 sm:py-1.5 rounded-lg transition-colors flex items-center gap-1.5 border border-border-default font-medium"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Tambah</span>
@@ -887,28 +749,29 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* Flat Account Strip */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border-subtle bg-surface-container-lowest rounded-xl border border-border-default">
               {wallets.map((wallet) => {
                 const share = totalBalance > 0 ? ((wallet.balance / totalBalance) * 100).toFixed(1) : '0';
 
                 return (
                   <div
                     key={wallet.id}
-                    className="bg-surface-container-low p-4 rounded-xl flex flex-col justify-between border border-border-default hover:border-primary-500 hover:shadow-xs transition-all"
+                    className="p-4 flex flex-col justify-between"
                   >
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
                         <div
                           className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs shrink-0"
                           style={{ backgroundColor: `${wallet.color}20`, color: wallet.color }}
                         >
                           {wallet.name.slice(0, 3).toUpperCase()}
                         </div>
-                        <div className="flex flex-col">
-                          <span className="text-xs font-semibold text-text-primary leading-tight">
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-xs font-semibold text-text-primary truncate leading-tight">
                             {wallet.name}
                           </span>
-                          <span className="text-[11px] text-text-muted">
+                          <span className="text-xs text-text-muted mt-0.5">
                             {wallet.wallet_type === 'cash'
                               ? 'Fisik di Dompet'
                               : wallet.wallet_type === 'bank'
@@ -917,17 +780,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                           </span>
                         </div>
                       </div>
-                      <span className="w-2 h-2 rounded-full bg-semantic-green" title="Aktif" />
+                      <span className="text-xs text-text-muted font-medium tabular-nums shrink-0">
+                        {share}%
+                      </span>
                     </div>
 
                     <div>
-                      <span className="text-lg font-semibold text-text-primary tabular-nums tracking-tight">
+                      <span className="text-lg font-bold text-text-primary tabular-nums tracking-tight">
                         {formatCurrency(wallet.balance)}
                       </span>
-                      <p className="text-xs text-text-muted mt-1 flex items-center justify-between">
-                        <span>Porsi Saldo</span>
-                        <span className="font-medium text-text-secondary">{share}%</span>
-                      </p>
                     </div>
                   </div>
                 );
@@ -938,10 +799,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
         {/* RIGHT COLUMN (Span 4) */}
         <div className="lg:col-span-4 flex flex-col gap-6">
-          {/* Transaksi Terbaru DENGAN LABEL WARNA PEMASUKAN / PENGELUARAN */}
-          <div className="bg-surface rounded-[14px] p-6 shadow-sm border border-border-default">
+          {/* Transaksi Terbaru */}
+          <div className="bg-surface rounded-xl p-5 sm:p-6 shadow-xs border border-border-default">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-text-primary tracking-tight">
+              <h2 className="text-base font-bold text-text-primary tracking-tight">
                 Transaksi Terbaru
               </h2>
               <span className="text-xs text-text-muted">Aktivitas terakhir</span>
@@ -976,28 +837,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                           </div>
 
                           <div className="flex flex-col min-w-0">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="text-xs font-semibold text-text-primary truncate">
-                                {tx.note || cat?.name || (tx.type === 'transfer' ? 'Transfer Saldo' : 'Transaksi')}
-                              </span>
-                              {/* Label Warna Pemasukan / Pengeluaran / Transfer */}
-                              {tx.type === 'income' && (
-                                <span className="px-1.5 py-0.2 rounded-full text-[9.5px] font-bold bg-[#ecfdf5] text-[#10b981] border border-[#10b981]/20">
-                                  Pemasukan
-                                </span>
-                              )}
-                              {tx.type === 'expense' && (
-                                <span className="px-1.5 py-0.2 rounded-full text-[9.5px] font-bold bg-[#fff1f2] text-[#f43f5e] border border-[#f43f5e]/20">
-                                  Pengeluaran
-                                </span>
-                              )}
-                              {tx.type === 'transfer' && (
-                                <span className="px-1.5 py-0.2 rounded-full text-[9.5px] font-bold bg-primary-50 text-primary-600 border border-primary-100">
-                                  Transfer
-                                </span>
-                              )}
-                            </div>
-                            <span className="text-[11px] text-text-muted truncate mt-0.5">
+                            <span className="text-xs font-semibold text-text-primary truncate">
+                              {tx.note || cat?.name || (tx.type === 'transfer' ? 'Transfer Saldo' : 'Transaksi')}
+                            </span>
+                            <span className="text-xs text-text-muted truncate mt-0.5">
                               {walletObj?.name || 'Dompet'} • {formatRelativeDate(tx.transaction_date)}
                             </span>
                           </div>
@@ -1019,19 +862,39 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
                           <button
                             onClick={async () => {
+                              const deletedTx = tx;
                               await deleteTransaction(tx.id);
-                              if (onShowToast) onShowToast('Transaksi dihapus');
+                              if (onShowToast) {
+                                onShowToast({
+                                  message: 'Transaksi dihapus',
+                                  action: {
+                                    label: 'Urungkan',
+                                    onClick: async () => {
+                                      await addTransaction({
+                                        type: deletedTx.type,
+                                        amount: Number(deletedTx.amount),
+                                        walletId: deletedTx.wallet_id,
+                                        categoryId: deletedTx.category_id || undefined,
+                                        destinationWalletId: deletedTx.destination_wallet_id || undefined,
+                                        goalId: deletedTx.goal_id || undefined,
+                                        note: deletedTx.note || undefined,
+                                        transactionDate: deletedTx.transaction_date,
+                                      });
+                                    },
+                                  },
+                                });
+                              }
                             }}
-                            className="opacity-70 sm:opacity-0 sm:group-hover:opacity-100 p-1 text-text-muted hover:text-semantic-rose rounded transition-all"
-                            title="Hapus"
-                            aria-label="Hapus"
+                            className="opacity-90 sm:opacity-0 sm:group-hover:opacity-100 p-2.5 sm:p-1 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center text-text-muted hover:text-semantic-rose rounded-lg transition-all"
+                            title="Hapus transaksi"
+                            aria-label="Hapus transaksi"
                           >
-                            <Trash2 className="w-3 h-3" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </div>
                       {idx < recentTransactions.length - 1 && (
-                        <div className="h-[1px] bg-bg-secondary my-1" />
+                        <div className="h-[1px] bg-border-subtle my-0.5" />
                       )}
                     </React.Fragment>
                   );
@@ -1042,124 +905,92 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <div className="mt-4 pt-2 flex justify-center">
               <button
                 onClick={() => onSelectTab('transactions')}
-                className="text-xs text-primary-600 hover:text-primary-700 font-medium transition-colors"
+                className="text-xs text-primary-600 hover:text-primary-700 inline-flex items-center gap-1.5 font-medium transition-colors py-2 px-3 min-h-[44px] sm:min-h-0 sm:p-0"
               >
-                Lihat Semua Transaksi →
+                <span>Lihat Semua Transaksi</span>
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
 
-          {/* Kategori Pengeluaran Donut Chart (REAL DATABASE SLICES, ANIMATED HOVER & VIBRANT COLORS) */}
-          <div className="bg-surface rounded-[14px] p-6 shadow-sm border border-border-default select-none">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-bold text-text-primary">Kategori Pengeluaran</h3>
-              <span className="text-xs text-text-muted font-medium bg-bg-secondary px-2.5 py-1 rounded-full">
-                Siklus Aktif
-              </span>
-            </div>
-
-            {/* Circular SVG Donut Chart with Vibrant Colors & Live Hover */}
-            <div className="flex flex-col items-center my-4">
-              <div className="relative w-48 h-48 flex items-center justify-center">
-                <svg className="w-full h-full -rotate-90 overflow-visible" viewBox="0 0 160 160">
-                  {/* Background neutral ring */}
-                  <circle
-                    cx="80"
-                    cy="80"
-                    r="62"
-                    fill="none"
-                    stroke="#e2e8f0"
-                    strokeWidth="16"
-                  />
-
-                  {/* Real Database Category Slices with Vivid Colors */}
-                  {activeSlices.map((slice, idx) => {
-                    const isHovered = hoveredCategoryIndex === idx;
-                    return (
-                      <circle
-                        key={slice.id}
-                        cx="80"
-                        cy="80"
-                        r="62"
-                        fill="none"
-                        stroke={slice.color}
-                        strokeWidth={isHovered ? 24 : 16}
-                        strokeDasharray={slice.strokeDasharray}
-                        strokeDashoffset={slice.strokeDashoffset}
-                        onMouseEnter={() => setHoveredCategoryIndex(idx)}
-                        onMouseLeave={() => setHoveredCategoryIndex(null)}
-                        className="transition-all duration-300 cursor-pointer"
-                        style={{
-                          filter: isHovered ? 'drop-shadow(0 0 8px rgba(99, 102, 241, 0.5))' : undefined,
-                        }}
-                      />
-                    );
-                  })}
-                </svg>
-
-                {/* Donut Center Label (Dynamically updates on Hover) */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none px-2">
-                  <span className="text-[11px] text-text-muted leading-tight truncate max-w-[110px]">
-                    {activeHoveredCategory ? activeHoveredCategory.name : totalCycleExpense > 0 ? 'Total Terpakai' : 'Belum Ada'}
-                  </span>
-                  <span className="text-[18px] sm:text-[20px] font-bold text-text-primary tracking-tight tabular-nums mt-0.5 truncate max-w-[130px]">
-                    {activeHoveredCategory
-                      ? formatCompactCurrency(activeHoveredCategory.value).replace('Rp ', '')
-                      : totalCycleExpense > 0
-                      ? formatCompactCurrency(totalCycleExpense).replace('Rp ', '')
-                      : 'Rp 0'}
-                  </span>
-                  <span className="text-[11px] text-semantic-green font-semibold">
-                    {activeHoveredCategory
-                      ? `${(activeHoveredCategory.ratio * 100).toFixed(1)}%`
-                      : totalCycleExpense > 0
-                      ? `${overallBudgetPercentage}%`
-                      : '0%'}
-                  </span>
-                </div>
+          {/* Target Tabungan (Active Goals Preview) */}
+          <div className="bg-surface rounded-xl p-5 sm:p-6 shadow-xs border border-border-default">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <PiggyBank className="w-4 h-4 text-primary-600" />
+                <h3 className="text-base font-bold text-text-primary">Target Tabungan</h3>
               </div>
+              <button
+                onClick={() => onSelectTab('savings')}
+                className="text-xs text-primary-600 hover:text-primary-700 inline-flex items-center gap-1.5 font-medium transition-colors py-2 px-2 min-h-[44px] sm:min-h-0 sm:p-0"
+              >
+                <span>Lihat Semua</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
             </div>
 
-            {/* Categories Legend List (Interactive on Hover & Real Database Categories) */}
-            <div className="flex flex-col gap-1.5 pt-1">
-              {categorySpending.filter(c => c.value > 0).length === 0 ? (
-                <div className="py-4 text-center text-xs text-text-muted">
-                  Belum ada pengeluaran yang dicatat pada siklus ini.
-                </div>
-              ) : (
-                categorySpending.filter(c => c.value > 0).slice(0, 5).map((item, idx) => {
-                  const isHovered = hoveredCategoryIndex === idx;
-                  const pct = totalCycleExpense > 0 ? (item.ratio * 100).toFixed(1) : '0';
+            {savingsGoals.length === 0 ? (
+              <div className="py-6 text-center">
+                <p className="text-xs text-text-muted mb-3">
+                  Belum ada target tabungan aktif.
+                </p>
+                <button
+                  onClick={() => onSelectTab('savings')}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary-600 bg-primary-50 hover:bg-primary-100 px-3.5 py-2 min-h-[44px] rounded-lg transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Buat Target</span>
+                </button>
+              </div>
+            ) : (
+              <div className="divide-y divide-border-subtle">
+                {savingsGoals.slice(0, 3).map((goal) => {
+                  const progress = Math.min(100, Math.round((goal.current_amount / goal.target_amount) * 100));
+                  const isCompleted = goal.current_amount >= goal.target_amount;
 
                   return (
                     <div
-                      key={item.id}
-                      onMouseEnter={() => setHoveredCategoryIndex(idx)}
-                      onMouseLeave={() => setHoveredCategoryIndex(null)}
-                      className={`flex items-center justify-between text-sm py-1.5 px-2 rounded-lg transition-colors cursor-pointer ${
-                        isHovered ? 'bg-surface-container-low font-semibold' : 'hover:bg-surface-container-low/60'
-                      }`}
+                      key={goal.id}
+                      className="py-3.5 first:pt-0 last:pb-0 flex flex-col gap-2"
                     >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span
-                          className="w-2.5 h-2.5 rounded-full shrink-0"
-                          style={{ backgroundColor: item.color }}
-                        />
-                        <span className="text-xs sm:text-sm text-text-primary truncate">{item.name}</span>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0 ml-2">
-                        <span className="text-xs text-text-secondary tabular-nums">
-                          {formatCurrency(item.value)}
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-semibold text-text-primary truncate">
+                          {goal.name}
                         </span>
-                        <span className="text-[11px] text-text-muted tabular-nums w-10 text-right font-medium">
-                          {pct}%
+                        {isCompleted ? (
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-semantic-green">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Tercapai
+                          </span>
+                        ) : (
+                          <span className="text-xs font-semibold text-text-secondary tabular-nums">
+                            {progress}%
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="w-full bg-border-subtle h-1.5 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{
+                            width: `${progress}%`,
+                            backgroundColor: goal.color || '#10b981',
+                          }}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs text-text-muted">
+                        <span className="tabular-nums font-medium text-text-secondary">
+                          {formatCurrency(goal.current_amount)}
+                        </span>
+                        <span className="tabular-nums">
+                          Target {formatCompactCurrency(goal.target_amount)}
                         </span>
                       </div>
                     </div>
                   );
-                })
-              )}
-            </div>
+                })}
+              </div>
+            )}
           </div>
         </div>
       </div>

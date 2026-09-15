@@ -41,8 +41,8 @@ function DashboardContent() {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
 
   // Toast Notification State
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const showToast = (msg: string) => setToastMessage(msg);
+  const [toastData, setToastData] = useState<string | import('./components/Toast').ToastData | null>(null);
+  const showToast = (data: string | import('./components/Toast').ToastData) => setToastData(data);
 
   // Student greeting name
   const studentName = profile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Mahasiswa';
@@ -88,7 +88,7 @@ function DashboardContent() {
   return (
     <div className="min-h-screen bg-bg-primary text-text-primary flex flex-col antialiased">
       {/* Toast Notification */}
-      <Toast message={toastMessage} onClose={() => setToastMessage(null)} />
+      <Toast toast={toastData} onClose={() => setToastData(null)} />
 
       {/* Desktop Persistent Left Sidebar (Stitch Design) */}
       <Sidebar

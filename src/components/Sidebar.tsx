@@ -32,13 +32,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab, onOpen
   const { user, profile, isConfigured, signOut } = useAuth();
 
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'transactions', label: 'Transactions', icon: ReceiptText },
-    { id: 'wallets', label: 'Wallets', icon: Wallet },
-    { id: 'budget', label: 'Budget', icon: PieChart },
-    { id: 'savings', label: 'Savings', icon: PiggyBank },
-    { id: 'analytics', label: 'Reports & Analytics', icon: TrendingUp },
-    { id: 'settings', label: 'Settings', icon: Settings },
+    { id: 'dashboard', label: 'Beranda', icon: LayoutDashboard },
+    { id: 'transactions', label: 'Transaksi', icon: ReceiptText },
+    { id: 'wallets', label: 'Dompet & Rekening', icon: Wallet },
+    { id: 'budget', label: 'Anggaran', icon: PieChart },
+    { id: 'savings', label: 'Tabungan', icon: PiggyBank },
+    { id: 'analytics', label: 'Laporan & Analisis', icon: TrendingUp },
+    { id: 'settings', label: 'Pengaturan', icon: Settings },
   ] as const;
 
   const displayName = profile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Mahasiswa';

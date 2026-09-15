@@ -1,0 +1,315 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-15T09:45:16.451Z",
+  "title": "Design System: SakuMahasiswa",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Ultramarine Ink",
+        "canonical": "#4648d4",
+        "tonalRamp": [
+          "#1e1f6e",
+          "#292ba3",
+          "#383ad0",
+          "#4648d4",
+          "#6063ee",
+          "#8184f4",
+          "#b4b6fa",
+          "#eef2ff"
+        ]
+      },
+      "primary-container": {
+        "role": "primary",
+        "displayName": "Electric Indigo Container",
+        "canonical": "#6063ee",
+        "tonalRamp": [
+          "#23267f",
+          "#3336b8",
+          "#494ce0",
+          "#6063ee",
+          "#797cf2",
+          "#9c9ef6",
+          "#c7c8fc",
+          "#eef2ff"
+        ]
+      },
+      "primary-focus": {
+        "role": "primary",
+        "displayName": "Electric Indigo Focus",
+        "canonical": "#6366f1",
+        "tonalRamp": [
+          "#252781",
+          "#373ab5",
+          "#4e51e1",
+          "#6366f1",
+          "#818cf8",
+          "#a5b4fc",
+          "#c7d2fe",
+          "#eef2ff"
+        ]
+      },
+      "neutral-bg": {
+        "role": "neutral",
+        "displayName": "Crisp Slate Canvas",
+        "canonical": "#f8fafc",
+        "tonalRamp": [
+          "#0f172a",
+          "#1e293b",
+          "#334155",
+          "#64748b",
+          "#94a3b8",
+          "#cbd5e1",
+          "#e2e8f0",
+          "#f8fafc"
+        ]
+      },
+      "neutral-surface": {
+        "role": "neutral",
+        "displayName": "Pure Surface White",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#18181b",
+          "#27272a",
+          "#52525b",
+          "#71717a",
+          "#a1a1aa",
+          "#d4d4d8",
+          "#f4f4f5",
+          "#ffffff"
+        ]
+      },
+      "neutral-text": {
+        "role": "neutral",
+        "displayName": "Midnight Slate",
+        "canonical": "#0f172a",
+        "tonalRamp": [
+          "#020617",
+          "#0f172a",
+          "#1e293b",
+          "#334155",
+          "#475569",
+          "#64748b",
+          "#94a3b8",
+          "#f8fafc"
+        ]
+      },
+      "safe-green": {
+        "role": "semantic",
+        "displayName": "Botanical Safe",
+        "canonical": "#10b981",
+        "tonalRamp": [
+          "#064e3b",
+          "#065f46",
+          "#047857",
+          "#059669",
+          "#10b981",
+          "#34d399",
+          "#6ee7b7",
+          "#ecfdf5"
+        ]
+      },
+      "alert-rose": {
+        "role": "semantic",
+        "displayName": "Signal Coral",
+        "canonical": "#f43f5e",
+        "tonalRamp": [
+          "#4c0519",
+          "#881337",
+          "#9f1239",
+          "#be123c",
+          "#e11d48",
+          "#f43f5e",
+          "#fb7185",
+          "#fff1f2"
+        ]
+      },
+      "warning-amber": {
+        "role": "semantic",
+        "displayName": "Sunlit Amber",
+        "canonical": "#f59e0b",
+        "tonalRamp": [
+          "#451a03",
+          "#78350f",
+          "#92400e",
+          "#b45309",
+          "#d97706",
+          "#f59e0b",
+          "#fbbf24",
+          "#fffbeb"
+        ]
+      },
+      "info-blue": {
+        "role": "semantic",
+        "displayName": "Atmospheric Blue",
+        "canonical": "#3b82f6",
+        "tonalRamp": [
+          "#172554",
+          "#1e3a8a",
+          "#1e40af",
+          "#1d4ed8",
+          "#2563eb",
+          "#3b82f6",
+          "#60a5fa",
+          "#eff6ff"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Daily Safe to Spend large financial figure hero."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Primary section headers and sheet modal titles."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Card headers, wallet labels, and modal subtitles."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Descriptive notes, transaction details, and list items."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Pace status badges, category tags, and input field captions."
+      }
+    },
+    "shadows": [
+      {
+        "name": "card-resting",
+        "value": "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+        "purpose": "Standard subtle separation for white surface cards on slate canvas."
+      },
+      {
+        "name": "card-interactive",
+        "value": "0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05)",
+        "purpose": "Elevation lift on card hover and active interactive items."
+      },
+      {
+        "name": "modal-sheet",
+        "value": "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
+        "purpose": "Elevation for dialogs, quick-add sheets, and backdrop-scrimmed panels."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-standard",
+        "value": "cubic-bezier(0.4, 0, 0.2, 1)",
+        "purpose": "Default transition curve for state shifts and modal animations."
+      },
+      {
+        "name": "spring-tactile",
+        "value": "cubic-bezier(0.34, 1.56, 0.64, 1)",
+        "purpose": "Tactile micro-interaction feedback on preset buttons."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      },
+      {
+        "name": "xl",
+        "value": "1280px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Primary actionable call to action with Electric Indigo fill and hover lift.",
+      "html": "<button class=\"ds-btn-primary\">Simpan Transaksi</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; background-color: #6366f1; color: #ffffff; font-family: Inter, sans-serif; font-size: 14px; font-weight: 500; padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; transition: background-color 0.15s ease, transform 0.15s ease; } .ds-btn-primary:hover { background-color: #4f46e5; transform: translateY(-1px); } .ds-btn-primary:active { transform: scale(0.98); }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Subtle neutral button for secondary workflows and cancellations.",
+      "html": "<button class=\"ds-btn-secondary\">Batal</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; justify-content: center; background-color: #f1f5f9; color: #475569; font-family: Inter, sans-serif; font-size: 14px; font-weight: 500; padding: 8px 16px; border-radius: 8px; border: 1px solid #e2e8f0; cursor: pointer; transition: background-color 0.15s ease; } .ds-btn-secondary:hover { background-color: #e2e8f0; color: #0f172a; }"
+    },
+    {
+      "name": "Safe Status Badge",
+      "kind": "chip",
+      "refersTo": "badge-safe",
+      "description": "Soft tinted pill with green dot indicator signaling safe daily spending rate.",
+      "html": "<span class=\"ds-badge-safe\"><span class=\"ds-badge-dot-safe\"></span>Status: Aman</span>",
+      "css": ".ds-badge-safe { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 9999px; background-color: #ecfdf5; color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); font-family: Inter, sans-serif; font-size: 11px; font-weight: 600; } .ds-badge-dot-safe { width: 6px; height: 6px; border-radius: 9999px; background-color: #10b981; }"
+    },
+    {
+      "name": "Quick Add Preset Chip",
+      "kind": "chip",
+      "refersTo": "chip-preset",
+      "description": "One-tap preset nominal chip for rapid budgeting entries on mobile.",
+      "html": "<button class=\"ds-preset-chip\">+50rb</button>",
+      "css": ".ds-preset-chip { display: inline-flex; align-items: center; justify-content: center; padding: 6px 14px; border-radius: 9999px; background-color: #f1f5f9; color: #0f172a; font-family: Inter, sans-serif; font-size: 12px; font-weight: 600; border: 1px solid #e2e8f0; cursor: pointer; transition: all 0.15s ease; } .ds-preset-chip:hover { background-color: #eef2ff; border-color: #6366f1; color: #4648d4; } .ds-preset-chip:active { transform: scale(0.95); }"
+    },
+    {
+      "name": "Hero Safe to Spend Card",
+      "kind": "card",
+      "refersTo": "card-safe-to-spend",
+      "description": "Signature hero card displaying daily safe spending limit with pace indicator.",
+      "html": "<div class=\"ds-safe-card\"><div class=\"ds-safe-card-header\"><span class=\"ds-safe-card-label\">SAFE TO SPEND</span><span class=\"ds-badge-safe\"><span class=\"ds-badge-dot-safe\"></span>Aman</span></div><div class=\"ds-safe-card-amount\">Rp 48.500 <span class=\"ds-safe-card-unit\">/ hari</span></div><div class=\"ds-safe-card-footer\">Sisa 14 hari dalam siklus anggaran (tgl 25)</div></div>",
+      "css": ".ds-safe-card { background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px 24px; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); font-family: Inter, sans-serif; } .ds-safe-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; } .ds-safe-card-label { font-size: 12px; font-weight: 600; color: #475569; letter-spacing: 0.05em; text-transform: uppercase; } .ds-safe-card-amount { font-size: 32px; font-weight: 800; color: #0f172a; font-variant-numeric: tabular-nums; letter-spacing: -0.025em; display: flex; align-items: baseline; gap: 8px; } .ds-safe-card-unit { font-size: 14px; font-weight: 400; color: #94a3b8; } .ds-safe-card-footer { font-size: 12px; color: #475569; margin-top: 12px; padding-top: 12px; border-top: 1px solid #f1f5f9; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Daylight Ledger",
+    "overview": "SakuMahasiswa is built around the feeling of opening a crisp, well-organized physical notebook on a clear morning. Instead of confronting students with spreadsheet clutter or dread-inducing debt trackers, it delivers instant financial calmness: an airy slate-and-indigo canvas that immediately answers the one question an Indonesian college student or perantau asks every day: Berapa yang aman saya belanjakan hari ini? The system rejects dark, overbearing fintech austerity and noisy gamification gimmicks.",
+    "keyCharacteristics": [
+      "Crisp, airy daylight atmosphere with high glanceability on outdoor mobile screens.",
+      "Dominant hero card hierarchy centered on tabular daily figures.",
+      "Gentle, anxiety-free semantic signaling through soft-tinted surfaces.",
+      "Mobile-first ergonomic touch zones (minimum 44px) built for rapid, one-handed inputs."
+    ],
+    "rules": [
+      {
+        "name": "The Soft-Shield Rule",
+        "body": "Semantic status alerts never use screaming saturated full-flood backgrounds. They must always use 10% soft-tint backgrounds (bg-semantic-*-soft) paired with crisp border accents and a saturated dot indicator, eliminating financial panic while maintaining clear hierarchy.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Voice Rule",
+        "body": "The primary electric indigo accent is reserved for actionable triggers (CTAs, FAB, active navigation). It occupies <=10% of any given viewport surface to prevent visual fatigue.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tabular Precision Rule",
+        "body": "Every currency figure and numerical balance must use .tabular-nums so columns and cards align with mathematical stability without horizontal jitter during live updates.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat-By-Default Rule",
+        "body": "Surfaces rest flush against the tonal background bordered by subtle 1px outlines. Heavy drop shadows are banned; elevation increases only when an element hovers, expands, or hovers over a modal scrim.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do anchor the Safe to Spend hero figure as the visual focal point of the dashboard.",
+      "Do wrap every monetary value in .tabular-nums with explicit Indonesian Rupiah formatting (Rp).",
+      "Do maintain a minimum 44px touch target on all clickable mobile elements and bottom navigation links.",
+      "Do use soft tinted pill backgrounds (bg-semantic-*-soft) for pace status rather than heavy solid warnings.",
+      "Do keep quick-add input flows achievable within 2 taps."
+    ],
+    "donts": [
+      "Don't use alarmist, high-saturation pure red full-bleed card backgrounds that induce budgeting panic.",
+      "Don't hide remaining cycle days or allowance start dates behind nested submenus.",
+      "Don't use non-standard decorative fonts; preserve crisp legibility via Inter with proper tabular numerics.",
+      "Don't introduce heavy, dark drop shadows that break the clean daylight ledger aesthetic."
+    ]
+  }
+}

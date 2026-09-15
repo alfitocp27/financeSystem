@@ -19,9 +19,13 @@ import {
   Award,
   Wallet as WalletIcon,
   Check,
+  TrendingUp,
+  PiggyBank,
 } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import { formatCurrency, formatCompactCurrency, formatDateIndo, formatRelativeDate, getLocalDateString } from '../lib/formatters';
+import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 
 const STITCH_COLORS = ['#2563eb', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
 
@@ -473,87 +477,107 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </section>
 
-      {/* 3. 4 Clean Financial Summary Cards (Grid of 4) */}
+      {/* 3. 4 Clean Financial Summary Cards (Grid of 4 with Card-05 design) */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {/* Card 1: Sisa Total Saldo Kas - TAMPILAN MENONJOL & HIGHLIGHTED */}
-        <div className="bg-surface rounded-2xl sm:rounded-[16px] p-5 border border-border-default shadow-xs hover:shadow-sm transition-all flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
-              Sisa Total Saldo Kas
-            </span>
-            <span className="inline-flex items-center gap-0.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#ecfdf5] text-[#10b981] border border-[#10b981]/20">
-              <ArrowUpRight className="w-3.5 h-3.5" /> 8.4%
-            </span>
+        {/* Card 1: Sisa Total Saldo Kas (Card-05 Design) */}
+        <Card className="relative w-full">
+          <div className="absolute top-6 right-6">
+            <div className="bg-primary-50 flex size-9 items-center justify-center rounded-lg">
+              <WalletIcon className="text-primary-600 size-4" />
+            </div>
           </div>
-          <div className="mt-3">
-            <div className="text-2xl sm:text-[28px] font-extrabold text-primary-600 tracking-tight tabular-nums">
+          <CardHeader>
+            <CardDescription>Sisa Total Saldo Kas</CardDescription>
+            <CardTitle className="text-2xl sm:text-[26px] font-bold text-primary-600 tabular-nums">
               {formatCurrency(totalBalance)}
-            </div>
-            <div className="text-xs font-semibold text-text-secondary mt-1 truncate">
-              Total pemasukan: {formatCurrency(totalIncomeInCycle)}
-            </div>
+            </CardTitle>
+          </CardHeader>
+          <div className="flex items-center gap-2 px-6 pb-6 text-xs text-text-muted">
+            <Badge
+              variant="secondary"
+              className="text-emerald-600 bg-semantic-green-soft border border-semantic-green/20 font-semibold"
+            >
+              <TrendingUp className="size-3 mr-1" />
+              +8.4%
+            </Badge>
+            <span className="truncate">Total masuk: {formatCompactCurrency(totalIncomeInCycle)}</span>
           </div>
-        </div>
+        </Card>
 
-        {/* Card 2: Total Pemasukan */}
-        <div className="bg-surface rounded-2xl sm:rounded-[16px] p-5 border border-border-default shadow-xs hover:shadow-sm transition-all flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
-              Total Pemasukan
-            </span>
-            <span className="inline-flex items-center gap-0.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#ecfdf5] text-[#10b981] border border-[#10b981]/20">
-              <ArrowUpRight className="w-3.5 h-3.5" /> 18.4%
-            </span>
+        {/* Card 2: Total Pemasukan (Card-05 Design) */}
+        <Card className="relative w-full">
+          <div className="absolute top-6 right-6">
+            <div className="bg-semantic-green-soft flex size-9 items-center justify-center rounded-lg">
+              <ArrowUpRight className="text-semantic-green size-4" />
+            </div>
           </div>
-          <div className="mt-3">
-            <div className="text-2xl sm:text-[28px] font-extrabold text-semantic-green tracking-tight tabular-nums">
+          <CardHeader>
+            <CardDescription>Total Pemasukan</CardDescription>
+            <CardTitle className="text-2xl sm:text-[26px] font-bold text-semantic-green tabular-nums">
               {formatCurrency(totalIncomeInCycle)}
-            </div>
-            <div className="text-xs text-text-muted mt-1 truncate font-medium">
-              Uang masuk siklus ini
-            </div>
+            </CardTitle>
+          </CardHeader>
+          <div className="flex items-center gap-2 px-6 pb-6 text-xs text-text-muted">
+            <Badge
+              variant="secondary"
+              className="text-emerald-600 bg-semantic-green-soft border border-semantic-green/20 font-semibold"
+            >
+              <ArrowUpRight className="size-3 mr-1" />
+              +18.4%
+            </Badge>
+            <span className="truncate">Uang masuk siklus ini</span>
           </div>
-        </div>
+        </Card>
 
-        {/* Card 3: Total Pengeluaran */}
-        <div className="bg-surface rounded-2xl sm:rounded-[16px] p-5 border border-border-default shadow-xs hover:shadow-sm transition-all flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
-              Total Pengeluaran
-            </span>
-            <span className="inline-flex items-center gap-0.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#fff1f2] text-[#f43f5e] border border-[#f43f5e]/20">
-              <ArrowDownRight className="w-3.5 h-3.5" /> {overallBudgetPercentage}%
-            </span>
+        {/* Card 3: Total Pengeluaran (Card-05 Design) */}
+        <Card className="relative w-full">
+          <div className="absolute top-6 right-6">
+            <div className="bg-semantic-rose-soft flex size-9 items-center justify-center rounded-lg">
+              <ArrowDownRight className="text-semantic-rose size-4" />
+            </div>
           </div>
-          <div className="mt-3">
-            <div className="text-2xl sm:text-[28px] font-extrabold text-semantic-rose tracking-tight tabular-nums">
+          <CardHeader>
+            <CardDescription>Total Pengeluaran</CardDescription>
+            <CardTitle className="text-2xl sm:text-[26px] font-bold text-semantic-rose tabular-nums">
               {formatCurrency(totalCycleExpense)}
-            </div>
-            <div className="text-xs text-text-muted mt-1 truncate font-medium">
-              Plafon: {formatCurrency(effectiveBudgetCeiling)}
-            </div>
+            </CardTitle>
+          </CardHeader>
+          <div className="flex items-center gap-2 px-6 pb-6 text-xs text-text-muted">
+            <Badge
+              variant="secondary"
+              className="text-semantic-rose bg-semantic-rose-soft border border-semantic-rose/20 font-semibold"
+            >
+              <ArrowDownRight className="size-3 mr-1" />
+              {overallBudgetPercentage}%
+            </Badge>
+            <span className="truncate">Plafon: {formatCompactCurrency(effectiveBudgetCeiling)}</span>
           </div>
-        </div>
+        </Card>
 
-        {/* Card 4: Tabungan Siklus Ini */}
-        <div className="bg-surface rounded-2xl sm:rounded-[16px] p-5 border border-border-default shadow-xs hover:shadow-sm transition-all flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
-              Tabungan Siklus Ini
-            </span>
-            <span className="inline-flex items-center gap-0.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#ecfdf5] text-[#10b981] border border-[#10b981]/20">
-              <ArrowUpRight className="w-3.5 h-3.5" /> 15.0%
-            </span>
+        {/* Card 4: Tabungan Siklus Ini (Card-05 Design) */}
+        <Card className="relative w-full">
+          <div className="absolute top-6 right-6">
+            <div className="bg-primary-50 flex size-9 items-center justify-center rounded-lg">
+              <PiggyBank className="text-primary-600 size-4" />
+            </div>
           </div>
-          <div className="mt-3">
-            <div className="text-2xl sm:text-[28px] font-extrabold text-primary-600 tracking-tight tabular-nums">
+          <CardHeader>
+            <CardDescription>Tabungan Siklus Ini</CardDescription>
+            <CardTitle className="text-2xl sm:text-[26px] font-bold text-primary-600 tabular-nums">
               {formatCurrency(totalSavingsGathered)}
-            </div>
-            <div className="text-xs text-text-muted mt-1 truncate font-medium">
-              {savingsGoals.length} target tabungan aktif
-            </div>
+            </CardTitle>
+          </CardHeader>
+          <div className="flex items-center gap-2 px-6 pb-6 text-xs text-text-muted">
+            <Badge
+              variant="secondary"
+              className="text-emerald-600 bg-semantic-green-soft border border-semantic-green/20 font-semibold"
+            >
+              <TrendingUp className="size-3 mr-1" />
+              +15.0%
+            </Badge>
+            <span className="truncate">{savingsGoals.length} target aktif</span>
           </div>
-        </div>
+        </Card>
       </section>
 
       {/* Arus Kas Harian SVG Wave Chart (NORMAL HEIGHT, NO RED DOTS, SMOOTH HOVER) */}

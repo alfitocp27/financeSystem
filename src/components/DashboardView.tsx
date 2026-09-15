@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Calendar,
   Plus,
@@ -18,6 +18,17 @@ import {
   CheckCircle2,
   ArrowRight,
 } from 'lucide-react';
+import {
+  ComposedChart,
+  Area,
+  Line,
+  ReferenceLine,
+  XAxis,
+  YAxis,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from 'recharts';
 import { useFinance } from '../context/FinanceContext';
 import { formatCurrency, formatCompactCurrency, formatDateIndo, formatRelativeDate, getLocalDateString } from '../lib/formatters';
 import { SafeToSpendCard } from './SafeToSpendCard';
@@ -59,7 +70,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   // Chart Interactive Hover States
   const [hoveredPointIndex, setHoveredPointIndex] = useState<number | null>(null);
-  const svgWaveRef = useRef<SVGSVGElement | null>(null);
 
   const startStr = getLocalDateString(cycleInfo.startDate);
   const endStr = getLocalDateString(cycleInfo.endDate);
@@ -129,7 +139,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     return categorySpending.filter((c) => c.value > 0);
   }, [categorySpending]);
 
-  // Real Daily Cash Flow Wave Chart (Comfortable Height, NO Red Dots, Beautiful Hover)
+  // Real Daily Cash Flow Line Chart Data (Recharts ComposedChart - adapted from 21st.dev line-charts-9)
   const cashFlowChartData = useMemo(() => {
     const start = new Date(cycleInfo.startDate);
     const end = new Date(cycleInfo.endDate);
@@ -139,14 +149,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     const msPerDay = 1000 * 60 * 60 * 24;
     const daysCount = Math.max(1, Math.round((end.getTime() - start.getTime()) / msPerDay));
 
-    const dailyRecords: {
+    const seriesData: {
       date: Date;
       dateStr: string;
       dayLabel: string;
       dayNum: number;
-      expense: number;
+      expense: number | null;
       isToday: boolean;
       isFuture: boolean;
+      benchmark: number;
     }[] = [];
 
     let maxDailyExp = 0;
@@ -168,107 +179,35 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
       const dayLabel = `${d.getDate()} ${new Intl.DateTimeFormat('id-ID', { month: 'short' }).format(d)}`;
 
-      dailyRecords.push({
+      seriesData.push({
         date: d,
         dateStr,
         dayLabel,
         dayNum: d.getDate(),
-        expense: isFuture ? 0 : dayExpense,
+        expense: isFuture ? null : dayExpense,
         isToday: d.getTime() === today.getTime(),
         isFuture,
+        benchmark: safeToSpend.dailySafeToSpend > 0 ? safeToSpend.dailySafeToSpend : 0,
       });
     }
 
-    // Comfortable Height Scale: viewBox 0 0 900 230
     const benchmarkSafe = safeToSpend.dailySafeToSpend > 0 ? safeToSpend.dailySafeToSpend : 50000;
-    const ceilingVal = Math.max(maxDailyExp, benchmarkSafe * 1.5, 80000);
-    const tierStep = Math.ceil(ceilingVal / 40000) * 10000;
-    const yTiers = [tierStep * 4, tierStep * 3, tierStep * 2, tierStep, 0];
-    const maxY = Math.max(yTiers[0], 1);
-
-    const startX = 60;
-    const endX = 840;
-    const topY = 30;
-    const bottomY = 195;
-    const usableHeight = bottomY - topY;
-    const stepX = (endX - startX) / Math.max(1, dailyRecords.length - 1);
-
-    const points = dailyRecords.map((rec, idx) => {
-      const x = Math.round(startX + idx * stepX);
-      const ratio = Math.min(1, rec.expense / maxY);
-      const y = Math.round(bottomY - ratio * usableHeight);
-      const isSpike = !rec.isFuture && safeToSpend.dailySafeToSpend > 0 && rec.expense > safeToSpend.dailySafeToSpend;
-      return {
-        ...rec,
-        x,
-        y,
-        isSpike,
-      };
-    });
-
-    // Benchmark Y for daily Safe to Spend limit line
-    const benchmarkY = safeToSpend.dailySafeToSpend > 0
-      ? Math.round(bottomY - Math.min(1, safeToSpend.dailySafeToSpend / maxY) * usableHeight)
-      : null;
-
-    // Sample 7 date labels along X-axis
-    const labelIndices = [
-      0,
-      Math.floor(points.length * 0.16),
-      Math.floor(points.length * 0.33),
-      Math.floor(points.length * 0.5),
-      Math.floor(points.length * 0.66),
-      Math.floor(points.length * 0.83),
-      points.length - 1,
-    ];
-    const xLabels = Array.from(new Set(labelIndices)).map(idx => points[idx]).filter(Boolean);
+    const ceilingVal = Math.max(maxDailyExp, benchmarkSafe * 1.3, 50000);
+    const yDomainMax = Math.ceil(ceilingVal / 20000) * 20000;
 
     return {
-      points,
-      yTiers,
-      xLabels,
+      seriesData,
       maxDailyExp,
-      bottomY,
-      benchmarkY,
-      stepX,
-      maxY,
+      yDomainMax,
+      benchmarkSafe: safeToSpend.dailySafeToSpend,
     };
   }, [cycleInfo, transactions, safeToSpend.dailySafeToSpend]);
 
-  // Handle smooth scrubbing along SVG wave chart (Mouse & Touch & Keyboard)
-  const updateHoveredPointFromClientX = (clientX: number) => {
-    if (!svgWaveRef.current || cashFlowChartData.points.length === 0) return;
-    const rect = svgWaveRef.current.getBoundingClientRect();
-    const relativeX = clientX - rect.left;
-    const svgX = (relativeX / rect.width) * 900;
-
-    let nearestIdx = 0;
-    let minDiff = Infinity;
-    cashFlowChartData.points.forEach((p, idx) => {
-      const diff = Math.abs(p.x - svgX);
-      if (diff < minDiff) {
-        minDiff = diff;
-        nearestIdx = idx;
-      }
-    });
-    setHoveredPointIndex(nearestIdx);
-  };
-
-  const handleSvgMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
-    updateHoveredPointFromClientX(e.clientX);
-  };
-
-  const handleSvgTouchMove = (e: React.TouchEvent<SVGSVGElement>) => {
-    if (e.touches.length > 0) {
-      updateHoveredPointFromClientX(e.touches[0].clientX);
-    }
-  };
-
   const handleChartKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (cashFlowChartData.points.length === 0) return;
+    if (cashFlowChartData.seriesData.length === 0) return;
     if (e.key === 'ArrowRight') {
       e.preventDefault();
-      setHoveredPointIndex((prev) => (prev === null ? 0 : Math.min(cashFlowChartData.points.length - 1, prev + 1)));
+      setHoveredPointIndex((prev) => (prev === null ? 0 : Math.min(cashFlowChartData.seriesData.length - 1, prev + 1)));
     } else if (e.key === 'ArrowLeft') {
       e.preventDefault();
       setHoveredPointIndex((prev) => (prev === null ? 0 : Math.max(0, prev - 1)));
@@ -304,7 +243,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   };
 
   const recentTransactions = transactions.slice(0, 5);
-  const activeHoveredPoint = hoveredPointIndex !== null ? cashFlowChartData.points[hoveredPointIndex] : null;
+  const activeHoveredPoint = hoveredPointIndex !== null ? cashFlowChartData.seriesData[hoveredPointIndex] : null;
 
   return (
     <div className="space-y-6 pb-6">
@@ -312,7 +251,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
         <div className="flex flex-col">
           <h1 className="text-2xl font-bold text-text-primary tracking-tight">
-            Selamat datang kembali, {studentName} 👋
+            Selamat datang kembali, {studentName}
           </h1>
           <p className="text-sm text-text-muted mt-0.5">
             Berikut ringkasan kondisi keuanganmu untuk siklus bulan {new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(cycleInfo.startDate)}.
@@ -348,15 +287,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
 
             <div className="flex items-center gap-3 text-xs flex-wrap">
-              {activeHoveredPoint ? (
+              {activeHoveredPoint && activeHoveredPoint.expense !== null ? (
                 <span className="font-semibold text-primary-600 bg-primary-50 px-2.5 py-1 rounded-lg border border-primary-200 animate-in fade-in duration-100">
                   {activeHoveredPoint.dayLabel}: {formatCurrency(activeHoveredPoint.expense)}
                 </span>
               ) : (
                 <>
                   <span className="flex items-center gap-1.5 text-text-muted">
-                    <span className="w-2.5 h-2.5 rounded-xs bg-primary-500" />
-                    <span>Pengeluaran Harian</span>
+                    <span className="w-2.5 h-2.5 rounded-full bg-primary-500" />
+                    <span>Tren Pengeluaran</span>
                   </span>
                   {safeToSpend.dailySafeToSpend > 0 && (
                     <span className="flex items-center gap-1.5 text-text-muted">
@@ -369,190 +308,201 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           </div>
 
-          {/* Discrete Daily Expense Bars with Safe-to-Spend Benchmark Line */}
+          {/* Interactive Line Chart (Adapted from 21st.dev sean0205/line-charts-9) */}
           <div
-            className="w-full overflow-x-auto focus:outline-hidden focus-visible:ring-2 focus-visible:ring-primary-500 rounded-lg"
+            className="w-full focus:outline-hidden focus-visible:ring-2 focus-visible:ring-primary-500 rounded-lg"
             tabIndex={0}
             role="region"
-            aria-label="Grafik pengeluaran arus kas harian. Gunakan tombol panah kiri dan kanan untuk menjelajah tanggal."
+            aria-label={`Grafik tren pengeluaran harian siklus ${new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(cycleInfo.startDate)}. Batas harian aman: ${formatCurrency(safeToSpend.dailySafeToSpend)} per hari. Gunakan tombol panah kiri dan kanan untuk menjelajah tanggal.`}
             onKeyDown={handleChartKeyDown}
           >
-            <svg
-              ref={svgWaveRef}
-              role="img"
-              aria-label={`Grafik pengeluaran harian siklus ${new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(cycleInfo.startDate)}. Batas harian aman: ${formatCurrency(safeToSpend.dailySafeToSpend)} per hari.`}
-              onMouseMove={handleSvgMouseMove}
-              onTouchMove={handleSvgTouchMove}
-              onMouseLeave={() => setHoveredPointIndex(null)}
-              className="w-full h-64 sm:h-72 overflow-visible min-w-[700px] cursor-crosshair transition-all select-none touch-pan-x"
-              preserveAspectRatio="none"
-              viewBox="0 0 900 230"
-            >
-              {/* Horizontal Grid Guidelines */}
-              {cashFlowChartData.yTiers.map((tier, idx) => {
-                const y = Math.round(195 - (tier / cashFlowChartData.maxY) * (195 - 30));
-                return (
-                  <g key={idx}>
-                    <line
-                      x1="50"
-                      x2="860"
-                      y1={y}
-                      y2={y}
-                      className="stroke-border-subtle"
-                      stroke="currentColor"
-                      strokeWidth="1"
-                    />
-                    <text
-                      className="fill-text-muted"
-                      fill="currentColor"
-                      fontSize="11"
-                      x="10"
-                      y={y + 4}
-                      fontFamily="Inter, sans-serif"
-                    >
-                      {tier > 0 ? formatCompactCurrency(tier).replace('Rp ', '') : '0k'}
-                    </text>
-                  </g>
-                );
-              })}
+            <div className="h-64 sm:h-72 w-full select-none">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart
+                  data={cashFlowChartData.seriesData}
+                  margin={{ top: 20, right: 16, left: -10, bottom: 5 }}
+                  onMouseMove={(state) => {
+                    if (state && state.activeTooltipIndex !== undefined) {
+                      setHoveredPointIndex(state.activeTooltipIndex);
+                    }
+                  }}
+                  onMouseLeave={() => setHoveredPointIndex(null)}
+                >
+                  {/* Subtle Area Gradient definition - Daylight Ledger depth cue */}
+                  <defs>
+                    <linearGradient id="expenseTrendGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#6366f1" stopOpacity={0.12} />
+                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
 
-              {/* Baseline axis line */}
-              <line
-                x1="50"
-                x2="860"
-                y1={cashFlowChartData.bottomY}
-                y2={cashFlowChartData.bottomY}
-                className="stroke-border-default"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              />
-
-              {/* Horizontal Benchmark Line: Daily Safe to Spend */}
-              {cashFlowChartData.benchmarkY !== null && (
-                <g>
-                  <line
-                    x1="50"
-                    x2="860"
-                    y1={cashFlowChartData.benchmarkY}
-                    y2={cashFlowChartData.benchmarkY}
-                    className="stroke-semantic-amber"
-                    stroke="currentColor"
-                    strokeDasharray="4,4"
-                    strokeWidth="1.5"
-                    opacity="0.75"
-                  />
-                  <text
-                    x="865"
-                    y={cashFlowChartData.benchmarkY + 3.5}
-                    className="fill-semantic-amber"
-                    fill="currentColor"
-                    fontSize="10"
-                    fontFamily="Inter, sans-serif"
-                    fontWeight="500"
-                  >
-                    Batas {formatCompactCurrency(safeToSpend.dailySafeToSpend).replace('Rp ', '')}
-                  </text>
-                </g>
-              )}
-
-              {/* Discrete Daily Expense Bar Stems */}
-              {cashFlowChartData.points.map((p, idx) => {
-                const isHovered = hoveredPointIndex === idx;
-                const barHeight = Math.max(0, cashFlowChartData.bottomY - p.y);
-                const barWidth = Math.max(6, Math.min(14, cashFlowChartData.stepX * 0.55));
-                const isOver = p.isSpike;
-
-                return (
-                  <g key={idx} className="transition-all duration-150">
-                    {p.expense > 0 ? (
-                      <rect
-                        x={p.x - barWidth / 2}
-                        y={p.y}
-                        width={barWidth}
-                        height={barHeight}
-                        rx={Math.min(barWidth / 2, 4)}
-                        className={`cursor-pointer transition-colors ${
-                          isOver ? 'fill-semantic-rose' : isHovered ? 'fill-primary-600' : 'fill-primary-500'
-                        }`}
-                        fill="currentColor"
-                        opacity={p.isFuture ? 0.2 : isHovered ? 1 : 0.85}
-                      />
-                    ) : (
-                      <circle
-                        cx={p.x}
-                        cy={cashFlowChartData.bottomY}
-                        r="2"
-                        className="fill-border-strong"
-                        fill="currentColor"
-                        opacity={p.isFuture ? 0.2 : 0.6}
-                      />
-                    )}
-                  </g>
-                );
-              })}
-
-              {/* Interactive Smooth Hover Crosshair & Tooltip */}
-              {activeHoveredPoint && (
-                <g className="transition-opacity duration-150">
-                  {/* Vertical Guideline */}
-                  <line
-                    x1={activeHoveredPoint.x}
-                    x2={activeHoveredPoint.x}
-                    y1={20}
-                    y2={cashFlowChartData.bottomY}
-                    className="stroke-primary-500"
-                    stroke="currentColor"
-                    strokeDasharray="4,4"
-                    strokeWidth="1.5"
-                    opacity="0.85"
+                  {/* Subtle horizontal CartesianGrid lines matching Daylight Ledger */}
+                  <CartesianGrid
+                    strokeDasharray="4 8"
+                    stroke="var(--color-border-subtle, #f1f5f9)"
+                    horizontal={true}
+                    vertical={false}
                   />
 
-                  {/* Floating Tooltip Card */}
-                  <g transform={`translate(${Math.max(85, Math.min(815, activeHoveredPoint.x))}, ${Math.max(35, activeHoveredPoint.y - 25)})`}>
-                    <rect
-                      x="-70"
-                      y="-36"
-                      width="140"
-                      height="36"
-                      rx="8"
-                      className="fill-slate-900"
-                      fill="currentColor"
-                      opacity="0.95"
-                    />
-                    <text
-                      x="0"
-                      y="-20"
-                      fill="#ffffff"
-                      fontSize="11"
-                      fontWeight="600"
-                      textAnchor="middle"
-                      fontFamily="Inter, sans-serif"
-                    >
-                      {formatCurrency(activeHoveredPoint.expense)}
-                    </text>
-                    <text
-                      x="0"
-                      y="-7"
-                      fill="#94a3b8"
-                      fontSize="10"
-                      textAnchor="middle"
-                      fontFamily="Inter, sans-serif"
-                    >
-                      {activeHoveredPoint.dayLabel} • {activeHoveredPoint.expense > safeToSpend.dailySafeToSpend && safeToSpend.dailySafeToSpend > 0 ? 'Overpace' : 'Aman'}
-                    </text>
-                  </g>
-                </g>
-              )}
+                  {/* Clean X-Axis */}
+                  <XAxis
+                    dataKey="dayLabel"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 11, fill: '#94a3b8' }}
+                    tickMargin={12}
+                    interval="preserveStartEnd"
+                    minTickGap={24}
+                  />
 
-              {/* X-Axis Dates Along the Bottom */}
-              <g className="fill-text-muted" fill="currentColor" fontSize="11" textAnchor="middle" fontFamily="Inter, sans-serif">
-                {cashFlowChartData.xLabels.map((p, idx) => (
-                  <text key={idx} x={p.x} y="218">
-                    {p.dayLabel}
-                  </text>
-                ))}
-              </g>
-            </svg>
+                  {/* Clean Y-Axis */}
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 11, fill: '#94a3b8' }}
+                    tickFormatter={(val) => (val > 0 ? formatCompactCurrency(val).replace('Rp ', '') : '0')}
+                    tickMargin={8}
+                    domain={[0, cashFlowChartData.yDomainMax]}
+                  />
+
+                  {/* Horizontal Benchmark Line: Daily Safe to Spend */}
+                  {safeToSpend.dailySafeToSpend > 0 && (
+                    <ReferenceLine
+                      y={safeToSpend.dailySafeToSpend}
+                      stroke="#f59e0b"
+                      strokeDasharray="4 4"
+                      strokeWidth={1.5}
+                      strokeOpacity={0.8}
+                      label={{
+                        value: `Batas ${formatCompactCurrency(safeToSpend.dailySafeToSpend).replace('Rp ', '')}`,
+                        position: 'insideTopRight',
+                        fill: '#d97706',
+                        fontSize: 10,
+                        fontWeight: 500,
+                        offset: 6,
+                      }}
+                    />
+                  )}
+
+                  {/* Custom Tooltip adapted from line-charts-9 */}
+                  <RechartsTooltip
+                    isAnimationActive={false}
+                    cursor={{
+                      stroke: '#6366f1',
+                      strokeWidth: 1.5,
+                      strokeDasharray: '4 4',
+                      strokeOpacity: 0.7,
+                    }}
+                    content={({ active, payload }) => {
+                      if (!active || !payload || !payload.length) return null;
+                      const data = payload[0]?.payload;
+                      if (!data) return null;
+
+                      const expense = data.expense ?? 0;
+                      const benchmark = safeToSpend.dailySafeToSpend;
+                      const diff = expense - benchmark;
+                      const isOver = benchmark > 0 && expense > benchmark;
+
+                      return (
+                        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-xl text-white text-xs max-w-xs animate-in fade-in zoom-in-95 duration-100 z-30">
+                          <div className="flex items-center justify-between gap-3 text-slate-400 pb-1.5 mb-1.5 border-b border-slate-800">
+                            <span className="font-semibold text-slate-200">{data.dayLabel}</span>
+                            <span
+                              className={`px-1.5 py-0.5 rounded-sm font-semibold text-xs ${
+                                data.isFuture
+                                  ? 'bg-slate-800 text-slate-400'
+                                  : isOver
+                                  ? 'bg-rose-950/70 text-rose-300 border border-rose-800/60'
+                                  : 'bg-emerald-950/70 text-emerald-300 border border-emerald-800/60'
+                              }`}
+                            >
+                              {data.isFuture ? 'Belum terjadi' : isOver ? 'Melebihi batas' : 'Aman'}
+                            </span>
+                          </div>
+
+                          <div className="space-y-1.5 tabular-nums">
+                            <div className="flex items-center justify-between gap-4">
+                              <span className="text-slate-400">Total Pengeluaran:</span>
+                              <span className="font-bold text-white">
+                                {data.isFuture ? 'Rp 0' : formatCurrency(expense)}
+                              </span>
+                            </div>
+
+                            {benchmark > 0 && (
+                              <>
+                                <div className="flex items-center justify-between gap-4">
+                                  <span className="text-slate-400">Batas Aman:</span>
+                                  <span className="text-slate-300">{formatCurrency(benchmark)}</span>
+                                </div>
+
+                                {!data.isFuture && (
+                                  <div className="flex items-center justify-between gap-4 pt-1 border-t border-slate-800/80">
+                                    <span className="text-slate-400">Selisih:</span>
+                                    <span className={`font-semibold ${isOver ? 'text-rose-400' : 'text-emerald-400'}`}>
+                                      {diff > 0 ? `+ ${formatCurrency(diff)}` : `- ${formatCurrency(Math.abs(diff))}`}
+                                    </span>
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    }}
+                  />
+
+                  {/* Subtle Area Gradient under Line for soft depth cues */}
+                  <Area
+                    type="monotone"
+                    dataKey="expense"
+                    stroke="none"
+                    fill="url(#expenseTrendGradient)"
+                    connectNulls={false}
+                    isAnimationActive={true}
+                    animationDuration={600}
+                    tooltipType="none"
+                  />
+
+                  {/* Clean Smooth Line adapted from 21st.dev line-charts-9 */}
+                  <Line
+                    type="monotone"
+                    dataKey="expense"
+                    stroke="#6366f1"
+                    strokeWidth={2.5}
+                    connectNulls={false}
+                    isAnimationActive={true}
+                    animationDuration={600}
+                    dot={(props) => {
+                      const { cx, cy, payload } = props;
+                      if (!payload || payload.expense === null) return <g key={`dot-empty-${cx}-${cy}`} />;
+                      const isSpike = safeToSpend.dailySafeToSpend > 0 && payload.expense > safeToSpend.dailySafeToSpend;
+
+                      // Display refined dot for spikes or active point
+                      if (isSpike) {
+                        return (
+                          <circle
+                            key={`dot-${payload.dateStr}`}
+                            cx={cx}
+                            cy={cy}
+                            r={3.5}
+                            fill="#f43f5e"
+                            stroke="#ffffff"
+                            strokeWidth={1.5}
+                          />
+                        );
+                      }
+                      return <g key={`dot-${payload.dateStr}`} />;
+                    }}
+                    activeDot={{
+                      r: 5,
+                      fill: '#6366f1',
+                      stroke: '#ffffff',
+                      strokeWidth: 2,
+                    }}
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
       </section>

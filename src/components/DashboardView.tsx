@@ -473,86 +473,91 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </section>
 
-      {/* 3. Financial Summary Cards (Grid of 4) WITH Arus Kas Harian SVG Wave Chart INSIDE */}
-      <section className="bg-surface rounded-[14px] border border-border-default shadow-sm mb-6 overflow-hidden">
-        {/* Top 4 KPI Metric Blocks (Total Saldo Menjol + Warna Angka & Badge) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 border-b border-border-default">
-          {/* Total Saldo - TAMPILAN MENONJOL & HIGHLIGHTED */}
-          <div className="p-5 flex flex-col justify-between border-b sm:border-b-0 sm:border-r border-border-default bg-gradient-to-br from-primary-50/60 via-white to-white">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-primary-900 uppercase tracking-wide">
-                Sisa Total Saldo Kas
-              </span>
-              <span className="inline-flex items-center gap-0.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#ecfdf5] text-[#10b981] border border-[#10b981]/20">
-                <ArrowUpRight className="w-3.5 h-3.5" /> 8.4%
-              </span>
-            </div>
-            <div className="mt-2.5">
-              <div className="text-3xl sm:text-[32px] font-extrabold text-primary-600 tracking-tight tabular-nums">
-                {formatCurrency(totalBalance)}
-              </div>
-              <div className="text-xs font-semibold text-text-secondary mt-1 truncate">
-                Total pemasukan: {formatCurrency(totalIncomeInCycle)}
-              </div>
-            </div>
+      {/* 3. 4 Clean Financial Summary Cards (Grid of 4) */}
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {/* Card 1: Sisa Total Saldo Kas - TAMPILAN MENONJOL & HIGHLIGHTED */}
+        <div className="bg-surface rounded-2xl sm:rounded-[16px] p-5 border border-border-default shadow-xs hover:shadow-sm transition-all flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
+              Sisa Total Saldo Kas
+            </span>
+            <span className="inline-flex items-center gap-0.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#ecfdf5] text-[#10b981] border border-[#10b981]/20">
+              <ArrowUpRight className="w-3.5 h-3.5" /> 8.4%
+            </span>
           </div>
-
-          {/* Total Pemasukan */}
-          <div className="p-5 flex flex-col justify-between border-b sm:border-b-0 lg:border-r border-border-default">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-text-muted">Total Pemasukan</span>
-              <span className="inline-flex items-center gap-0.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#ecfdf5] text-[#10b981] border border-[#10b981]/20">
-                <ArrowUpRight className="w-3.5 h-3.5" /> 18.4%
-              </span>
+          <div className="mt-3">
+            <div className="text-2xl sm:text-[28px] font-extrabold text-primary-600 tracking-tight tabular-nums">
+              {formatCurrency(totalBalance)}
             </div>
-            <div className="mt-2">
-              <div className="text-2xl font-bold text-semantic-green tracking-tight tabular-nums">
-                {formatCompactCurrency(totalIncomeInCycle)}
-              </div>
-              <div className="text-xs text-text-muted mt-1 truncate">
-                {formatCurrency(totalIncomeInCycle)} masuk siklus
-              </div>
-            </div>
-          </div>
-
-          {/* Total Pengeluaran */}
-          <div className="p-5 flex flex-col justify-between border-b sm:border-b-0 sm:border-r border-border-default">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-text-muted">Total Pengeluaran</span>
-              <span className="inline-flex items-center gap-0.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#fff1f2] text-[#f43f5e] border border-[#f43f5e]/20">
-                <ArrowDownRight className="w-3.5 h-3.5" /> {overallBudgetPercentage}%
-              </span>
-            </div>
-            <div className="mt-2">
-              <div className="text-2xl font-bold text-semantic-rose tracking-tight tabular-nums">
-                {formatCompactCurrency(totalCycleExpense)}
-              </div>
-              <div className="text-xs text-text-muted mt-1 truncate">
-                dari plafon {formatCompactCurrency(effectiveBudgetCeiling)}
-              </div>
-            </div>
-          </div>
-
-          {/* Tabungan Siklus Ini */}
-          <div className="p-5 flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-text-muted">Tabungan Siklus Ini</span>
-              <span className="inline-flex items-center gap-0.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#ecfdf5] text-[#10b981] border border-[#10b981]/20">
-                <ArrowUpRight className="w-3.5 h-3.5" /> 15.0%
-              </span>
-            </div>
-            <div className="mt-2">
-              <div className="text-2xl font-bold text-primary-600 tracking-tight tabular-nums">
-                {formatCompactCurrency(totalSavingsGathered)}
-              </div>
-              <div className="text-xs text-text-muted mt-1 truncate">
-                {savingsGoals.length} target tabungan aktif
-              </div>
+            <div className="text-xs font-semibold text-text-secondary mt-1 truncate">
+              Total pemasukan: {formatCurrency(totalIncomeInCycle)}
             </div>
           </div>
         </div>
 
-        {/* Bottom Part: Arus Kas Harian SVG Wave Chart (NORMAL HEIGHT, NO RED DOTS, SMOOTH HOVER) */}
+        {/* Card 2: Total Pemasukan */}
+        <div className="bg-surface rounded-2xl sm:rounded-[16px] p-5 border border-border-default shadow-xs hover:shadow-sm transition-all flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
+              Total Pemasukan
+            </span>
+            <span className="inline-flex items-center gap-0.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#ecfdf5] text-[#10b981] border border-[#10b981]/20">
+              <ArrowUpRight className="w-3.5 h-3.5" /> 18.4%
+            </span>
+          </div>
+          <div className="mt-3">
+            <div className="text-2xl sm:text-[28px] font-extrabold text-semantic-green tracking-tight tabular-nums">
+              {formatCurrency(totalIncomeInCycle)}
+            </div>
+            <div className="text-xs text-text-muted mt-1 truncate font-medium">
+              Uang masuk siklus ini
+            </div>
+          </div>
+        </div>
+
+        {/* Card 3: Total Pengeluaran */}
+        <div className="bg-surface rounded-2xl sm:rounded-[16px] p-5 border border-border-default shadow-xs hover:shadow-sm transition-all flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
+              Total Pengeluaran
+            </span>
+            <span className="inline-flex items-center gap-0.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#fff1f2] text-[#f43f5e] border border-[#f43f5e]/20">
+              <ArrowDownRight className="w-3.5 h-3.5" /> {overallBudgetPercentage}%
+            </span>
+          </div>
+          <div className="mt-3">
+            <div className="text-2xl sm:text-[28px] font-extrabold text-semantic-rose tracking-tight tabular-nums">
+              {formatCurrency(totalCycleExpense)}
+            </div>
+            <div className="text-xs text-text-muted mt-1 truncate font-medium">
+              Plafon: {formatCurrency(effectiveBudgetCeiling)}
+            </div>
+          </div>
+        </div>
+
+        {/* Card 4: Tabungan Siklus Ini */}
+        <div className="bg-surface rounded-2xl sm:rounded-[16px] p-5 border border-border-default shadow-xs hover:shadow-sm transition-all flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
+              Tabungan Siklus Ini
+            </span>
+            <span className="inline-flex items-center gap-0.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#ecfdf5] text-[#10b981] border border-[#10b981]/20">
+              <ArrowUpRight className="w-3.5 h-3.5" /> 15.0%
+            </span>
+          </div>
+          <div className="mt-3">
+            <div className="text-2xl sm:text-[28px] font-extrabold text-primary-600 tracking-tight tabular-nums">
+              {formatCurrency(totalSavingsGathered)}
+            </div>
+            <div className="text-xs text-text-muted mt-1 truncate font-medium">
+              {savingsGoals.length} target tabungan aktif
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Arus Kas Harian SVG Wave Chart (NORMAL HEIGHT, NO RED DOTS, SMOOTH HOVER) */}
+      <section className="bg-surface rounded-[16px] border border-border-default shadow-xs mb-6 overflow-hidden">
         <div className="p-6 relative select-none">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">

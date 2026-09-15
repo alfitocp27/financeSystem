@@ -125,4 +125,24 @@ describe('Safe to Spend Calculation', () => {
     expect(futureAllowance).toBe(18000);
     expect(initial.dailySafeToSpend - futureAllowance).toBe(2000);
   });
+
+  it('accurately maintains daily allowance and subtracts today expenses without double deduction', () => {
+    const refDate = new Date(2026, 8, 15);
+    // Sisa hari: 16 days. Budget: 1.600.000.
+    // Jatah hari ini harus 1.600.000 / 16 = 100.000
+    // Pengeluaran hari ini = 30.000.
+    // Sisa jatah hari ini harus 100.000 - 30.000 = 70.000!
+    const result = calculateSafeToSpend({
+      totalBudget: 1600000,
+      totalExpenses: 30000, // Termasuk pengeluaran hari ini
+      todayExpenses: 30000,
+      cycleStartDay: 1,
+      referenceDate: refDate,
+    });
+
+    expect(result.dailySafeToSpend).toBe(100000);
+    expect(result.remainingToday).toBe(70000);
+    expect(result.remainingBudget).toBe(1570000);
+    expect(result.paceStatus).toBe('safe');
+  });
 });

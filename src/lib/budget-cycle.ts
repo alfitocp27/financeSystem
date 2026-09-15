@@ -98,16 +98,31 @@ export function calculateSafeToSpend(params: {
   } = params;
 
   const cycle = getCycleInfo(cycleStartDay, referenceDate);
-  const remainingBudget = Math.max(0, totalBudget - totalExpenses - totalSavingsAllocated - totalUnpaidCommitments);
-  const dailySafeToSpend = remainingBudget > 0 ? Math.floor(remainingBudget / cycle.daysRemaining) : 0;
+
+  // Pengeluaran sebelum hari ini (hari-hari sebelumnya di siklus aktif)
+  const pastExpenses = Math.max(0, totalExpenses - todayExpenses);
+
+  // Anggaran yang tersedia di awal hari ini (sebelum belanja hari ini)
+  const budgetAtStartOfDay = Math.max(
+    0,
+    totalBudget - pastExpenses - totalSavingsAllocated - totalUnpaidCommitments
+  );
+
+  // Jatah belanja aman hari ini = sisa anggaran di awal hari / sisa hari siklus
+  const dailySafeToSpend = cycle.daysRemaining > 0 ? Math.floor(budgetAtStartOfDay / cycle.daysRemaining) : 0;
+
+  // Sisa jatah yang boleh dibelanjakan hari ini
   const remainingToday = dailySafeToSpend - todayExpenses;
+
+  // Sisa anggaran total saat ini (setelah pengeluaran hari ini dan komitmen)
+  const remainingBudget = Math.max(0, totalBudget - totalExpenses - totalSavingsAllocated - totalUnpaidCommitments);
 
   let paceStatus: PaceStatus;
   if (totalBudget <= 0) {
     paceStatus = 'no-budget';
   } else if (remainingToday < 0) {
     paceStatus = 'overpace';
-  } else if (todayExpenses >= dailySafeToSpend * 0.8) {
+  } else if (todayExpenses >= dailySafeToSpend * 0.8 && dailySafeToSpend > 0) {
     paceStatus = 'warning';
   } else {
     paceStatus = 'safe';

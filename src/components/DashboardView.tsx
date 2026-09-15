@@ -3,8 +3,6 @@ import {
   HelpCircle,
   Calendar,
   Plus,
-  ArrowUpRight,
-  ArrowDownRight,
   Calculator,
   Utensils,
   Home,
@@ -19,13 +17,10 @@ import {
   Award,
   Wallet as WalletIcon,
   Check,
-  TrendingUp,
-  PiggyBank,
 } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import { formatCurrency, formatCompactCurrency, formatDateIndo, formatRelativeDate, getLocalDateString } from '../lib/formatters';
-import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { SpendingLimitCard } from '@/components/ui/card-8';
 
 const STITCH_COLORS = ['#2563eb', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
 
@@ -477,107 +472,67 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </section>
 
-      {/* 3. 4 Clean Financial Summary Cards (Grid of 4 with Card-05 design) */}
+      {/* 3. 4 Clean Financial Summary Cards (Grid of 4 with SpendingLimitCard design) */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {/* Card 1: Sisa Total Saldo Kas (Card-05 Design) */}
-        <Card className="relative w-full">
-          <div className="absolute top-6 right-6">
-            <div className="bg-primary-50 flex size-9 items-center justify-center rounded-lg">
-              <WalletIcon className="text-primary-600 size-4" />
-            </div>
-          </div>
-          <CardHeader>
-            <CardDescription>Sisa Total Saldo Kas</CardDescription>
-            <CardTitle className="text-2xl sm:text-[26px] font-bold text-primary-600 tabular-nums">
-              {formatCurrency(totalBalance)}
-            </CardTitle>
-          </CardHeader>
-          <div className="flex items-center gap-2 px-6 pb-6 text-xs text-text-muted">
-            <Badge
-              variant="secondary"
-              className="text-emerald-600 bg-semantic-green-soft border border-semantic-green/20 font-semibold"
-            >
-              <TrendingUp className="size-3 mr-1" />
-              +8.4%
-            </Badge>
-            <span className="truncate">Total masuk: {formatCompactCurrency(totalIncomeInCycle)}</span>
-          </div>
-        </Card>
+        {/* Card 1: Sisa Total Saldo Kas */}
+        <SpendingLimitCard
+          title="Sisa Total Saldo Kas"
+          dateRange={totalIncomeInCycle > 0 ? `Total pemasukan: ${formatCompactCurrency(totalIncomeInCycle)}` : "Saldo kas aktif"}
+          buttonText="+8.4%"
+          isIncrease={true}
+          currentSpending={totalBalance}
+          limit={totalIncomeInCycle > 0 ? totalIncomeInCycle : (totalBalance || 1)}
+          currentFormatted={formatCurrency(totalBalance)}
+          limitFormatted={formatCurrency(totalIncomeInCycle > 0 ? totalIncomeInCycle : totalBalance)}
+          limitPrefix="dari pemasukan"
+          filledColorClass="bg-primary-500"
+          unfilledColorClass="bg-primary-50"
+        />
 
-        {/* Card 2: Total Pemasukan (Card-05 Design) */}
-        <Card className="relative w-full">
-          <div className="absolute top-6 right-6">
-            <div className="bg-semantic-green-soft flex size-9 items-center justify-center rounded-lg">
-              <ArrowUpRight className="text-semantic-green size-4" />
-            </div>
-          </div>
-          <CardHeader>
-            <CardDescription>Total Pemasukan</CardDescription>
-            <CardTitle className="text-2xl sm:text-[26px] font-bold text-semantic-green tabular-nums">
-              {formatCurrency(totalIncomeInCycle)}
-            </CardTitle>
-          </CardHeader>
-          <div className="flex items-center gap-2 px-6 pb-6 text-xs text-text-muted">
-            <Badge
-              variant="secondary"
-              className="text-emerald-600 bg-semantic-green-soft border border-semantic-green/20 font-semibold"
-            >
-              <ArrowUpRight className="size-3 mr-1" />
-              +18.4%
-            </Badge>
-            <span className="truncate">Uang masuk siklus ini</span>
-          </div>
-        </Card>
+        {/* Card 2: Total Pemasukan */}
+        <SpendingLimitCard
+          title="Total Pemasukan"
+          dateRange="Uang masuk siklus ini"
+          buttonText="+18.4%"
+          isIncrease={true}
+          currentSpending={totalIncomeInCycle}
+          limit={totalIncomeInCycle || 1}
+          currentFormatted={formatCurrency(totalIncomeInCycle)}
+          limitFormatted={formatCurrency(totalIncomeInCycle)}
+          limitPrefix="realisasi"
+          filledColorClass="bg-semantic-green"
+          unfilledColorClass="bg-semantic-green-soft"
+        />
 
-        {/* Card 3: Total Pengeluaran (Card-05 Design) */}
-        <Card className="relative w-full">
-          <div className="absolute top-6 right-6">
-            <div className="bg-semantic-rose-soft flex size-9 items-center justify-center rounded-lg">
-              <ArrowDownRight className="text-semantic-rose size-4" />
-            </div>
-          </div>
-          <CardHeader>
-            <CardDescription>Total Pengeluaran</CardDescription>
-            <CardTitle className="text-2xl sm:text-[26px] font-bold text-semantic-rose tabular-nums">
-              {formatCurrency(totalCycleExpense)}
-            </CardTitle>
-          </CardHeader>
-          <div className="flex items-center gap-2 px-6 pb-6 text-xs text-text-muted">
-            <Badge
-              variant="secondary"
-              className="text-semantic-rose bg-semantic-rose-soft border border-semantic-rose/20 font-semibold"
-            >
-              <ArrowDownRight className="size-3 mr-1" />
-              {overallBudgetPercentage}%
-            </Badge>
-            <span className="truncate">Plafon: {formatCompactCurrency(effectiveBudgetCeiling)}</span>
-          </div>
-        </Card>
+        {/* Card 3: Total Pengeluaran */}
+        <SpendingLimitCard
+          title="Total Pengeluaran"
+          dateRange={`Plafon: ${formatCompactCurrency(effectiveBudgetCeiling)}`}
+          buttonText={`${overallBudgetPercentage}%`}
+          isIncrease={overallBudgetPercentage > 100 ? false : true}
+          currentSpending={totalCycleExpense}
+          limit={effectiveBudgetCeiling}
+          currentFormatted={formatCurrency(totalCycleExpense)}
+          limitFormatted={formatCurrency(effectiveBudgetCeiling)}
+          limitPrefix="dari plafon"
+          filledColorClass={overallBudgetPercentage >= 100 ? "bg-semantic-rose" : "bg-semantic-rose"}
+          unfilledColorClass="bg-semantic-rose-soft"
+        />
 
-        {/* Card 4: Tabungan Siklus Ini (Card-05 Design) */}
-        <Card className="relative w-full">
-          <div className="absolute top-6 right-6">
-            <div className="bg-primary-50 flex size-9 items-center justify-center rounded-lg">
-              <PiggyBank className="text-primary-600 size-4" />
-            </div>
-          </div>
-          <CardHeader>
-            <CardDescription>Tabungan Siklus Ini</CardDescription>
-            <CardTitle className="text-2xl sm:text-[26px] font-bold text-primary-600 tabular-nums">
-              {formatCurrency(totalSavingsGathered)}
-            </CardTitle>
-          </CardHeader>
-          <div className="flex items-center gap-2 px-6 pb-6 text-xs text-text-muted">
-            <Badge
-              variant="secondary"
-              className="text-emerald-600 bg-semantic-green-soft border border-semantic-green/20 font-semibold"
-            >
-              <TrendingUp className="size-3 mr-1" />
-              +15.0%
-            </Badge>
-            <span className="truncate">{savingsGoals.length} target aktif</span>
-          </div>
-        </Card>
+        {/* Card 4: Tabungan Siklus Ini */}
+        <SpendingLimitCard
+          title="Tabungan Siklus Ini"
+          dateRange={`${savingsGoals.length} target tabungan aktif`}
+          buttonText="+15.0%"
+          isIncrease={true}
+          currentSpending={totalSavingsGathered}
+          limit={Math.max(totalSavingsGathered, 1000000)}
+          currentFormatted={formatCurrency(totalSavingsGathered)}
+          limitFormatted={formatCurrency(Math.max(totalSavingsGathered, 1000000))}
+          limitPrefix="dari target"
+          filledColorClass="bg-primary-600"
+          unfilledColorClass="bg-primary-50"
+        />
       </section>
 
       {/* Arus Kas Harian SVG Wave Chart (NORMAL HEIGHT, NO RED DOTS, SMOOTH HOVER) */}

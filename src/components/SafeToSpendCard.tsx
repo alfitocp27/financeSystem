@@ -67,7 +67,7 @@ export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({ onOpenSimulato
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
           {/* Left Column: Number & Indicators */}
           <div className="flex flex-col">
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
               <span className="text-[12px] uppercase tracking-wider font-semibold text-text-secondary">
                 Safe to Spend
               </span>
@@ -81,11 +81,11 @@ export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({ onOpenSimulato
               {onOpenSimulator && (
                 <button
                   onClick={onOpenSimulator}
-                  className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-primary-50 hover:bg-primary-100 text-primary-600 transition-colors ml-auto md:ml-2"
+                  className="inline-flex items-center justify-center w-7 h-7 sm:w-auto sm:h-auto sm:px-2.5 sm:py-0.5 sm:rounded-full rounded-lg text-[11px] font-semibold bg-primary-50 hover:bg-primary-100 text-primary-600 transition-colors ml-auto md:ml-2"
                   title="Simulasi belanja ekstra"
                 >
-                  <Calculator className="w-3 h-3" />
-                  <span>Simulasi Jajan</span>
+                  <Calculator className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline ml-1">Simulasi Jajan</span>
                 </button>
               )}
             </div>
@@ -142,11 +142,11 @@ export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({ onOpenSimulato
 
             {/* Sub-label dates */}
             <div className="flex justify-between items-center mt-2 text-[11px] text-text-muted">
-              <span>{formatDateIndo(cycleInfo.startDate)}</span>
+              <span className="hidden sm:inline">{formatDateIndo(cycleInfo.startDate)}</span>
               <span className="text-text-secondary font-medium">
                 Hari ke-{cycleInfo.daysPassed} dari {cycleInfo.totalDays}
               </span>
-              <span>{formatDateIndo(cycleInfo.endDate)}</span>
+              <span className="hidden sm:inline">{formatDateIndo(cycleInfo.endDate)}</span>
             </div>
           </div>
         </div>

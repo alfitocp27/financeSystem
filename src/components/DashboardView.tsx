@@ -376,11 +376,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
       {/* 2. Primary Highlight: Safe to Spend Card (Stitch Exact) */}
       <section className="mb-6">
-        <div className="bg-surface rounded-[14px] p-6 shadow-sm border border-border-default relative overflow-hidden">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="bg-surface rounded-[14px] p-4 sm:p-6 shadow-sm border border-border-default relative overflow-hidden">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
             {/* Left Column */}
             <div className="flex flex-col">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                 <span className="text-[13px] uppercase tracking-wider font-semibold text-text-secondary">
                   Safe to Spend
                 </span>
@@ -393,7 +393,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 </div>
 
                 <span
-                  className={`ml-2 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${badge.bg}`}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${badge.bg}`}
                 >
                   <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`} />
                   {badge.text}
@@ -401,19 +401,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
                 <button
                   onClick={onOpenSimulator}
-                  className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary-50 hover:bg-primary-100 text-primary-600 transition-colors ml-auto md:ml-3"
+                  className="inline-flex items-center justify-center w-8 h-8 sm:w-auto sm:h-auto sm:px-2.5 sm:py-0.5 sm:rounded-full rounded-lg text-xs font-semibold bg-primary-50 hover:bg-primary-100 text-primary-600 transition-colors ml-auto md:ml-3"
                   title="Simulasi dampak belanja terhadap jatah hari esok"
                 >
-                  <Calculator className="w-3.5 h-3.5" />
-                  <span>Simulasi Jajan</span>
+                  <Calculator className="w-4 h-4" />
+                  <span className="hidden sm:inline ml-1">Simulasi Jajan</span>
                 </button>
               </div>
 
-              <div className="flex items-baseline gap-2 mt-2">
-                <span className="text-3xl sm:text-[36px] font-bold text-text-primary tabular-nums tracking-tight">
+              <div className="flex items-baseline gap-1.5 sm:gap-2 mt-2">
+                <span className="text-2xl sm:text-3xl md:text-[36px] font-bold text-text-primary tabular-nums tracking-tight">
                   {formatCurrency(safeToSpend.dailySafeToSpend)}
                 </span>
-                <span className="text-base text-text-muted font-normal">/ hari</span>
+                <span className="text-sm sm:text-base text-text-muted font-normal">/ hari</span>
               </div>
 
               <div className="flex items-center gap-2 mt-1.5">
@@ -431,7 +431,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
 
             {/* Right Column: Safe-to-Spend Pacing Micro Visualizer */}
-            <div className="flex flex-col w-full md:w-80 bg-surface-container-low p-4 rounded-xl border border-border-subtle">
+            <div className="flex flex-col w-full md:w-80 bg-surface-container-low p-3 sm:p-4 rounded-xl border border-border-subtle">
               <div className="flex items-center justify-between text-xs text-text-secondary mb-1.5">
                 <span>Pacing Pengeluaran</span>
                 <span
@@ -461,11 +461,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </div>
 
               <div className="flex justify-between items-center mt-2 text-xs text-text-muted">
-                <span>Mulai ({cycleInfo.startDate.getDate()} {new Intl.DateTimeFormat('id-ID', { month: 'short' }).format(cycleInfo.startDate)})</span>
+                <span className="hidden sm:inline">Mulai ({cycleInfo.startDate.getDate()} {new Intl.DateTimeFormat('id-ID', { month: 'short' }).format(cycleInfo.startDate)})</span>
                 <span className="text-text-secondary font-medium">
                   Hari ke-{cycleInfo.daysPassed} dari {cycleInfo.totalDays}
                 </span>
-                <span>Akhir ({cycleInfo.endDate.getDate()} {new Intl.DateTimeFormat('id-ID', { month: 'short' }).format(cycleInfo.endDate)})</span>
+                <span className="hidden sm:inline">Akhir ({cycleInfo.endDate.getDate()} {new Intl.DateTimeFormat('id-ID', { month: 'short' }).format(cycleInfo.endDate)})</span>
               </div>
             </div>
           </div>

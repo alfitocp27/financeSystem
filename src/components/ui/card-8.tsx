@@ -117,9 +117,11 @@ export const SpendingLimitCard = ({
       </header>
 
       <div className="mt-4 sm:mt-5">
-        <p className="text-2xl sm:text-[28px] font-extrabold tracking-tight tabular-nums flex items-baseline flex-wrap gap-1.5">
-          <span>{displayCurrent}</span>
-          <span className="text-xs sm:text-sm font-medium text-text-muted">
+        <p className="flex items-baseline gap-1.5 leading-none whitespace-nowrap overflow-hidden">
+          <span className="text-xl sm:text-[22px] font-extrabold tracking-tight tabular-nums text-text-primary shrink-0">
+            {displayCurrent}
+          </span>
+          <span className="text-[11px] sm:text-[12px] font-medium text-text-muted shrink-0">
             {limitPrefix} {displayLimit}
           </span>
         </p>

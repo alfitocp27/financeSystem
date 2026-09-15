@@ -477,14 +477,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         {/* Card 1: Sisa Total Saldo Kas */}
         <SpendingLimitCard
           title="Sisa Total Saldo Kas"
-          dateRange={totalIncomeInCycle > 0 ? `Total pemasukan: ${formatCompactCurrency(totalIncomeInCycle)}` : "Saldo kas aktif"}
+          dateRange={totalIncomeInCycle > 0 ? `Total masuk: ${formatCompactCurrency(totalIncomeInCycle)}` : "Saldo kas aktif"}
           buttonText="+8.4%"
           isIncrease={true}
           currentSpending={totalBalance}
           limit={totalIncomeInCycle > 0 ? totalIncomeInCycle : (totalBalance || 1)}
           currentFormatted={formatCurrency(totalBalance)}
           limitFormatted={formatCurrency(totalIncomeInCycle > 0 ? totalIncomeInCycle : totalBalance)}
-          limitPrefix="dari pemasukan"
+          limitPrefix="of"
+          segments={5}
           filledColorClass="bg-primary-500"
           unfilledColorClass="bg-primary-50"
         />
@@ -499,7 +500,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           limit={totalIncomeInCycle || 1}
           currentFormatted={formatCurrency(totalIncomeInCycle)}
           limitFormatted={formatCurrency(totalIncomeInCycle)}
-          limitPrefix="realisasi"
+          limitPrefix="of"
+          segments={5}
           filledColorClass="bg-semantic-green"
           unfilledColorClass="bg-semantic-green-soft"
         />
@@ -514,7 +516,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           limit={effectiveBudgetCeiling}
           currentFormatted={formatCurrency(totalCycleExpense)}
           limitFormatted={formatCurrency(effectiveBudgetCeiling)}
-          limitPrefix="dari plafon"
+          limitPrefix="of"
+          segments={5}
           filledColorClass={overallBudgetPercentage >= 100 ? "bg-semantic-rose" : "bg-semantic-rose"}
           unfilledColorClass="bg-semantic-rose-soft"
         />
@@ -529,7 +532,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           limit={Math.max(totalSavingsGathered, 1000000)}
           currentFormatted={formatCurrency(totalSavingsGathered)}
           limitFormatted={formatCurrency(Math.max(totalSavingsGathered, 1000000))}
-          limitPrefix="dari target"
+          limitPrefix="of"
+          segments={5}
           filledColorClass="bg-primary-600"
           unfilledColorClass="bg-primary-50"
         />

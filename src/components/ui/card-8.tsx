@@ -20,11 +20,11 @@ export interface SpendingLimitCardProps {
   currentFormatted?: string;
   /** Custom preformatted limit (optional) */
   limitFormatted?: string;
-  /** Prefix for limit (default 'dari') */
+  /** Prefix for limit (default 'of') */
   limitPrefix?: string;
   /** The currency symbol to display */
   currency?: string;
-  /** The number of segments in the progress bar */
+  /** The number of segments in the progress bar (default 5) */
   segments?: number;
   /** CSS class for the filled part of the progress bar */
   filledColorClass?: string;
@@ -48,9 +48,9 @@ export const SpendingLimitCard = ({
   limit,
   currentFormatted,
   limitFormatted,
-  limitPrefix = "dari",
+  limitPrefix = "of",
   currency = "Rp ",
-  segments = 7,
+  segments = 5,
   filledColorClass = "bg-primary-500",
   unfilledColorClass = "bg-border-default",
   onButtonClick,
@@ -93,23 +93,23 @@ export const SpendingLimitCard = ({
           <p className="text-xs text-text-muted mt-0.5 truncate">{dateRange}</p>
         </div>
 
-        {/* Button with percentage & up/down indicator */}
+        {/* Button with percentage & up/down indicator - compact & clean */}
         {buttonText && (
           <Button
             variant="outline"
             size="sm"
             onClick={onButtonClick}
             className={cn(
-              "shrink-0 font-bold text-xs gap-1 px-2.5 py-1 h-auto rounded-full border transition-transform active:scale-95",
+              "shrink-0 font-semibold text-[11px] gap-1 px-2 py-0.5 h-6 rounded-full border transition-transform active:scale-95 shadow-2xs",
               isIncrease
                 ? "bg-semantic-green-soft text-semantic-green border-semantic-green/20 hover:bg-emerald-100"
                 : "bg-semantic-rose-soft text-semantic-rose border-semantic-rose/20 hover:bg-rose-100"
             )}
           >
             {isIncrease ? (
-              <ArrowUpRight className="w-3.5 h-3.5" />
+              <ArrowUpRight className="w-3 h-3 stroke-[2.5]" />
             ) : (
-              <ArrowDownRight className="w-3.5 h-3.5" />
+              <ArrowDownRight className="w-3 h-3 stroke-[2.5]" />
             )}
             <span>{buttonText}</span>
           </Button>

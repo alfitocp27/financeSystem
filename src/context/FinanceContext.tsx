@@ -68,14 +68,8 @@ const DEFAULT_CATEGORIES: Category[] = [
   { id: 'c9999999-9999-4999-8999-999999999999', user_id: 'demo', name: 'Beasiswa & Lomba', type: 'income', icon: 'award', color: '#f59e0b', created_at: '' },
 ];
 
-const DEFAULT_GOALS: SavingsGoal[] = [];
-
-const DEFAULT_BUDGETS: Budget[] = [];
-
-const DEFAULT_COMMITMENTS: RecurringCommitment[] = [];
-
 export function FinanceProvider({ children }: { children: React.ReactNode }) {
-  const { user, profile, isDemoUser, isConfigured } = useAuth();
+  const { user, profile, isConfigured } = useAuth();
 
   const [wallets, setWallets] = useState<Wallet[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -88,31 +82,17 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
   const cycleStartDay = profile?.cycle_start_day ?? 25;
   const cycleInfo = useMemo(() => getCycleInfo(cycleStartDay), [cycleStartDay]);
 
-  // Load / Seed Data from Supabase or Local Storage
+  // Load Real Data from Supabase
   const refreshData = useCallback(async () => {
     setIsLoading(true);
 
-    if (isDemoUser || !isConfigured || !user) {
-      // LocalStorage Demo Storage
-      const storedWallets = localStorage.getItem('demo_wallets');
-      const storedCategories = localStorage.getItem('demo_categories');
-      const storedTransactions = localStorage.getItem('demo_transactions');
-      const storedBudgets = localStorage.getItem('demo_budgets');
-      const storedGoals = localStorage.getItem('demo_goals');
-      const storedCommitments = localStorage.getItem('demo_commitments');
-
-      setWallets(storedWallets ? JSON.parse(storedWallets) : DEFAULT_WALLETS);
-      setCategories(storedCategories ? JSON.parse(storedCategories) : DEFAULT_CATEGORIES);
-      setBudgets(storedBudgets ? JSON.parse(storedBudgets) : DEFAULT_BUDGETS);
-      setSavingsGoals(storedGoals ? JSON.parse(storedGoals) : DEFAULT_GOALS);
-      setCommitments(storedCommitments ? JSON.parse(storedCommitments) : DEFAULT_COMMITMENTS);
-
-      if (storedTransactions) {
-        setTransactions(JSON.parse(storedTransactions));
-      } else {
-        setTransactions([]);
-        localStorage.setItem('demo_transactions', JSON.stringify([]));
-      }
+    if (!user || !isConfigured) {
+      setWallets([]);
+      setCategories([]);
+      setTransactions([]);
+      setBudgets([]);
+      setSavingsGoals([]);
+      setCommitments([]);
       setIsLoading(false);
       return;
     }
@@ -167,7 +147,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [user, isDemoUser, isConfigured]);
+  }, [user, isConfigured]);
 
   useEffect(() => {
     refreshData();

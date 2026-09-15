@@ -29,7 +29,7 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab, onOpenAuth }) => {
-  const { user, profile, isDemoUser, isConfigured, signOut } = useAuth();
+  const { user, profile, isConfigured, signOut } = useAuth();
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -42,7 +42,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab, onOpen
   ] as const;
 
   const displayName = profile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Mahasiswa';
-  const displayEmail = user?.email || (isDemoUser ? 'demo@sakumhs.app' : 'Belum masuk');
+  const displayEmail = user?.email || '';
 
   return (
     <aside className="hidden lg:flex fixed top-0 left-0 h-screen w-[240px] bg-surface border-r border-border-default z-40 flex-col justify-between py-6 px-4 select-none">
@@ -53,16 +53,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab, onOpen
             <CreditCard className="w-5 h-5" />
           </div>
           <div className="flex flex-col">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[16px] font-bold text-text-primary tracking-tight leading-snug">
-                SakuMhs
-              </span>
-              {isDemoUser && (
-                <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                  Demo
-                </span>
-              )}
-            </div>
+            <span className="text-[16px] font-bold text-text-primary tracking-tight leading-snug">
+              SakuMhs
+            </span>
             <span className="text-[11px] text-text-muted font-normal">
               Finansial Mahasiswa
             </span>

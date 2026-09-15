@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { AlertCircle, Eye, EyeOff, Mail, User as UserIcon } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
-  const { signIn, signUp, isConfigured, setDemoMode } = useAuth();
+  const { signIn, signUp, isConfigured } = useAuth();
 
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
@@ -242,16 +242,6 @@ export const LoginPage: React.FC = () => {
               {mode === 'login' ? 'Daftar gratis' : 'Masuk di sini'}
             </button>
           </p>
-
-          <div>
-            <button
-              type="button"
-              onClick={setDemoMode}
-              className="text-[11px] text-slate-400 hover:text-slate-600 transition-colors"
-            >
-              Atau coba dalam Mode Tamu (Offline) →
-            </button>
-          </div>
         </div>
       </div>
     </div>

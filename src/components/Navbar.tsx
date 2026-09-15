@@ -18,7 +18,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenAuth,
   onOpenQuickAdd,
 }) => {
-  const { user, isDemoUser, signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const { cycleInfo } = useFinance();
 
   const getPageTitle = (tab: ActiveTab) => {
@@ -53,14 +53,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <CreditCard className="w-4 h-4" />
             </div>
             <div className="flex flex-col">
-              <div className="flex items-center gap-1">
-                <span className="text-sm font-bold text-text-primary tracking-tight">SakuMhs</span>
-                {isDemoUser && (
-                  <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-50 text-amber-700 border border-amber-200">
-                    Demo
-                  </span>
-                )}
-              </div>
+              <span className="text-sm font-bold text-text-primary tracking-tight">SakuMhs</span>
               <span className="text-[10px] text-text-muted">{getPageTitle(activeTab)}</span>
             </div>
           </div>

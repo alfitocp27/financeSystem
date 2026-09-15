@@ -271,7 +271,7 @@ function DashboardContent() {
 }
 
 function MainApp() {
-  const { user, isDemoUser, isLoading } = useAuth();
+  const { user, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -281,8 +281,8 @@ function MainApp() {
     );
   }
 
-  // If not logged in and not in demo mode, go directly to LoginPage!
-  if (!user && !isDemoUser) {
+  // Wajib Login: langsung ke halaman LoginPage jika belum login
+  if (!user) {
     return <LoginPage />;
   }
 

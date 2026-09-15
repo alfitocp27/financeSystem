@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Calendar, Database, Check, RefreshCw, Layers, Home, Building2, User } from 'lucide-react';
+import { X, Calendar, Database, Check, Layers, Home, Building2, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useFinance } from '../context/FinanceContext';
 
@@ -10,8 +10,8 @@ interface SettingsModalProps {
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, onShowToast }) => {
-  const { user, profile, updateCycleStartDay, isConfigured, isDemoUser, setDemoMode } = useAuth();
-  const { refreshData, applyPresetTemplate } = useFinance();
+  const { user, profile, updateCycleStartDay } = useAuth();
+  const { applyPresetTemplate } = useFinance();
 
   const [cycleDay, setCycleDay] = useState<number>(profile?.cycle_start_day || 25);
   const [isSaved, setIsSaved] = useState(false);
@@ -46,20 +46,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
           : 'Template Tinggal di Rumah diterapkan!'
       );
     }
-    onClose();
-  };
-
-  const handleResetDemo = () => {
-    localStorage.removeItem('demo_wallets');
-    localStorage.removeItem('demo_categories');
-    localStorage.removeItem('demo_transactions');
-    localStorage.removeItem('demo_budgets');
-    localStorage.removeItem('demo_goals');
-    localStorage.removeItem('demo_commitments');
-    localStorage.removeItem('demo_cycle_start_day');
-    setDemoMode();
-    refreshData();
-    if (onShowToast) onShowToast('Data demo berhasil direset');
     onClose();
   };
 
@@ -170,7 +156,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
               <span>Akun Pengguna</span>
             </span>
             <span className="font-semibold text-text-primary truncate max-w-[180px]">
-              {user?.email || 'Mode Demo (Lokal)'}
+              {user?.email || 'Akun Mahasiswa'}
             </span>
           </div>
 
@@ -179,26 +165,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
               <Database className="w-3.5 h-3.5 text-text-muted" />
               <span>Database Backend</span>
             </span>
-            <span
-              className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${
-                isConfigured
-                  ? 'bg-semantic-green-soft text-semantic-green'
-                  : 'bg-amber-50 text-amber-700'
-              }`}
-            >
-              {isConfigured ? 'Supabase Connected' : 'Local Storage Mode'}
+            <span className="px-2 py-0.5 rounded-full font-bold text-[10px] bg-semantic-green-soft text-semantic-green">
+              Supabase Connected
             </span>
           </div>
-
-          {isDemoUser && (
-            <button
-              onClick={handleResetDemo}
-              className="w-full py-2 bg-surface hover:bg-bg-secondary text-text-secondary border border-border-default rounded-xl text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 active:scale-95"
-            >
-              <RefreshCw className="w-3.5 h-3.5 text-text-muted" />
-              <span>Reset Data Demo ke Semula</span>
-            </button>
-          )}
         </div>
       </div>
     </div>

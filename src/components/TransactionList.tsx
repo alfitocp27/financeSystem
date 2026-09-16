@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import type { Transaction } from '../types/database.types';
-import { formatCurrency, formatDateIndo } from '../lib/formatters';
+import { formatCurrency, formatDateIndo, getLocalDateString } from '../lib/formatters';
 import {
   groupTransactionsByDate,
   formatTransactionTime,
@@ -48,6 +48,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
     cycleInfo,
     deleteTransaction,
     updateTransaction,
+    correctFinancialTransaction,
   } = useFinance();
 
   // Filters state
@@ -126,12 +127,12 @@ export const TransactionList: React.FC<TransactionListProps> = ({
 
   // Filtered transactions calculation
   const filteredTransactions = useMemo(() => {
-    const startCycleStr = cycleInfo.startDate.toISOString().split('T')[0];
-    const endCycleStr = cycleInfo.endDate.toISOString().split('T')[0];
+    const startCycleStr = getLocalDateString(cycleInfo.startDate);
+    const endCycleStr = getLocalDateString(cycleInfo.endDate);
 
     const now = new Date();
-    const startMonthStr = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-    const endMonthStr = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+    const startMonthStr = getLocalDateString(new Date(now.getFullYear(), now.getMonth(), 1));
+    const endMonthStr = getLocalDateString(new Date(now.getFullYear(), now.getMonth() + 1, 0));
 
     return transactions.filter((tx) => {
       // Type filter
@@ -204,7 +205,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
     link.setAttribute('href', encodedUri);
     link.setAttribute(
       'download',
-      `transaksi_sakumhs_${new Date().toISOString().split('T')[0]}.csv`
+      `transaksi_sakumhs_${getLocalDateString(new Date())}.csv`
     );
     document.body.appendChild(link);
     link.click();
@@ -695,6 +696,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
         categories={categories}
         onClose={() => setEditingTx(null)}
         onSave={updateTransaction}
+        onCorrectFinancial={correctFinancialTransaction}
         onShowToast={onShowToast}
       />
     </div>

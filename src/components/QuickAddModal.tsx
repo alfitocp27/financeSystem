@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { X, ArrowDownRight, ArrowUpRight, ArrowRightLeft, Check, Plus } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import type { TransactionType, Wallet } from '../types/database.types';
+import { getLocalDateString } from '../lib/formatters';
 
 interface QuickAddModalProps {
   isOpen: boolean;
@@ -27,6 +28,9 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  const todayStr = useMemo(() => getLocalDateString(new Date()), []);
+  const [transactionDate, setTransactionDate] = useState<string>(todayStr);
+
   const activeWallets = useMemo(
     () => wallets.filter((w) => w.is_active !== false),
     [wallets]
@@ -50,6 +54,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
       if (initialCats.length > 0) {
         setCategoryId(initialCats[0].id);
       }
+      setTransactionDate(getLocalDateString(new Date()));
       setErrorMsg(null);
     }
   }, [isOpen, initialAmount, activeWallets, categories, type]);
@@ -105,6 +110,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
       categoryId: type !== 'transfer' ? (categoryId || filteredCategories[0]?.id) : undefined,
       destinationWalletId: type === 'transfer' ? destinationWalletId : undefined,
       note: note.trim() || undefined,
+      transactionDate,
     });
 
     setIsSubmitting(false);
@@ -219,6 +225,24 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
               >
                 Reset
               </button>
+            </div>
+          </div>
+
+          {/* Tanggal Transaksi */}
+          <div>
+            <label htmlFor="quick-add-date" className="text-xs font-semibold text-text-secondary block mb-1">
+              Tanggal Transaksi
+            </label>
+            <div className="relative">
+              <input
+                id="quick-add-date"
+                type="date"
+                value={transactionDate}
+                max={todayStr}
+                onChange={(e) => setTransactionDate(e.target.value)}
+                className="w-full px-3.5 py-2.5 bg-surface-elevated border border-border-default rounded-xl text-xs font-semibold text-text-primary focus:outline-none focus:ring-1 focus:ring-primary min-h-[44px]"
+                aria-label="Tanggal Transaksi"
+              />
             </div>
           </div>
 

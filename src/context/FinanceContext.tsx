@@ -33,6 +33,16 @@ interface FinanceContextType {
   }) => Promise<{ error: Error | null }>;
   deleteTransaction: (id: string) => Promise<{ error: Error | null }>;
   updateTransaction: (id: string, updates: { note?: string; categoryId?: string }) => Promise<{ error: Error | null }>;
+  correctFinancialTransaction: (params: {
+    oldTransactionId: string;
+    type: TransactionType;
+    amount: number;
+    walletId: string;
+    transactionDate: string;
+    destinationWalletId?: string;
+    categoryId?: string;
+    note?: string;
+  }) => Promise<{ error: Error | null; transaction?: Transaction }>;
   addWallet: (params: { name: string; wallet_type: WalletType; balance: number; color?: string; icon?: string }) => Promise<{ error: Error | null }>;
   updateWallet: (id: string, updates: Partial<Wallet>) => Promise<{ error: Error | null }>;
   deleteWallet: (id: string) => Promise<{ error: Error | null }>;
@@ -516,6 +526,144 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
     }
 
     return { error: null };
+  };
+
+  const correctFinancialTransaction = async (params: {
+    oldTransactionId: string;
+    type: TransactionType;
+    amount: number;
+    walletId: string;
+    transactionDate: string;
+    destinationWalletId?: string;
+    categoryId?: string;
+    note?: string;
+  }): Promise<{ error: Error | null; transaction?: Transaction }> => {
+    const oldTx = transactions.find((t) => t.id === params.oldTransactionId);
+    if (!oldTx) {
+      return { error: new Error('Transaksi lama tidak ditemukan.') };
+    }
+
+    if (oldTx.goal_id) {
+      return {
+        error: new Error(
+          'Transaksi tabungan tidak dapat dikoreksi melalui menu ini. Silakan kelola langsung melalui Target Tabungan.'
+        ),
+      };
+    }
+
+    const previousTransactions = transactions;
+    const previousWallets = wallets;
+
+    if (user && isConfigured) {
+      try {
+        const { data: newTx, error: rpcError } = await supabase.rpc('replace_financial_transaction', {
+          p_old_transaction_id: params.oldTransactionId,
+          p_type: params.type,
+          p_amount: Number(params.amount),
+          p_wallet_id: params.walletId,
+          p_transaction_date: params.transactionDate,
+          p_destination_wallet_id: params.type === 'transfer' ? params.destinationWalletId || null : null,
+          p_category_id: params.type !== 'transfer' ? params.categoryId || null : null,
+          p_note: params.note?.trim() || null,
+        });
+
+        if (rpcError) {
+          console.error('RPC replace_financial_transaction error:', rpcError);
+          return { error: rpcError };
+        }
+
+        if (newTx) {
+          // Refetch fresh transactions and wallets from Supabase to guarantee absolute ledger consistency
+          const [{ data: updatedT }, { data: updatedW }] = await Promise.all([
+            supabase
+              .from('transactions')
+              .select('*')
+              .order('transaction_date', { ascending: false })
+              .order('created_at', { ascending: false }),
+            supabase
+              .from('wallets')
+              .select('*')
+              .order('created_at', { ascending: true }),
+          ]);
+
+          if (updatedT) {
+            setTransactions(updatedT as Transaction[]);
+          }
+          if (updatedW && updatedW.length > 0) {
+            setWallets(updatedW as Wallet[]);
+          }
+
+          return { error: null, transaction: newTx as Transaction };
+        }
+      } catch (err: any) {
+        console.error('Exception during correctFinancialTransaction:', err);
+        setTransactions(previousTransactions);
+        setWallets(previousWallets);
+        return { error: err };
+      }
+    }
+
+    // Demo Mode fallback (Reverse + Replace in local state)
+    const newTxId = 'tx-' + Date.now();
+    const newTx: Transaction = {
+      id: newTxId,
+      user_id: user?.id || 'demo',
+      wallet_id: params.walletId,
+      category_id: params.type !== 'transfer' ? params.categoryId || null : null,
+      goal_id: null,
+      type: params.type,
+      amount: Number(params.amount),
+      transaction_date: params.transactionDate,
+      destination_wallet_id: params.type === 'transfer' ? params.destinationWalletId || null : null,
+      note: params.note?.trim() || null,
+      created_at: new Date().toISOString(),
+    };
+
+    // 1. Reverse old transaction from wallets
+    let updatedWallets = wallets.map((w) => {
+      let b = Number(w.balance);
+      if (w.id === oldTx.wallet_id) {
+        if (oldTx.type === 'income') b -= Number(oldTx.amount);
+        if (oldTx.type === 'expense' || oldTx.type === 'transfer') b += Number(oldTx.amount);
+      }
+      if (oldTx.type === 'transfer' && w.id === oldTx.destination_wallet_id) {
+        b -= Number(oldTx.amount);
+      }
+      return { ...w, balance: Math.max(0, b) };
+    });
+
+    // 2. Apply new transaction to wallets
+    updatedWallets = updatedWallets.map((w) => {
+      let b = Number(w.balance);
+      if (w.id === newTx.wallet_id) {
+        if (newTx.type === 'income') b += Number(newTx.amount);
+        if (newTx.type === 'expense' || newTx.type === 'transfer') b -= Number(newTx.amount);
+      }
+      if (newTx.type === 'transfer' && w.id === newTx.destination_wallet_id) {
+        b += Number(newTx.amount);
+      }
+      return { ...w, balance: Math.max(0, b) };
+    });
+
+    const updatedTxList = [
+      newTx,
+      ...transactions.filter((t) => t.id !== params.oldTransactionId),
+    ].sort((a, b) => {
+      const dateCmp = b.transaction_date.localeCompare(a.transaction_date);
+      if (dateCmp !== 0) return dateCmp;
+      return (b.created_at || '').localeCompare(a.created_at || '');
+    });
+    setTransactions(updatedTxList);
+    setWallets(updatedWallets);
+
+    try {
+      localStorage.setItem('demo_transactions', JSON.stringify(updatedTxList));
+      localStorage.setItem('demo_wallets', JSON.stringify(updatedWallets));
+    } catch {
+      // ignore
+    }
+
+    return { error: null, transaction: newTx };
   };
 
   const addWallet = async (params: { name: string; wallet_type: WalletType; balance: number; color?: string; icon?: string }) => {
@@ -1068,6 +1216,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       addTransaction,
       deleteTransaction,
       updateTransaction,
+      correctFinancialTransaction,
       addWallet,
       updateWallet,
       deleteWallet,

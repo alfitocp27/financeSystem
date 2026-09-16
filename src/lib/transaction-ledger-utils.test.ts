@@ -285,5 +285,103 @@ describe('transaction-ledger-utils', () => {
       expect(csvContent.startsWith('data:text/csv;charset=utf-8,\uFEFF')).toBe(true);
     });
   });
+
+  describe('Backdated Transactions handling', () => {
+    it('correctly places a backdated transaction created today into its past date group', () => {
+      const mockTxs: Transaction[] = [
+        {
+          id: 'tx-today',
+          user_id: 'demo',
+          wallet_id: 'w-1',
+          category_id: 'c-1',
+          goal_id: null,
+          type: 'expense',
+          amount: 20000,
+          transaction_date: '2026-09-16', // Today
+          destination_wallet_id: null,
+          note: 'Kopi hari ini',
+          created_at: '2026-09-16T10:00:00Z',
+        },
+        {
+          id: 'tx-backdated',
+          user_id: 'demo',
+          wallet_id: 'w-1',
+          category_id: 'c-1',
+          goal_id: null,
+          type: 'expense',
+          amount: 45000,
+          transaction_date: '2026-09-13', // 3 days ago
+          destination_wallet_id: null,
+          note: 'Beli buku 3 hari lalu',
+          created_at: '2026-09-16T10:05:00Z', // Recorded today!
+        },
+      ];
+
+      const groups = groupTransactionsByDate(mockTxs, refDate);
+      expect(groups).toHaveLength(2);
+
+      // Group 0: Today (2026-09-16)
+      expect(groups[0].date).toBe('2026-09-16');
+      expect(groups[0].label).toBe('Hari Ini');
+      expect(groups[0].dailyExpenseTotal).toBe(20000);
+      expect(groups[0].transactions[0].id).toBe('tx-today');
+
+      // Group 1: Past date (2026-09-13)
+      expect(groups[1].date).toBe('2026-09-13');
+      expect(groups[1].dailyExpenseTotal).toBe(45000);
+      expect(groups[1].transactions[0].id).toBe('tx-backdated');
+    });
+
+    it('correctly calculates subtotal when multiple backdated transactions occur on the same historical date', () => {
+      const mockTxs: Transaction[] = [
+        {
+          id: 'tx-1',
+          user_id: 'demo',
+          wallet_id: 'w-1',
+          category_id: 'c-1',
+          goal_id: null,
+          type: 'expense',
+          amount: 30000,
+          transaction_date: '2026-09-12',
+          destination_wallet_id: null,
+          note: null,
+          created_at: '2026-09-16T08:00:00Z',
+        },
+        {
+          id: 'tx-2',
+          user_id: 'demo',
+          wallet_id: 'w-1',
+          category_id: 'c-1',
+          goal_id: null,
+          type: 'expense',
+          amount: 25000,
+          transaction_date: '2026-09-12',
+          destination_wallet_id: null,
+          note: null,
+          created_at: '2026-09-16T08:01:00Z',
+        },
+        {
+          id: 'tx-3',
+          user_id: 'demo',
+          wallet_id: 'w-1',
+          category_id: null,
+          goal_id: null,
+          type: 'income',
+          amount: 100000,
+          transaction_date: '2026-09-12',
+          destination_wallet_id: null,
+          note: null,
+          created_at: '2026-09-16T08:02:00Z',
+        },
+      ];
+
+      const groups = groupTransactionsByDate(mockTxs, refDate);
+      expect(groups).toHaveLength(1);
+      expect(groups[0].date).toBe('2026-09-12');
+      expect(groups[0].dailyExpenseTotal).toBe(55000); // 30k + 25k
+      expect(groups[0].dailyIncomeTotal).toBe(100000);
+      expect(groups[0].transactions).toHaveLength(3);
+    });
+  });
 });
 

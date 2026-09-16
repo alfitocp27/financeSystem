@@ -31,6 +31,7 @@ interface FinanceContextType {
     transactionDate?: string;
   }) => Promise<{ error: Error | null }>;
   deleteTransaction: (id: string) => Promise<{ error: Error | null }>;
+  updateTransaction: (id: string, updates: { note?: string; categoryId?: string }) => Promise<{ error: Error | null }>;
   addWallet: (params: { name: string; wallet_type: WalletType; balance: number; color?: string; icon?: string }) => Promise<{ error: Error | null }>;
   updateWallet: (id: string, updates: Partial<Wallet>) => Promise<{ error: Error | null }>;
   deleteWallet: (id: string) => Promise<{ error: Error | null }>;
@@ -358,7 +359,12 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
   };
 
   const deleteTransaction = async (id: string) => {
+    const previousTransactions = transactions;
+    const previousWallets = wallets;
+    const previousGoals = savingsGoals;
+
     const tx = transactions.find((t) => t.id === id);
+    if (!tx) return { error: new Error('Transaksi tidak ditemukan.') };
 
     // 1. Optimistic rollback in local state immediately: saldo dikembalikan sesuai alur proses bisnis!
     setTransactions((prev) => prev.filter((t) => t.id !== id));
@@ -390,6 +396,10 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
         const { error: delError } = await supabase.from('transactions').delete().eq('id', id);
         if (delError) {
           console.error('Delete transaction error:', delError);
+          // Rollback local state on database failure!
+          setTransactions(previousTransactions);
+          setWallets(previousWallets);
+          setSavingsGoals(previousGoals);
           return { error: delError };
         }
 
@@ -407,12 +417,86 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
         return { error: null };
       } catch (err: any) {
         console.error('Delete transaction DB error:', err);
+        setTransactions(previousTransactions);
+        setWallets(previousWallets);
+        setSavingsGoals(previousGoals);
         return { error: err };
       }
     }
 
     try {
       localStorage.setItem('demo_transactions', JSON.stringify(transactions.filter((t) => t.id !== id)));
+    } catch {
+      // ignore
+    }
+
+    return { error: null };
+  };
+
+  const updateTransaction = async (
+    id: string,
+    updates: { note?: string; categoryId?: string }
+  ): Promise<{ error: Error | null }> => {
+    const previousTransactions = transactions;
+    const targetTx = transactions.find((t) => t.id === id);
+    if (!targetTx) return { error: new Error('Transaksi tidak ditemukan.') };
+
+    const payload: { note?: string | null; category_id?: string | null } = {};
+    if (updates.note !== undefined) {
+      payload.note = updates.note.trim() || null;
+    }
+    if (updates.categoryId !== undefined) {
+      payload.category_id = updates.categoryId || null;
+    }
+
+    // 1. Optimistic update (strictly only note & category, balances never touched!)
+    setTransactions((prev) =>
+      prev.map((t) => {
+        if (t.id === id) {
+          return {
+            ...t,
+            ...(payload.note !== undefined ? { note: payload.note } : {}),
+            ...(payload.category_id !== undefined ? { category_id: payload.category_id } : {}),
+          };
+        }
+        return t;
+      })
+    );
+
+    // 2. Supabase Sync
+    if (user && isConfigured) {
+      try {
+        const { error: updateError } = await supabase
+          .from('transactions')
+          .update(payload)
+          .eq('id', id);
+
+        if (updateError) {
+          console.error('Update transaction Supabase error:', updateError);
+          setTransactions(previousTransactions);
+          return { error: updateError };
+        }
+        return { error: null };
+      } catch (err: any) {
+        console.error('Update transaction error:', err);
+        setTransactions(previousTransactions);
+        return { error: err };
+      }
+    }
+
+    // Demo Mode Sync
+    try {
+      const updatedList = transactions.map((t) => {
+        if (t.id === id) {
+          return {
+            ...t,
+            ...(payload.note !== undefined ? { note: payload.note } : {}),
+            ...(payload.category_id !== undefined ? { category_id: payload.category_id } : {}),
+          };
+        }
+        return t;
+      });
+      localStorage.setItem('demo_transactions', JSON.stringify(updatedList));
     } catch {
       // ignore
     }
@@ -853,6 +937,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       totalUnpaidCommitments,
       addTransaction,
       deleteTransaction,
+      updateTransaction,
       addWallet,
       updateWallet,
       deleteWallet,

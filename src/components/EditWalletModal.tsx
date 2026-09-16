@@ -17,7 +17,6 @@ export const EditWalletModal: React.FC<EditWalletModalProps> = ({ wallet, isOpen
 
   const [name, setName] = useState('');
   const [walletType, setWalletType] = useState<WalletType>('bank');
-  const [balanceStr, setBalanceStr] = useState('0');
   const [color, setColor] = useState('#B9924F');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [inlineError, setInlineError] = useState<string | null>(null);
@@ -26,8 +25,7 @@ export const EditWalletModal: React.FC<EditWalletModalProps> = ({ wallet, isOpen
   useEffect(() => {
     if (wallet) {
       setName(wallet.name);
-      setWalletType(wallet.wallet_type);
-      setBalanceStr(wallet.balance.toString());
+      setWalletType(wallet.wallet_type || 'bank');
       setColor(wallet.color || '#B9924F');
       setInlineError(null);
       setConfirmAction(null);
@@ -52,7 +50,6 @@ export const EditWalletModal: React.FC<EditWalletModalProps> = ({ wallet, isOpen
     const { error } = await updateWallet(wallet.id, {
       name: name.trim(),
       wallet_type: walletType,
-      balance: parseInt(balanceStr, 10) || 0,
       color,
     });
 
@@ -239,14 +236,12 @@ export const EditWalletModal: React.FC<EditWalletModalProps> = ({ wallet, isOpen
 
             <div>
               <label className="text-xs font-semibold text-text-secondary block mb-1">
-                Koreksi Saldo (Rp)
+                Saldo Saat Ini
               </label>
-              <input
-                type="number"
-                value={balanceStr}
-                onChange={(e) => setBalanceStr(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-surface-elevated border border-border-default rounded-xl text-base font-bold text-text-primary focus:outline-none focus:border-border-gold-focus"
-              />
+              <div className="w-full px-3.5 py-2.5 bg-surface-container-low border border-border-default rounded-xl text-sm font-bold flex items-center justify-between">
+                <span className="text-text-primary tabular-nums">{formatCurrency(wallet.balance)}</span>
+                <span className="text-xs font-normal text-text-muted">Dimutasi via transaksi</span>
+              </div>
             </div>
 
             <div>

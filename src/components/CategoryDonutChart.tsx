@@ -1,9 +1,45 @@
 import React, { useState, useRef, useEffect, useId } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Utensils,
+  Home,
+  Bus,
+  BookOpen,
+  Coffee,
+  ShoppingBag,
+  Briefcase,
+  Award,
+  Tag,
+} from 'lucide-react';
 import { formatCurrency } from '../lib/formatters';
+import { getMutedCategoryStyle } from '../lib/category-color-utils';
 
 import { type CategoryDonutItem } from '../lib/analytics-utils';
 export type { CategoryDonutItem };
+
+const getCategoryIcon = (iconName?: string) => {
+  switch (iconName) {
+    case 'utensils':
+      return <Utensils className="w-3.5 h-3.5" />;
+    case 'home':
+      return <Home className="w-3.5 h-3.5" />;
+    case 'bus':
+      return <Bus className="w-3.5 h-3.5" />;
+    case 'book':
+    case 'book-open':
+      return <BookOpen className="w-3.5 h-3.5" />;
+    case 'coffee':
+      return <Coffee className="w-3.5 h-3.5" />;
+    case 'shopping-bag':
+      return <ShoppingBag className="w-3.5 h-3.5" />;
+    case 'briefcase':
+      return <Briefcase className="w-3.5 h-3.5" />;
+    case 'award':
+      return <Award className="w-3.5 h-3.5" />;
+    default:
+      return <Tag className="w-3.5 h-3.5" />;
+  }
+};
 
 interface CategoryDonutChartProps {
   data: CategoryDonutItem[];
@@ -238,6 +274,7 @@ export const CategoryDonutChart: React.FC<CategoryDonutChartProps> = ({
           {data.map((item, index) => {
             const isItemActive = activeIndex === index;
             const hasActiveFocus = activeIndex !== null;
+            const iconStyle = getMutedCategoryStyle(item.rawColor || item.color);
 
             return (
               <button
@@ -276,16 +313,20 @@ export const CategoryDonutChart: React.FC<CategoryDonutChartProps> = ({
                 aria-pressed={isItemActive}
                 aria-label={`${item.name}: ${formatCurrency(item.value)} (${item.percentage}%)`}
               >
-                {/* Left: Color Pip + Category Name */}
+                {/* Left: Category Icon Box + Category Name */}
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <span
-                    className="w-3 h-3 rounded-xs shrink-0 transition-transform duration-150"
+                  <div
+                    className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border transition-transform duration-150"
                     style={{
-                      backgroundColor: item.color,
-                      transform: isItemActive ? 'scale(1.2)' : 'scale(1)',
+                      backgroundColor: iconStyle.backgroundColor,
+                      color: iconStyle.color,
+                      borderColor: iconStyle.borderColor,
+                      transform: isItemActive ? 'scale(1.08)' : 'scale(1)',
                     }}
                     aria-hidden="true"
-                  />
+                  >
+                    {getCategoryIcon(item.icon)}
+                  </div>
                   <span className="text-xs text-text-primary truncate font-medium">
                     {item.name}
                   </span>

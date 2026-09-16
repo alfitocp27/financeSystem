@@ -31,11 +31,11 @@ import {
 } from 'recharts';
 import { useFinance } from '../context/FinanceContext';
 import { formatCurrency, formatCompactCurrency, formatDateIndo, formatRelativeDate, getLocalDateString } from '../lib/formatters';
+import { getMutedCategoryStyle } from '../lib/category-color-utils';
 import { SafeToSpendCard } from './SafeToSpendCard';
 import type { ToastData } from './Toast';
 
-const MUTED_CATEGORY_COLORS = ['#D6B875', '#B9924F', '#6683A3', '#5F8A70', '#A85F68', '#4F5765'];
-
+// --- Dashboard Props ---
 interface DashboardViewProps {
   studentName: string;
   onOpenQuickAdd?: () => void;
@@ -96,14 +96,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       return t.type === 'expense' && d >= startStr && d <= endStr;
     });
 
-    const mapped = expenseCats.map((cat, idx) => {
+    const mapped = expenseCats.map((cat) => {
       const total = inCycleExpenses
         .filter((t) => t.category_id === cat.id)
         .reduce((sum, t) => sum + Number(t.amount), 0);
       return {
         id: cat.id,
         name: cat.name,
-        color: cat.color || MUTED_CATEGORY_COLORS[idx % MUTED_CATEGORY_COLORS.length],
+        color: cat.color || '#B9924F',
         icon: cat.icon,
         value: total,
       };
@@ -572,19 +572,26 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   Sisa Kuota: <strong className="text-text-primary tabular-nums font-semibold">{formatCurrency(totalRemainingQuota)}</strong>
                 </span>
               </div>
-              <div className="h-3 w-full bg-bg-secondary rounded-full flex overflow-hidden p-0.5 gap-0.5">
-                {activeSlices.map((slice) => (
-                  <div
-                    key={slice.id}
-                    className="h-full transition-all duration-500 rounded-full"
-                    style={{
-                      width: `${(slice.ratio * 100).toFixed(1)}%`,
-                      backgroundColor: slice.color,
-                    }}
-                    title={`${slice.name} (${(slice.ratio * 100).toFixed(1)}%)`}
-                  />
-                ))}
-                <div className="bg-surface-container flex-1 h-full rounded-full" title="Sisa Budget" />
+              <div className="h-3 w-full bg-bg-secondary rounded-full flex overflow-hidden p-0.5 gap-0.5 border border-border-subtle">
+                {activeSlices.map((slice) => {
+                  const sliceStyle = getMutedCategoryStyle(slice.color);
+
+                  return (
+                    <div
+                      key={slice.id}
+                      className="h-full transition-all duration-500 rounded-full"
+                      style={{
+                        width: `${(slice.ratio * 100).toFixed(1)}%`,
+                        backgroundColor: sliceStyle.color,
+                      }}
+                      title={`${slice.name} (${(slice.ratio * 100).toFixed(1)}%)`}
+                    />
+                  );
+                })}
+                <div
+                  className="bg-surface-elevated/70 border border-border-subtle flex-1 h-full rounded-full"
+                  title="Sisa Budget"
+                />
               </div>
             </div>
 
@@ -596,15 +603,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 const spent = cat.value;
                 const percentage = budgetAmount > 0 ? Math.min(100, Math.round((spent / budgetAmount) * 100)) : 0;
                 const isOver = budgetAmount > 0 && spent > budgetAmount;
-                const isWarning = !isOver && percentage >= 85;
+                const iconStyle = getMutedCategoryStyle(cat.color);
 
                 return (
                   <div key={cat.id} className="py-3.5 first:pt-1 last:pb-1">
                     <div className="flex items-center justify-between mb-1.5">
                       <div className="flex items-center gap-2.5 min-w-0">
                         <div
-                          className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                          style={{ backgroundColor: `${cat.color}15`, color: cat.color }}
+                          className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border"
+                          style={{
+                            backgroundColor: iconStyle.backgroundColor,
+                            color: iconStyle.color,
+                            borderColor: iconStyle.borderColor,
+                          }}
                         >
                           {getCategoryIcon(cat.icon)}
                         </div>
@@ -623,8 +634,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                           className={`tabular-nums font-semibold ${
                             isOver
                               ? 'text-semantic-rose-text'
-                              : isWarning
-                              ? 'text-semantic-amber-text'
                               : 'text-text-muted'
                           }`}
                         >
@@ -633,17 +642,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       </div>
                     </div>
 
-                    <div className="w-full bg-border-subtle h-1.5 rounded-full overflow-hidden mb-1.5">
+                    <div className="w-full bg-surface-elevated h-1.5 rounded-full overflow-hidden mb-1.5 border border-border-subtle/40">
                       <div
                         className={`h-full rounded-full transition-all duration-500 ${
-                          isOver
-                            ? 'bg-semantic-rose'
-                            : isWarning
-                            ? 'bg-semantic-amber'
-                            : 'bg-primary'
+                          isOver ? 'bg-semantic-rose' : ''
                         }`}
                         style={{
                           width: `${Math.min(percentage, 100)}%`,
+                          backgroundColor: isOver ? undefined : iconStyle.color,
                         }}
                       />
                     </div>

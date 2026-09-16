@@ -7,9 +7,9 @@ import {
   calculatePeakSpendingDay,
   aggregateCategoryDonutData,
   generateDynamicInsights,
-  ANALYTICS_CATEGORY_COLORS,
   OTHER_CATEGORY_COLOR,
 } from './analytics-utils';
+import { getMutedCategoryStyle } from './category-color-utils';
 import type { Transaction, Category } from '../types/database.types';
 
 describe('Analytics Utilities', () => {
@@ -87,6 +87,7 @@ describe('Analytics Utilities', () => {
       expect(top?.name).toBe('Makanan & Minuman');
       expect(top?.total).toBe(250000);
       expect(top?.percentage).toBe(71); // 250000 / 350000 = ~71%
+      expect(top?.color).toBe(getMutedCategoryStyle(mockCategories[0].color).color);
     });
 
     it('returns null if there are no cycle expenses', () => {
@@ -130,11 +131,14 @@ describe('Analytics Utilities', () => {
       // Top 5 + 1 "Lainnya" = 6 items
       expect(items).toHaveLength(6);
       expect(items[0].id).toBe('cat-1');
-      expect(items[0].color).toBe(ANALYTICS_CATEGORY_COLORS[0]);
+      expect(items[0].color).toBe(getMutedCategoryStyle(mockCategories[0].color).color);
+      expect(items[0].icon).toBe('utensils');
+      expect(items[0].rawColor).toBe('#B9924F');
       expect(items[5].id).toBe('category-others');
       expect(items[5].name).toBe('Lainnya');
       expect(items[5].value).toBe(50000);
       expect(items[5].color).toBe(OTHER_CATEGORY_COLOR);
+      expect(items[5].icon).toBe('tag');
     });
 
     it('does not create a Lainnya slice when there are exactly 5 or fewer categories', () => {

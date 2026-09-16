@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import { formatCurrency, formatDateIndo, getLocalDateString } from '../lib/formatters';
+import { getMutedCategoryStyle } from '../lib/category-color-utils';
 
 interface BudgetManagerProps {
   onShowToast?: (msg: string) => void;
@@ -100,7 +101,7 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({ onShowToast, onOpe
       <div className="p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary-soft text-text-gold flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-primary-soft text-text-gold flex items-center justify-center shrink-0 border border-border-gold">
               <Sliders className="w-4 h-4" />
             </div>
             <div>
@@ -123,7 +124,7 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({ onShowToast, onOpe
           <button
             onClick={onOpenAddCategory}
             type="button"
-            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 min-h-[44px] rounded-lg bg-primary-soft text-text-gold hover:bg-primary/20 transition-colors text-xs font-semibold shrink-0 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary"
+            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 min-h-[44px] rounded-lg bg-primary-soft text-text-gold hover:bg-primary-soft/80 border border-border-gold transition-colors text-xs font-semibold shrink-0 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary"
           >
             <Plus className="w-4 h-4" />
             <span>Tambah Pos Baru</span>
@@ -165,13 +166,17 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({ onShowToast, onOpe
           <span className="text-text-secondary font-medium">Realisasi Anggaran Siklus</span>
           <span
             className={`font-semibold tabular-nums ${
-              overallPercentage >= 100 ? 'text-semantic-rose-text' : 'text-text-gold'
+              overallPercentage >= 100
+                ? 'text-semantic-rose-text'
+                : overallPercentage >= 80
+                ? 'text-semantic-amber-text'
+                : 'text-text-gold'
             }`}
           >
             {overallPercentage}% {overallPercentage >= 100 ? '(Melampaui Plafon)' : 'teralokasi'}
           </span>
         </div>
-        <div className="h-2 w-full bg-surface-elevated rounded-full overflow-hidden">
+        <div className="h-2 w-full bg-surface-elevated rounded-full overflow-hidden border border-border-subtle/50">
           <div
             className={`h-full rounded-full transition-all duration-500 ${
               overallPercentage >= 100
@@ -209,6 +214,8 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({ onShowToast, onOpe
             const isEditing = editingCategoryId === cat.id;
             const percentage = budgetAmount > 0 ? Math.round((spent / budgetAmount) * 100) : 0;
             const isOverbudget = budgetAmount > 0 && spent > budgetAmount;
+            const isWarning = !isOverbudget && percentage >= 80;
+            const iconStyle = getMutedCategoryStyle(cat.color);
 
             return (
               <div
@@ -218,10 +225,11 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({ onShowToast, onOpe
                 {/* Left: Icon & Category Name */}
                 <div className="flex items-center gap-3 min-w-0">
                   <div
-                    className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                    className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border"
                     style={{
-                      backgroundColor: `${cat.color || '#B9924F'}20`,
-                      color: cat.color || '#B9924F',
+                      backgroundColor: iconStyle.backgroundColor,
+                      color: iconStyle.color,
+                      borderColor: iconStyle.borderColor,
                     }}
                     aria-hidden="true"
                   >
@@ -235,6 +243,10 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({ onShowToast, onOpe
                       {isOverbudget ? (
                         <span className="text-semantic-rose-text font-medium flex items-center gap-1">
                           <AlertCircle className="w-3 h-3" /> Melampaui ({percentage}%)
+                        </span>
+                      ) : isWarning ? (
+                        <span className="text-semantic-amber-text font-medium">
+                          Mendekati limit ({percentage}%)
                         </span>
                       ) : budgetAmount > 0 ? (
                         <span className="tabular-nums">{percentage}% dari plafon</span>
@@ -287,7 +299,7 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({ onShowToast, onOpe
                     <button
                       type="button"
                       onClick={handleCancelEdit}
-                      className="min-h-[44px] min-w-[44px] px-3.5 py-2 bg-surface-elevated text-text-secondary hover:text-text-primary rounded-lg transition-colors font-medium text-xs flex items-center justify-center shrink-0 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary"
+                      className="min-h-[44px] min-w-[44px] px-3.5 py-2 bg-surface-elevated text-text-secondary hover:text-text-primary rounded-lg transition-colors font-medium text-xs flex items-center justify-center shrink-0 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary border border-border-subtle"
                       title="Batal"
                       aria-label="Batal ubah anggaran"
                     >
@@ -306,16 +318,15 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({ onShowToast, onOpe
                           / {budgetAmount > 0 ? formatCurrency(budgetAmount) : '—'}
                         </span>
                       </div>
-                      <div className="w-28 sm:w-36 h-1.5 bg-surface-elevated rounded-full overflow-hidden">
+                      <div className="w-28 sm:w-36 h-1.5 bg-surface-elevated rounded-full overflow-hidden border border-border-subtle/40">
                         <div
                           className={`h-full rounded-full transition-all duration-300 ${
-                            isOverbudget
-                              ? 'bg-semantic-rose'
-                              : percentage >= 80
-                              ? 'bg-semantic-amber'
-                              : 'bg-primary'
+                            isOverbudget ? 'bg-semantic-rose' : ''
                           }`}
-                          style={{ width: `${Math.min(percentage, 100)}%` }}
+                          style={{
+                            width: `${Math.min(percentage, 100)}%`,
+                            backgroundColor: isOverbudget ? undefined : iconStyle.color,
+                          }}
                         />
                       </div>
                     </div>

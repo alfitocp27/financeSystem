@@ -1,5 +1,6 @@
 import type { Transaction, Category } from '../types/database.types';
 import { getLocalDateString, formatDateIndo, formatCurrency } from './formatters';
+import { getMutedCategoryStyle } from './category-color-utils';
 
 export const ANALYTICS_CATEGORY_COLORS = [
   '#D6B875', // Champagne Gold Highlight
@@ -17,6 +18,8 @@ export interface CategoryDonutItem {
   value: number;
   percentage: number;
   color: string;
+  icon?: string;
+  rawColor?: string;
 }
 
 export interface CycleAnalyticsSummary {
@@ -113,13 +116,15 @@ export function calculateTopCategory(
 
   const top = sorted[0];
   const percentage = Math.round((top.total / totalExpense) * 100);
+  const catObj = categories.find((c) => c.id === top.id);
+  const topColor = catObj?.color ? getMutedCategoryStyle(catObj.color).color : ANALYTICS_CATEGORY_COLORS[0];
 
   return {
     id: top.id,
     name: top.name,
     total: top.total,
     percentage,
-    color: ANALYTICS_CATEGORY_COLORS[0],
+    color: topColor,
   };
 }
 
@@ -165,7 +170,10 @@ export function aggregateCategoryDonutData(
 ): CategoryDonutItem[] {
   if (cycleExpenses.length === 0 || totalExpense <= 0) return [];
 
-  const categoryTotals: Record<string, { id: string; name: string; total: number }> = {};
+  const categoryTotals: Record<
+    string,
+    { id: string; name: string; icon?: string; rawColor?: string; total: number }
+  > = {};
 
   cycleExpenses.forEach((t) => {
     const catId = t.category_id || 'uncategorized';
@@ -174,6 +182,8 @@ export function aggregateCategoryDonutData(
       categoryTotals[catId] = {
         id: catId,
         name: cat ? cat.name : 'Tanpa Kategori',
+        icon: cat?.icon,
+        rawColor: cat?.color,
         total: 0,
       };
     }
@@ -187,13 +197,18 @@ export function aggregateCategoryDonutData(
   const top5 = sorted.slice(0, 5);
   const remaining = sorted.slice(5);
 
-  const items: CategoryDonutItem[] = top5.map((cat, idx) => ({
-    id: cat.id,
-    name: cat.name,
-    value: cat.total,
-    percentage: Math.round((cat.total / totalExpense) * 100),
-    color: ANALYTICS_CATEGORY_COLORS[idx % ANALYTICS_CATEGORY_COLORS.length],
-  }));
+  const items: CategoryDonutItem[] = top5.map((cat, idx) => {
+    const mutedStyle = cat.rawColor ? getMutedCategoryStyle(cat.rawColor) : null;
+    return {
+      id: cat.id,
+      name: cat.name,
+      value: cat.total,
+      percentage: Math.round((cat.total / totalExpense) * 100),
+      color: mutedStyle ? mutedStyle.color : ANALYTICS_CATEGORY_COLORS[idx % ANALYTICS_CATEGORY_COLORS.length],
+      icon: cat.icon,
+      rawColor: cat.rawColor,
+    };
+  });
 
   if (remaining.length > 0) {
     const otherTotal = remaining.reduce((sum, item) => sum + item.total, 0);
@@ -204,6 +219,8 @@ export function aggregateCategoryDonutData(
         value: otherTotal,
         percentage: Math.round((otherTotal / totalExpense) * 100),
         color: OTHER_CATEGORY_COLOR,
+        icon: 'tag',
+        rawColor: OTHER_CATEGORY_COLOR,
       });
     }
   }

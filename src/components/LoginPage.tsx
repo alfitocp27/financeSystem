@@ -3,9 +3,9 @@ import { useAuth } from '../context/AuthContext';
 import { AlertCircle, Eye, EyeOff, Mail, User as UserIcon } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
-  const { signIn, signUp, isConfigured } = useAuth();
+  const { signIn, signUp, resetPassword, isConfigured } = useAuth();
 
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -21,6 +21,32 @@ export const LoginPage: React.FC = () => {
     setSuccessMsg(null);
 
     const cleanEmail = email.trim();
+
+    if (mode === 'forgot') {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!cleanEmail || !emailRegex.test(cleanEmail)) {
+        setErrorMsg('Silakan masukkan alamat email yang valid');
+        return;
+      }
+
+      setIsSubmitting(true);
+      const { error } = await resetPassword(cleanEmail);
+      setIsSubmitting(false);
+
+      if (error) {
+        const msg = error.message.toLowerCase();
+        if (msg.includes('rate') || msg.includes('429')) {
+          setErrorMsg('Terlalu banyak permintaan. Silakan tunggu beberapa menit sebelum mencoba kembali.');
+        } else {
+          setErrorMsg('Gagal mengirim tautan pemulihan. Silakan periksa koneksi internet Anda.');
+        }
+      } else {
+        setSuccessMsg('Jika email terdaftar, tautan pemulihan kata sandi telah dikirim ke kotak masuk atau folder spam email Anda.');
+        setEmail('');
+      }
+      return;
+    }
+
     if (!cleanEmail || !password) {
       setErrorMsg('Email dan password wajib diisi');
       return;
@@ -87,12 +113,18 @@ export const LoginPage: React.FC = () => {
           {/* Title & Subtitle */}
           <div className="text-center mb-7">
             <h1 className="text-xl font-bold text-text-primary tracking-tight">
-              {mode === 'login' ? 'Masuk ke SakuMhs' : 'Daftar Akun SakuMhs'}
+              {mode === 'login'
+                ? 'Masuk ke SakuMhs'
+                : mode === 'register'
+                ? 'Daftar Akun SakuMhs'
+                : 'Pemulihan Kata Sandi'}
             </h1>
             <p className="text-xs text-text-secondary mt-1.5 leading-snug">
               {mode === 'login'
                 ? 'Selamat datang kembali! Masukkan detail akunmu.'
-                : 'Mulai kelola uang saku dan target tabunganmu.'}
+                : mode === 'register'
+                ? 'Mulai kelola uang saku dan target tabunganmu.'
+                : 'Masukkan email mahasiswa Anda untuk menerima tautan pemulihan kata sandi.'}
             </p>
           </div>
 
@@ -146,41 +178,47 @@ export const LoginPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Password Input */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-semibold text-text-secondary" htmlFor="password">
-                  Password
-                </label>
-                {mode === 'login' && (
+            {/* Password Input (Only for login and register) */}
+            {mode !== 'forgot' && (
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-semibold text-text-secondary" htmlFor="password">
+                    Password
+                  </label>
+                  {mode === 'login' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMode('forgot');
+                        setErrorMsg(null);
+                        setSuccessMsg(null);
+                      }}
+                      className="text-xs text-text-muted hover:text-text-gold transition-colors"
+                    >
+                      Lupa password?
+                    </button>
+                  )}
+                </div>
+                <div className="relative">
+                  <input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Minimal 6 karakter"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="w-full h-11 pl-3.5 pr-10 rounded-xl bg-surface-elevated border border-border-default text-xs font-medium text-text-primary placeholder:text-text-muted focus:outline-none focus:border-border-gold-focus transition-all"
+                  />
                   <button
                     type="button"
-                    onClick={() => alert('Silakan hubungi administrator atau buat akun baru.')}
-                    className="text-xs text-text-muted hover:text-text-gold transition-colors"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-text-muted hover:text-text-primary transition-colors focus:outline-none"
                   >
-                    Lupa password?
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
-                )}
+                </div>
               </div>
-              <div className="relative">
-                <input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Minimal 6 karakter"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="w-full h-11 pl-3.5 pr-10 rounded-xl bg-surface-elevated border border-border-default text-xs font-medium text-text-primary placeholder:text-text-muted focus:outline-none focus:border-border-gold-focus transition-all"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-text-muted hover:text-text-primary transition-colors focus:outline-none"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
+            )}
 
             {/* Remember Me Checkbox */}
             {mode === 'login' && (
@@ -220,7 +258,9 @@ export const LoginPage: React.FC = () => {
                   ? 'Memproses...'
                   : mode === 'login'
                   ? 'Masuk ke Akun'
-                  : 'Daftar Sekarang'}
+                  : mode === 'register'
+                  ? 'Daftar Sekarang'
+                  : 'Kirim Tautan Pemulihan'}
               </button>
             </div>
           </form>
@@ -228,20 +268,37 @@ export const LoginPage: React.FC = () => {
 
         {/* Bottom Footer Strip */}
         <div className="py-4 px-7 border-t border-border-subtle text-center bg-surface-elevated space-y-2">
-          <p className="text-xs text-text-secondary">
-            {mode === 'login' ? 'Belum punya akun? ' : 'Sudah memiliki akun? '}
-            <button
-              type="button"
-              onClick={() => {
-                setMode(mode === 'login' ? 'register' : 'login');
-                setErrorMsg(null);
-                setSuccessMsg(null);
-              }}
-              className="text-text-gold hover:text-primary-focus font-semibold transition-colors"
-            >
-              {mode === 'login' ? 'Daftar gratis' : 'Masuk di sini'}
-            </button>
-          </p>
+          {mode === 'forgot' ? (
+            <p className="text-xs text-text-secondary">
+              Sudah ingat kata sandi Anda?{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('login');
+                  setErrorMsg(null);
+                  setSuccessMsg(null);
+                }}
+                className="text-text-gold hover:text-primary-focus font-semibold transition-colors"
+              >
+                Kembali ke Masuk
+              </button>
+            </p>
+          ) : (
+            <p className="text-xs text-text-secondary">
+              {mode === 'login' ? 'Belum punya akun? ' : 'Sudah memiliki akun? '}
+              <button
+                type="button"
+                onClick={() => {
+                  setMode(mode === 'login' ? 'register' : 'login');
+                  setErrorMsg(null);
+                  setSuccessMsg(null);
+                }}
+                className="text-text-gold hover:text-primary-focus font-semibold transition-colors"
+              >
+                {mode === 'login' ? 'Daftar gratis' : 'Masuk di sini'}
+              </button>
+            </p>
+          )}
         </div>
       </div>
     </div>

@@ -8,7 +8,6 @@ import {
   TrendingUp,
   Settings,
   LogOut,
-  LogIn,
   CreditCard,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -25,10 +24,9 @@ export type ActiveTab =
 interface SidebarProps {
   activeTab: ActiveTab;
   onSelectTab: (tab: ActiveTab) => void;
-  onOpenAuth: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab, onOpenAuth }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab }) => {
   const { user, profile, signOut } = useAuth();
 
   const navItems = [
@@ -112,21 +110,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab, onOpen
         </div>
 
         {/* Auth Action */}
-        {user ? (
+        {user && (
           <button
             onClick={signOut}
             className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold text-semantic-rose-text hover:bg-semantic-rose-soft transition-colors min-h-[44px]"
           >
             <LogOut className="w-4 h-4" />
             <span>Keluar Akun</span>
-          </button>
-        ) : (
-          <button
-            onClick={onOpenAuth}
-            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold text-slate-950 bg-primary hover:bg-primary-hover transition-colors min-h-[44px]"
-          >
-            <LogIn className="w-4 h-4" />
-            <span>Masuk / Daftar</span>
           </button>
         )}
       </div>

@@ -34,11 +34,11 @@ import { formatCurrency, formatCompactCurrency, formatDateIndo, formatRelativeDa
 import { SafeToSpendCard } from './SafeToSpendCard';
 import type { ToastData } from './Toast';
 
-const STITCH_COLORS = ['#2563eb', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
+const MUTED_CATEGORY_COLORS = ['#D6B875', '#B9924F', '#6683A3', '#5F8A70', '#A85F68', '#4F5765'];
 
 interface DashboardViewProps {
   studentName: string;
-  onOpenQuickAdd: () => void;
+  onOpenQuickAdd?: () => void;
   onOpenSimulator: () => void;
   onOpenTransfer: () => void;
   onOpenAddWallet: () => void;
@@ -48,7 +48,6 @@ interface DashboardViewProps {
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
   studentName,
-  onOpenQuickAdd,
   onOpenSimulator,
   onOpenTransfer,
   onOpenAddWallet,
@@ -104,7 +103,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       return {
         id: cat.id,
         name: cat.name,
-        color: cat.color || STITCH_COLORS[idx % STITCH_COLORS.length],
+        color: cat.color || MUTED_CATEGORY_COLORS[idx % MUTED_CATEGORY_COLORS.length],
         icon: cat.icon,
         value: total,
       };
@@ -119,7 +118,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       mapped.push({
         id: 'cat-uncategorized',
         name: 'Lainnya / Umum',
-        color: '#64748b',
+        color: '#4F5765',
         icon: 'tag',
         value: uncategorizedTotal,
       });
@@ -247,27 +246,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   return (
     <div className="space-y-6 pb-6">
-      {/* 1. Top Greeting & Primary Trigger Header (Stitch Exact) */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
-        <div className="flex flex-col">
-          <h1 className="text-2xl font-bold text-text-primary tracking-tight">
-            Selamat datang kembali, {studentName}
-          </h1>
-          <p className="text-sm text-text-muted mt-0.5">
-            Berikut ringkasan kondisi keuanganmu untuk siklus bulan {new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(cycleInfo.startDate)}.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2 self-start sm:self-auto">
-          <button
-            onClick={onOpenQuickAdd}
-            className="bg-primary-500 hover:bg-primary-600 active:scale-95 text-white font-semibold text-sm px-4 py-2.5 min-h-[44px] rounded-lg flex items-center gap-2 transition-all shadow-sm"
-            id="btnQuickAdd"
-          >
-            <Plus className="w-4 h-4 stroke-[2.5]" />
-            <span>Tambah Transaksi</span>
-          </button>
-        </div>
+      {/* 1. Top Greeting Header */}
+      <div className="flex flex-col gap-1 pt-1 mb-6">
+        <h1 className="text-2xl font-bold text-text-primary tracking-tight">
+          Selamat datang kembali, {studentName}
+        </h1>
+        <p className="text-sm text-text-muted mt-0.5">
+          Berikut ringkasan kondisi keuanganmu untuk siklus bulan {new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(cycleInfo.startDate)}.
+        </p>
       </div>
 
       {/* 2. Primary Focal Point: Safe to Spend & Financial Summary Ribbon */}
@@ -275,7 +261,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <SafeToSpendCard onOpenSimulator={onOpenSimulator} />
       </section>
 
-      {/* Arus Kas Harian SVG Wave Chart (NORMAL HEIGHT, NO RED DOTS, SMOOTH HOVER) */}
+      {/* Arus Kas Harian SVG Wave Chart */}
       <section className="bg-surface rounded-xl border border-border-default shadow-xs mb-6 overflow-hidden">
         <div className="p-6 relative select-none">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
@@ -288,13 +274,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
             <div className="flex items-center gap-3 text-xs flex-wrap">
               {activeHoveredPoint && activeHoveredPoint.expense !== null ? (
-                <span className="font-semibold text-primary-600 bg-primary-50 px-2.5 py-1 rounded-lg border border-primary-200 animate-in fade-in duration-100">
+                <span className="font-semibold text-text-gold bg-primary-soft px-2.5 py-1 rounded-lg border border-border-gold animate-in fade-in duration-100">
                   {activeHoveredPoint.dayLabel}: {formatCurrency(activeHoveredPoint.expense)}
                 </span>
               ) : (
                 <>
                   <span className="flex items-center gap-1.5 text-text-muted">
-                    <span className="w-2.5 h-2.5 rounded-full bg-primary-500" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-primary" />
                     <span>Tren Pengeluaran</span>
                   </span>
                   {safeToSpend.dailySafeToSpend > 0 && (
@@ -328,18 +314,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   }}
                   onMouseLeave={() => setHoveredPointIndex(null)}
                 >
-                  {/* Subtle Area Gradient definition - Daylight Ledger depth cue */}
+                  {/* Subtle Area Gradient definition - Muted Gold depth cue (12-14% near line, fading to 0) */}
                   <defs>
                     <linearGradient id="expenseTrendGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#6366f1" stopOpacity={0.12} />
-                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                      <stop offset="0%" stopColor="#B9924F" stopOpacity={0.14} />
+                      <stop offset="95%" stopColor="#B9924F" stopOpacity={0.0} />
                     </linearGradient>
                   </defs>
 
-                  {/* Subtle horizontal CartesianGrid lines matching Daylight Ledger */}
+                  {/* Subtle horizontal CartesianGrid lines matching Obsidian theme */}
                   <CartesianGrid
                     strokeDasharray="4 8"
-                    stroke="var(--color-border-subtle, #f1f5f9)"
+                    stroke="var(--color-border-subtle, rgba(255,255,255,0.04))"
                     horizontal={true}
                     vertical={false}
                   />
@@ -349,7 +335,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     dataKey="dayLabel"
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fontSize: 11, fill: '#94a3b8' }}
+                    tick={{ fontSize: 12, fill: '#8A93A0' }}
                     tickMargin={12}
                     interval="preserveStartEnd"
                     minTickGap={24}
@@ -359,39 +345,39 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   <YAxis
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fontSize: 11, fill: '#94a3b8' }}
+                    tick={{ fontSize: 12, fill: '#8A93A0' }}
                     tickFormatter={(val) => (val > 0 ? formatCompactCurrency(val).replace('Rp ', '') : '0')}
                     tickMargin={8}
                     domain={[0, cashFlowChartData.yDomainMax]}
                   />
 
-                  {/* Horizontal Benchmark Line: Daily Safe to Spend */}
+                  {/* Horizontal Benchmark Line: Daily Safe to Spend in Muted Bronze Ochre */}
                   {safeToSpend.dailySafeToSpend > 0 && (
                     <ReferenceLine
                       y={safeToSpend.dailySafeToSpend}
-                      stroke="#f59e0b"
+                      stroke="#A98245"
                       strokeDasharray="4 4"
                       strokeWidth={1.5}
                       strokeOpacity={0.8}
                       label={{
                         value: `Batas ${formatCompactCurrency(safeToSpend.dailySafeToSpend).replace('Rp ', '')}`,
                         position: 'insideTopRight',
-                        fill: '#d97706',
-                        fontSize: 10,
+                        fill: '#BE9553',
+                        fontSize: 12,
                         fontWeight: 500,
                         offset: 6,
                       }}
                     />
                   )}
 
-                  {/* Custom Tooltip adapted from line-charts-9 */}
+                  {/* Custom Tooltip adapted for Obsidian Dark Theme */}
                   <RechartsTooltip
                     isAnimationActive={false}
                     cursor={{
-                      stroke: '#6366f1',
+                      stroke: '#B9924F',
                       strokeWidth: 1.5,
                       strokeDasharray: '4 4',
-                      strokeOpacity: 0.7,
+                      strokeOpacity: 0.6,
                     }}
                     content={({ active, payload }) => {
                       if (!active || !payload || !payload.length) return null;
@@ -404,16 +390,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       const isOver = benchmark > 0 && expense > benchmark;
 
                       return (
-                        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-xl text-white text-xs max-w-xs animate-in fade-in zoom-in-95 duration-100 z-30">
-                          <div className="flex items-center justify-between gap-3 text-slate-400 pb-1.5 mb-1.5 border-b border-slate-800">
-                            <span className="font-semibold text-slate-200">{data.dayLabel}</span>
+                        <div className="bg-surface-modal border border-border-default rounded-xl p-3 shadow-xl text-text-primary text-xs max-w-xs animate-in fade-in zoom-in-95 duration-100 z-30">
+                          <div className="flex items-center justify-between gap-3 text-text-muted pb-1.5 mb-1.5 border-b border-border-default">
+                            <span className="font-semibold text-text-primary">{data.dayLabel}</span>
                             <span
                               className={`px-1.5 py-0.5 rounded-sm font-semibold text-xs ${
                                 data.isFuture
-                                  ? 'bg-slate-800 text-slate-400'
+                                  ? 'bg-surface-elevated text-text-muted'
                                   : isOver
-                                  ? 'bg-rose-950/70 text-rose-300 border border-rose-800/60'
-                                  : 'bg-emerald-950/70 text-emerald-300 border border-emerald-800/60'
+                                  ? 'bg-semantic-rose-soft text-semantic-rose-text border border-semantic-rose/30'
+                                  : 'bg-semantic-green-soft text-semantic-green-text border border-semantic-green/30'
                               }`}
                             >
                               {data.isFuture ? 'Belum terjadi' : isOver ? 'Melebihi batas' : 'Aman'}
@@ -422,8 +408,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
                           <div className="space-y-1.5 tabular-nums">
                             <div className="flex items-center justify-between gap-4">
-                              <span className="text-slate-400">Total Pengeluaran:</span>
-                              <span className="font-bold text-white">
+                              <span className="text-text-muted">Total Pengeluaran:</span>
+                              <span className="font-bold text-text-primary">
                                 {data.isFuture ? 'Rp 0' : formatCurrency(expense)}
                               </span>
                             </div>
@@ -431,14 +417,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                             {benchmark > 0 && (
                               <>
                                 <div className="flex items-center justify-between gap-4">
-                                  <span className="text-slate-400">Batas Aman:</span>
-                                  <span className="text-slate-300">{formatCurrency(benchmark)}</span>
+                                  <span className="text-text-muted">Batas Aman:</span>
+                                  <span className="text-text-secondary">{formatCurrency(benchmark)}</span>
                                 </div>
 
                                 {!data.isFuture && (
-                                  <div className="flex items-center justify-between gap-4 pt-1 border-t border-slate-800/80">
-                                    <span className="text-slate-400">Selisih:</span>
-                                    <span className={`font-semibold ${isOver ? 'text-rose-400' : 'text-emerald-400'}`}>
+                                  <div className="flex items-center justify-between gap-4 pt-1 border-t border-border-default">
+                                    <span className="text-text-muted">Selisih:</span>
+                                    <span className={`font-semibold ${isOver ? 'text-semantic-rose-text' : 'text-semantic-green-text'}`}>
                                       {diff > 0 ? `+ ${formatCurrency(diff)}` : `- ${formatCurrency(Math.abs(diff))}`}
                                     </span>
                                   </div>
@@ -463,41 +449,62 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     tooltipType="none"
                   />
 
-                  {/* Clean Smooth Line adapted from 21st.dev line-charts-9 */}
+                  {/* Clean Smooth Line in Muted Gold */}
                   <Line
                     type="monotone"
                     dataKey="expense"
-                    stroke="#6366f1"
+                    stroke="#B9924F"
                     strokeWidth={2.5}
                     connectNulls={false}
                     isAnimationActive={true}
                     animationDuration={600}
                     dot={(props) => {
                       const { cx, cy, payload } = props;
-                      if (!payload || payload.expense === null) return <g key={`dot-empty-${cx}-${cy}`} />;
-                      const isSpike = safeToSpend.dailySafeToSpend > 0 && payload.expense > safeToSpend.dailySafeToSpend;
+                      if (!payload || payload.expense === null || payload.isFuture) return <g key={`dot-empty-${cx}-${cy}`} />;
+                      const isOver = safeToSpend.dailySafeToSpend > 0 && payload.expense > safeToSpend.dailySafeToSpend;
 
-                      // Display refined dot for spikes or active point
-                      if (isSpike) {
+                      // Rose dot only for points strictly exceeding the safe limit
+                      if (isOver) {
                         return (
                           <circle
                             key={`dot-${payload.dateStr}`}
                             cx={cx}
                             cy={cy}
                             r={3.5}
-                            fill="#f43f5e"
-                            stroke="#ffffff"
+                            fill="#A85F68"
+                            stroke="#14171F"
                             strokeWidth={1.5}
                           />
                         );
                       }
-                      return <g key={`dot-${payload.dateStr}`} />;
+
+                      // Normal point: subtle muted gold dot
+                      return (
+                        <circle
+                          key={`dot-${payload.dateStr}`}
+                          cx={cx}
+                          cy={cy}
+                          r={2}
+                          fill="#B9924F"
+                          stroke="#14171F"
+                          strokeWidth={1}
+                          opacity={0.8}
+                        />
+                      );
                     }}
-                    activeDot={{
-                      r: 5,
-                      fill: '#6366f1',
-                      stroke: '#ffffff',
-                      strokeWidth: 2,
+                    activeDot={(props: any) => {
+                      const { cx, cy, payload } = props;
+                      const isOver = safeToSpend.dailySafeToSpend > 0 && payload && payload.expense > safeToSpend.dailySafeToSpend;
+                      return (
+                        <circle
+                          cx={cx}
+                          cy={cy}
+                          r={5}
+                          fill={isOver ? '#A85F68' : '#B9924F'}
+                          stroke="#D6B875"
+                          strokeWidth={2}
+                        />
+                      );
                     }}
                   />
                 </ComposedChart>
@@ -522,8 +529,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   <span
                     className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${
                       overallBudgetPercentage >= 100
-                        ? 'bg-semantic-rose-soft text-semantic-rose border-semantic-rose/20'
-                        : 'bg-semantic-green-soft text-semantic-green border-semantic-green/20'
+                        ? 'bg-semantic-rose-soft text-semantic-rose-text border-semantic-rose/20'
+                        : 'bg-semantic-green-soft text-semantic-green-text border-semantic-green/20'
                     }`}
                   >
                     <span
@@ -615,9 +622,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         <span
                           className={`tabular-nums font-semibold ${
                             isOver
-                              ? 'text-semantic-rose'
+                              ? 'text-semantic-rose-text'
                               : isWarning
-                              ? 'text-semantic-amber'
+                              ? 'text-semantic-amber-text'
                               : 'text-text-muted'
                           }`}
                         >
@@ -633,7 +640,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                             ? 'bg-semantic-rose'
                             : isWarning
                             ? 'bg-semantic-amber'
-                            : 'bg-primary-500'
+                            : 'bg-primary'
                         }`}
                         style={{
                           width: `${Math.min(percentage, 100)}%`,
@@ -643,7 +650,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
                     <div className="flex items-center justify-between text-xs text-text-muted">
                       <span>{percentage}% terpakai</span>
-                      <span className={`tabular-nums font-medium ${isOver ? 'text-semantic-rose' : 'text-text-secondary'}`}>
+                      <span className={`tabular-nums font-medium ${isOver ? 'text-semantic-rose-text' : 'text-text-secondary'}`}>
                         {isOver
                           ? `Lewat ${formatCompactCurrency(spent - budgetAmount)}`
                           : budgetAmount > 0
@@ -662,7 +669,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </span>
               <button
                 onClick={() => onSelectTab('budget')}
-                className="text-xs text-primary-600 hover:text-primary-700 inline-flex items-center gap-1.5 font-medium transition-colors py-2 px-2 min-h-[44px] sm:min-h-0 sm:p-0"
+                className="text-xs text-primary hover:text-primary-hover inline-flex items-center gap-1.5 font-medium transition-colors py-2 px-2 min-h-[44px] sm:min-h-0 sm:p-0"
               >
                 <span>Lihat Analisis Detail</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -684,14 +691,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <div className="flex items-center gap-2">
                 <button
                   onClick={onOpenTransfer}
-                  className="text-xs text-primary-600 hover:bg-primary-50 px-3.5 py-2 min-h-[44px] sm:min-h-0 sm:py-1.5 rounded-lg transition-colors flex items-center gap-1.5 border border-primary-100 font-medium"
+                  className="text-xs text-primary hover:bg-primary-soft px-3.5 py-2 min-h-[44px] sm:min-h-0 sm:py-1.5 rounded-lg transition-colors flex items-center gap-1.5 border border-border-gold font-medium"
                 >
                   <ArrowRightLeft className="w-3.5 h-3.5" />
                   <span>Transfer</span>
                 </button>
                 <button
                   onClick={onOpenAddWallet}
-                  className="text-xs text-text-secondary hover:bg-bg-secondary px-3.5 py-2 min-h-[44px] sm:min-h-0 sm:py-1.5 rounded-lg transition-colors flex items-center gap-1.5 border border-border-default font-medium"
+                  className="text-xs text-text-secondary hover:bg-surface-elevated px-3.5 py-2 min-h-[44px] sm:min-h-0 sm:py-1.5 rounded-lg transition-colors flex items-center gap-1.5 border border-border-default font-medium"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Tambah</span>
@@ -700,7 +707,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
 
             {/* Flat Account Strip */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border-subtle bg-surface-container-lowest rounded-xl border border-border-default">
+            <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border-subtle bg-surface-elevated rounded-xl border border-border-default">
               {wallets.map((wallet) => {
                 const share = totalBalance > 0 ? ((wallet.balance / totalBalance) * 100).toFixed(1) : '0';
 
@@ -775,12 +782,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                           <div
                             className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
                               tx.type === 'income'
-                                ? 'bg-semantic-green-soft text-semantic-green'
-                                : 'bg-surface-container text-text-secondary'
+                                ? 'bg-semantic-green-soft text-semantic-green-text'
+                                : 'bg-surface-elevated text-text-secondary'
                             }`}
                           >
                             {tx.type === 'transfer' ? (
-                              <ArrowRightLeft className="w-4 h-4 text-primary-600" />
+                              <ArrowRightLeft className="w-4 h-4 text-primary" />
                             ) : (
                               getCategoryIcon(cat?.icon)
                             )}
@@ -800,9 +807,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                           <span
                             className={`text-xs font-bold tabular-nums ${
                               tx.type === 'income'
-                                ? 'text-semantic-green'
+                                ? 'text-semantic-green-text'
                                 : tx.type === 'expense'
-                                ? 'text-semantic-rose'
+                                ? 'text-semantic-rose-text'
                                 : 'text-text-primary'
                             }`}
                           >
@@ -835,7 +842,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                                 });
                               }
                             }}
-                            className="opacity-90 sm:opacity-0 sm:group-hover:opacity-100 p-2.5 sm:p-1 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center text-text-muted hover:text-semantic-rose rounded-lg transition-all"
+                            className="opacity-90 sm:opacity-0 sm:group-hover:opacity-100 p-2.5 sm:p-1 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center text-text-muted hover:text-semantic-rose-text rounded-lg transition-all"
                             title="Hapus transaksi"
                             aria-label="Hapus transaksi"
                           >
@@ -855,7 +862,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <div className="mt-4 pt-2 flex justify-center">
               <button
                 onClick={() => onSelectTab('transactions')}
-                className="text-xs text-primary-600 hover:text-primary-700 inline-flex items-center gap-1.5 font-medium transition-colors py-2 px-3 min-h-[44px] sm:min-h-0 sm:p-0"
+                className="text-xs text-primary hover:text-primary-hover inline-flex items-center gap-1.5 font-medium transition-colors py-2 px-3 min-h-[44px] sm:min-h-0 sm:p-0"
               >
                 <span>Lihat Semua Transaksi</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -867,12 +874,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="bg-surface rounded-xl p-5 sm:p-6 shadow-xs border border-border-default">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <PiggyBank className="w-4 h-4 text-primary-600" />
+                <PiggyBank className="w-4 h-4 text-primary" />
                 <h3 className="text-base font-bold text-text-primary">Target Tabungan</h3>
               </div>
               <button
                 onClick={() => onSelectTab('savings')}
-                className="text-xs text-primary-600 hover:text-primary-700 inline-flex items-center gap-1.5 font-medium transition-colors py-2 px-2 min-h-[44px] sm:min-h-0 sm:p-0"
+                className="text-xs text-primary hover:text-primary-hover inline-flex items-center gap-1.5 font-medium transition-colors py-2 px-2 min-h-[44px] sm:min-h-0 sm:p-0"
               >
                 <span>Lihat Semua</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -886,7 +893,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 </p>
                 <button
                   onClick={() => onSelectTab('savings')}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary-600 bg-primary-50 hover:bg-primary-100 px-3.5 py-2 min-h-[44px] rounded-lg transition-colors"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-950 bg-primary hover:bg-primary-hover px-3.5 py-2 min-h-[44px] rounded-lg transition-colors"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Buat Target</span>
@@ -908,7 +915,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                           {goal.name}
                         </span>
                         {isCompleted ? (
-                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-semantic-green">
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-semantic-green-text">
                             <CheckCircle2 className="w-3.5 h-3.5" /> Tercapai
                           </span>
                         ) : (
@@ -923,7 +930,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                           className="h-full rounded-full transition-all duration-500"
                           style={{
                             width: `${progress}%`,
-                            backgroundColor: goal.color || '#10b981',
+                            backgroundColor: goal.color || '#5F8A70',
                           }}
                         />
                       </div>

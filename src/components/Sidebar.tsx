@@ -29,7 +29,7 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab, onOpenAuth }) => {
-  const { user, profile, isConfigured, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
 
   const navItems = [
     { id: 'dashboard', label: 'Beranda', icon: LayoutDashboard },
@@ -49,14 +49,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab, onOpen
       <div className="flex flex-col gap-6">
         {/* Logo Branding */}
         <div className="flex items-center gap-3 px-2">
-          <div className="w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center text-primary-600 shrink-0 shadow-xs">
-            <CreditCard className="w-5 h-5" />
+          <div className="w-8 h-8 rounded-lg bg-primary-soft text-primary flex items-center justify-center shrink-0 border border-border-gold">
+            <CreditCard className="w-4 h-4" />
           </div>
           <div className="flex flex-col">
-            <span className="text-[16px] font-bold text-text-primary tracking-tight leading-snug">
+            <span className="text-base font-bold text-text-primary tracking-tight leading-snug">
               SakuMhs
             </span>
-            <span className="text-[11px] text-text-muted font-normal">
+            <span className="text-xs text-text-muted font-normal">
               Finansial Mahasiswa
             </span>
           </div>
@@ -71,18 +71,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab, onOpen
               <button
                 key={item.id}
                 onClick={() => onSelectTab(item.id)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-[14px] font-medium transition-all text-left ${
+                className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left min-h-[44px] ${
                   isActive
-                    ? 'bg-primary-50 text-primary-600 font-semibold'
-                    : 'text-text-secondary hover:bg-bg-secondary hover:text-text-primary'
+                    ? 'bg-primary/[0.08] text-text-gold font-semibold'
+                    : 'text-text-secondary hover:bg-surface-elevated/60 hover:text-text-primary'
                 }`}
               >
-                <Icon
-                  className={`w-5 h-5 ${
-                    isActive ? 'text-primary-600' : 'text-text-muted'
-                  }`}
-                />
-                <span>{item.label}</span>
+                <div className="flex items-center gap-3">
+                  <Icon
+                    className={`w-5 h-5 ${
+                      isActive ? 'text-text-gold' : 'text-text-muted'
+                    }`}
+                  />
+                  <span>{item.label}</span>
+                </div>
+                {isActive && <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" aria-hidden="true" />}
               </button>
             );
           })}
@@ -94,14 +97,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab, onOpen
         {/* User preview badge */}
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-full bg-primary-50 text-primary-600 flex items-center justify-center text-xs font-bold shrink-0">
+            <div className="w-8 h-8 rounded-full bg-primary-soft text-primary flex items-center justify-center text-xs font-bold shrink-0 border border-border-gold">
               {displayName.slice(0, 2).toUpperCase()}
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="text-[13px] font-semibold text-text-primary truncate">
+              <span className="text-xs font-semibold text-text-primary truncate">
                 {displayName}
               </span>
-              <span className="text-[11px] text-text-muted truncate">
+              <span className="text-xs text-text-muted truncate">
                 {displayEmail}
               </span>
             </div>
@@ -112,7 +115,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab, onOpen
         {user ? (
           <button
             onClick={signOut}
-            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold text-semantic-rose hover:bg-semantic-rose-soft transition-colors"
+            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold text-semantic-rose-text hover:bg-semantic-rose-soft transition-colors min-h-[44px]"
           >
             <LogOut className="w-4 h-4" />
             <span>Keluar Akun</span>
@@ -120,25 +123,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab, onOpen
         ) : (
           <button
             onClick={onOpenAuth}
-            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold text-primary-600 bg-primary-50 hover:bg-primary-100 transition-colors"
+            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold text-slate-950 bg-primary hover:bg-primary-hover transition-colors min-h-[44px]"
           >
             <LogIn className="w-4 h-4" />
             <span>Masuk / Daftar</span>
           </button>
         )}
-
-        {/* Supabase Status indicator */}
-        <div className="flex items-center justify-between text-[10px] text-text-muted px-1">
-          <span className="flex items-center gap-1">
-            <span
-              className={`w-1.5 h-1.5 rounded-full ${
-                isConfigured ? 'bg-semantic-green' : 'bg-amber-400'
-              }`}
-            />
-            {isConfigured ? 'Supabase Connected' : 'Local Storage Mode'}
-          </span>
-          <span className="text-[10px] text-text-muted">v0.1</span>
-        </div>
       </div>
     </aside>
   );

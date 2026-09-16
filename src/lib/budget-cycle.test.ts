@@ -145,4 +145,35 @@ describe('Safe to Spend Calculation', () => {
     expect(result.remainingBudget).toBe(1570000);
     expect(result.paceStatus).toBe('safe');
   });
+
+  it('differentiates category allocated budget headroom from macro safe to spend with commitments', () => {
+    // Scenario:
+    // Total wallet balance / macro budget: Rp 2.000.000
+    // Total category plafon sum: Rp 1.800.000
+    // Expenses so far: Rp 500.000
+    // Unpaid commitment (e.g. Kos): Rp 600.000
+    
+    // Category Plafon Headroom:
+    const totalAllocatedBudget = 1800000;
+    const totalExpenses = 500000;
+    const remainingCategoryHeadroom = totalAllocatedBudget - totalExpenses; // Rp 1.300.000
+
+    // Macro Safe to Spend:
+    const safeToSpend = calculateSafeToSpend({
+      totalBudget: 2000000,
+      totalExpenses: 500000,
+      totalUnpaidCommitments: 600000,
+      todayExpenses: 0,
+      cycleStartDay: 1,
+      referenceDate: new Date(2026, 8, 15),
+    });
+
+    // SafeToSpend reserves the unpaid commitment:
+    expect(safeToSpend.remainingBudget).toBe(900000); // 2.000.000 - 500.000 - 600.000
+    // While category budget headroom strictly tracks allocation minus spent:
+    expect(remainingCategoryHeadroom).toBe(1300000);
+    // They are intentionally independent metrics to avoid double deduction:
+    expect(remainingCategoryHeadroom).not.toBe(safeToSpend.remainingBudget);
+  });
 });
+

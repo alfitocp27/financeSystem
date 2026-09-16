@@ -1,7 +1,22 @@
 import React, { useState } from 'react';
-import { Sliders, Edit3, Check, AlertCircle, Plus, Calendar, Utensils, Home, Bus, BookOpen, Coffee, ShoppingBag, Tag } from 'lucide-react';
+import {
+  Sliders,
+  Edit3,
+  Check,
+  X,
+  Plus,
+  Calendar,
+  Utensils,
+  Home,
+  Bus,
+  BookOpen,
+  Coffee,
+  ShoppingBag,
+  Tag,
+  AlertCircle,
+} from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
-import { formatCurrency, formatDateIndo } from '../lib/formatters';
+import { formatCurrency, formatDateIndo, getLocalDateString } from '../lib/formatters';
 
 interface BudgetManagerProps {
   onShowToast?: (msg: string) => void;
@@ -16,9 +31,9 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({ onShowToast, onOpe
 
   const expenseCategories = categories.filter((c) => c.type === 'expense');
 
-  // Filter transactions within current cycle
-  const startStr = cycleInfo.startDate.toISOString().split('T')[0];
-  const endStr = cycleInfo.endDate.toISOString().split('T')[0];
+  // Filter transactions within current cycle safely using local date strings (timezone-safe)
+  const startStr = getLocalDateString(cycleInfo.startDate);
+  const endStr = getLocalDateString(cycleInfo.endDate);
 
   const totalAllocatedBudget = budgets.reduce((acc, b) => acc + Number(b.amount), 0);
   const totalCycleExpense = transactions
@@ -27,17 +42,33 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({ onShowToast, onOpe
 
   const totalRemainingQuota = Math.max(0, totalAllocatedBudget - totalCycleExpense);
   const overallPercentage = totalAllocatedBudget > 0
-    ? Math.min(100, Math.round((totalCycleExpense / totalAllocatedBudget) * 100))
+    ? Math.round((totalCycleExpense / totalAllocatedBudget) * 100)
     : 0;
 
   const handleStartEdit = (catId: string, currentBudget: number) => {
     setEditingCategoryId(catId);
-    setEditAmountStr(currentBudget > 0 ? currentBudget.toString() : '');
+    setEditAmountStr(currentBudget > 0 ? new Intl.NumberFormat('id-ID').format(currentBudget) : '');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingCategoryId(null);
+    setEditAmountStr('');
+  };
+
+  const handleAmountChange = (raw: string) => {
+    const digits = raw.replace(/\D/g, '');
+    if (!digits) {
+      setEditAmountStr('');
+      return;
+    }
+    const num = parseInt(digits, 10);
+    setEditAmountStr(new Intl.NumberFormat('id-ID').format(num));
   };
 
   const handleSaveBudget = async (catId: string) => {
     setIsSaving(true);
-    const amount = parseInt(editAmountStr, 10) || 0;
+    const cleanDigits = editAmountStr.replace(/\D/g, '');
+    const amount = parseInt(cleanDigits, 10) || 0;
     await setCategoryBudget(catId, amount);
     setIsSaving(false);
     setEditingCategoryId(null);
@@ -64,208 +95,248 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({ onShowToast, onOpe
   };
 
   return (
-    <section className="bg-surface rounded-2xl sm:rounded-[14px] p-5 sm:p-6 border border-border-default shadow-sm">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border-default">
+    <section className="bg-surface rounded-xl border border-border-default shadow-xs overflow-hidden">
+      {/* Header Bar */}
+      <div className="p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <div className="flex flex-wrap items-center gap-2.5">
-            <div className="flex items-center gap-1.5">
-              <Sliders className="w-4 h-4 text-primary-600" />
-              <h2 className="text-base font-bold text-text-primary tracking-tight">
-                Ringkasan Penggunaan Budget
-              </h2>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-primary-soft text-text-gold flex items-center justify-center shrink-0">
+              <Sliders className="w-4 h-4" />
             </div>
-            <span
-              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${
-                overallPercentage >= 100
-                  ? 'bg-semantic-rose-soft text-semantic-rose border-semantic-rose/20'
-                  : overallPercentage >= 80
-                  ? 'bg-semantic-amber-soft text-semantic-amber border-semantic-amber/20'
-                  : 'bg-semantic-green-soft text-semantic-green border-semantic-green/20'
-              }`}
-            >
-              <span
-                className={`w-1.5 h-1.5 rounded-full ${
-                  overallPercentage >= 100
-                    ? 'bg-semantic-rose'
-                    : overallPercentage >= 80
-                    ? 'bg-semantic-amber'
-                    : 'bg-semantic-green'
-                }`}
-              />
-              {overallPercentage >= 100
-                ? `Overbudget (${overallPercentage}%)`
-                : `Aman (${overallPercentage}%)`}
-            </span>
+            <div>
+              <h2 className="text-sm font-bold text-text-primary tracking-tight">
+                Plafon & Realisasi Anggaran
+              </h2>
+              <p className="text-xs text-text-muted flex items-center gap-1.5 mt-0.5">
+                <Calendar className="w-3.5 h-3.5 text-text-muted" />
+                <span>
+                  Siklus: {formatDateIndo(cycleInfo.startDate)} – {formatDateIndo(cycleInfo.endDate)}
+                </span>
+                <span className="text-border-subtle">•</span>
+                <span className="text-text-secondary font-medium">Sisa {cycleInfo.daysRemaining} hari</span>
+              </p>
+            </div>
           </div>
-
-          <p className="text-xs text-text-muted flex items-center gap-1.5">
-            <Calendar className="w-3.5 h-3.5 text-text-muted" />
-            <span>Siklus: {formatDateIndo(cycleInfo.startDate)} – {formatDateIndo(cycleInfo.endDate)} • </span>
-            <span className="text-text-secondary font-medium">Sisa {cycleInfo.daysRemaining} hari</span>
-          </p>
         </div>
 
-        {/* Realisasi vs Plafon */}
-        <div className="flex flex-col sm:items-end justify-center">
-          <span className="text-[11px] text-text-muted font-medium">Realisasi Terpakai</span>
-          <div className="flex items-baseline gap-1 mt-0.5">
-            <span className="text-base sm:text-lg font-bold text-text-primary tabular-nums tracking-tight">
-              {formatCurrency(totalCycleExpense)}
-            </span>
-            <span className="text-xs text-text-secondary font-medium tabular-nums">
-              / {formatCurrency(totalAllocatedBudget)} plafon
-            </span>
-          </div>
-          {onOpenAddCategory && (
-            <button
-              onClick={onOpenAddCategory}
-              className="mt-2 inline-flex items-center gap-1 text-[11px] font-bold text-primary-600 hover:text-primary-700 transition-colors"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Tambah Kategori Baru</span>
-            </button>
-          )}
+        {onOpenAddCategory && (
+          <button
+            onClick={onOpenAddCategory}
+            type="button"
+            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 min-h-[44px] rounded-lg bg-primary-soft text-text-gold hover:bg-primary/20 transition-colors text-xs font-semibold shrink-0 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Tambah Pos Baru</span>
+          </button>
+        )}
+      </div>
+
+      {/* 3-Metric Flat Ledger Strip */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border-subtle border-y border-border-subtle bg-surface-elevated/40">
+        <div className="p-4 sm:p-5 flex flex-col justify-between">
+          <span className="text-xs font-medium text-text-muted">Total Plafon</span>
+          <span className="text-lg sm:text-xl font-extrabold text-text-primary tabular-nums tracking-tight mt-1">
+            {formatCurrency(totalAllocatedBudget)}
+          </span>
+        </div>
+
+        <div className="p-4 sm:p-5 flex flex-col justify-between">
+          <span className="text-xs font-medium text-text-muted">Total Terpakai</span>
+          <span
+            className={`text-lg sm:text-xl font-extrabold tabular-nums tracking-tight mt-1 ${
+              overallPercentage >= 100 ? 'text-semantic-rose-text' : 'text-text-primary'
+            }`}
+          >
+            {formatCurrency(totalCycleExpense)}
+          </span>
+        </div>
+
+        <div className="p-4 sm:p-5 flex flex-col justify-between">
+          <span className="text-xs font-medium text-text-muted">Sisa Plafon Alokasi</span>
+          <span className="text-lg sm:text-xl font-extrabold text-text-gold tabular-nums tracking-tight mt-1">
+            {formatCurrency(totalRemainingQuota)}
+          </span>
         </div>
       </div>
 
-      {/* Visual Bar Meter: Segmented Category Breakdown Strip */}
-      <div className="pt-4 pb-2">
-        <div className="flex items-center justify-between text-xs text-text-muted mb-2">
-          <span>Distribusi Realisasi Budget</span>
-          <span className="font-medium text-text-secondary">
-            Sisa Kuota: <strong className="text-text-primary tabular-nums font-semibold">{formatCurrency(totalRemainingQuota)}</strong>
+      {/* Unified Progress Bar */}
+      <div className="px-5 sm:px-6 py-4 border-b border-border-subtle">
+        <div className="flex items-center justify-between text-xs mb-2">
+          <span className="text-text-secondary font-medium">Realisasi Anggaran Siklus</span>
+          <span
+            className={`font-semibold tabular-nums ${
+              overallPercentage >= 100 ? 'text-semantic-rose-text' : 'text-text-gold'
+            }`}
+          >
+            {overallPercentage}% {overallPercentage >= 100 ? '(Melampaui Plafon)' : 'teralokasi'}
           </span>
         </div>
-        <div className="h-3 w-full bg-bg-secondary rounded-full flex overflow-hidden p-0.5 gap-0.5">
+        <div className="h-2 w-full bg-surface-elevated rounded-full overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all duration-500 ${
+              overallPercentage >= 100
+                ? 'bg-semantic-rose'
+                : overallPercentage >= 80
+                ? 'bg-semantic-amber'
+                : 'bg-primary'
+            }`}
+            style={{ width: `${Math.min(overallPercentage, 100)}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Flat Ledger Category Rows */}
+      {expenseCategories.length === 0 ? (
+        <div className="p-8 text-center text-xs text-text-muted">
+          Belum ada pos pengeluaran. Klik &quot;Tambah Pos Baru&quot; untuk membuat pos anggaran.
+        </div>
+      ) : (
+        <div className="divide-y divide-border-subtle">
           {expenseCategories.map((cat) => {
+            const budget = budgets.find((b) => b.category_id === cat.id);
+            const budgetAmount = budget ? Number(budget.amount) : 0;
+
             const spent = transactions
-              .filter((t) => t.type === 'expense' && t.category_id === cat.id && t.transaction_date >= startStr && t.transaction_date <= endStr)
+              .filter(
+                (t) =>
+                  t.type === 'expense' &&
+                  t.category_id === cat.id &&
+                  t.transaction_date >= startStr &&
+                  t.transaction_date <= endStr
+              )
               .reduce((sum, t) => sum + Number(t.amount), 0);
-            const ratio = totalAllocatedBudget > 0 ? (spent / totalAllocatedBudget) * 100 : 0;
-            if (ratio <= 0) return null;
+
+            const isEditing = editingCategoryId === cat.id;
+            const percentage = budgetAmount > 0 ? Math.round((spent / budgetAmount) * 100) : 0;
+            const isOverbudget = budgetAmount > 0 && spent > budgetAmount;
 
             return (
               <div
                 key={cat.id}
-                className="h-full rounded-full transition-all duration-500"
-                style={{
-                  width: `${Math.min(ratio, 100)}%`,
-                  backgroundColor: cat.color || '#6366f1',
-                }}
-                title={`${cat.name} (${ratio.toFixed(1)}%)`}
-              />
-            );
-          })}
-          <div className="bg-surface-container flex-1 h-full rounded-full" title="Sisa Kuota" />
-        </div>
-      </div>
-
-      {/* Comparative Category Cards (Gauge List) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4">
-        {expenseCategories.map((cat) => {
-          const budget = budgets.find((b) => b.category_id === cat.id);
-          const budgetAmount = budget ? Number(budget.amount) : 0;
-
-          const spent = transactions
-            .filter((t) => t.type === 'expense' && t.category_id === cat.id && t.transaction_date >= startStr && t.transaction_date <= endStr)
-            .reduce((sum, t) => sum + Number(t.amount), 0);
-
-          const isEditing = editingCategoryId === cat.id;
-          const percentage = budgetAmount > 0 ? Math.min(100, Math.round((spent / budgetAmount) * 100)) : 0;
-          const isOverbudget = budgetAmount > 0 && spent > budgetAmount;
-
-          return (
-            <div
-              key={cat.id}
-              className="bg-surface-container-low p-4 rounded-xl border border-border-default hover:border-primary-500 transition-colors flex flex-col justify-between"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2.5 min-w-0">
+                className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 transition-colors hover:bg-surface-elevated/30"
+              >
+                {/* Left: Icon & Category Name */}
+                <div className="flex items-center gap-3 min-w-0">
                   <div
-                    className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                    style={{ backgroundColor: `${cat.color}20`, color: cat.color }}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                    style={{
+                      backgroundColor: `${cat.color || '#B9924F'}20`,
+                      color: cat.color || '#B9924F',
+                    }}
+                    aria-hidden="true"
                   >
                     {getCategoryIcon(cat.icon)}
                   </div>
-                  <span className="text-xs font-semibold text-text-primary truncate">
-                    {cat.name}
-                  </span>
+                  <div className="min-w-0">
+                    <span className="text-xs sm:text-sm font-semibold text-text-primary block truncate">
+                      {cat.name}
+                    </span>
+                    <span className="text-xs text-text-muted block mt-0.5">
+                      {isOverbudget ? (
+                        <span className="text-semantic-rose-text font-medium flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" /> Melampaui ({percentage}%)
+                        </span>
+                      ) : budgetAmount > 0 ? (
+                        <span className="tabular-nums">{percentage}% dari plafon</span>
+                      ) : (
+                        'Belum ada plafon'
+                      )}
+                    </span>
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  {isOverbudget ? (
-                    <span className="text-[10px] font-bold text-semantic-rose bg-semantic-rose-soft px-2 py-0.5 rounded-full flex items-center gap-1">
-                      <AlertCircle className="w-3 h-3" /> Lewat
-                    </span>
-                  ) : budgetAmount > 0 ? (
-                    <span className="text-[11px] font-bold text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full tabular-nums">
-                      {percentage}%
-                    </span>
-                  ) : null}
-
-                  {!isEditing && (
-                    <button
-                      onClick={() => handleStartEdit(cat.id, budgetAmount)}
-                      className="p-1 text-text-muted hover:text-text-primary rounded-md transition-colors"
-                      title="Atur Budget"
-                    >
-                      <Edit3 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Edit Amount Mode */}
-              {isEditing ? (
-                <div className="flex items-center gap-1.5 my-1">
-                  <span className="text-xs text-text-muted font-bold">Rp</span>
-                  <input
-                    type="number"
-                    placeholder="Nominal"
-                    value={editAmountStr}
-                    onChange={(e) => setEditAmountStr(e.target.value)}
-                    autoFocus
-                    className="flex-1 px-2.5 py-1 text-xs font-bold bg-white border border-border-default rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-                  />
-                  <button
-                    onClick={() => handleSaveBudget(cat.id)}
-                    disabled={isSaving}
-                    className="p-1.5 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
-                    title="Simpan"
+                {/* Right: Numbers or Inline Edit Mode */}
+                {isEditing ? (
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleSaveBudget(cat.id);
+                    }}
+                    className="flex items-center gap-2 w-full sm:max-w-md py-0.5"
                   >
-                    <Check className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              ) : (
-                /* Normal Meter */
-                <div>
-                  <div className="w-full bg-border-default h-1.5 rounded-full overflow-hidden mb-1.5">
-                    <div
-                      className={`h-full rounded-full transition-all duration-300 ${
-                        isOverbudget
-                          ? 'bg-semantic-rose'
-                          : percentage >= 80
-                          ? 'bg-semantic-amber'
-                          : 'bg-primary-500'
-                      }`}
-                      style={{ width: `${percentage}%` }}
-                    />
+                    <div className="relative flex-1">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-text-muted">
+                        Rp
+                      </span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        autoFocus
+                        value={editAmountStr}
+                        onChange={(e) => handleAmountChange(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Escape') {
+                            e.preventDefault();
+                            handleCancelEdit();
+                          }
+                        }}
+                        className="w-full pl-9 pr-3 py-2 text-xs font-bold bg-surface-elevated text-text-primary border border-border-default rounded-lg focus:outline-hidden focus:border-border-gold-focus focus:ring-1 focus:ring-primary min-h-[44px]"
+                        placeholder="0"
+                        aria-label={`Nominal plafon anggaran ${cat.name}`}
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={isSaving}
+                      className="min-h-[44px] min-w-[44px] px-3.5 py-2 bg-primary text-slate-950 rounded-lg hover:bg-primary-hover transition-colors font-bold text-xs flex items-center justify-center shrink-0 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary"
+                      title="Simpan"
+                      aria-label="Simpan anggaran"
+                    >
+                      <Check className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCancelEdit}
+                      className="min-h-[44px] min-w-[44px] px-3.5 py-2 bg-surface-elevated text-text-secondary hover:text-text-primary rounded-lg transition-colors font-medium text-xs flex items-center justify-center shrink-0 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary"
+                      title="Batal"
+                      aria-label="Batal ubah anggaran"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </form>
+                ) : (
+                  <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
+                    {/* Progress Bar and Amounts */}
+                    <div className="flex flex-col sm:items-end gap-1 min-w-[130px]">
+                      <div className="flex items-baseline gap-1 text-xs tabular-nums">
+                        <span className="font-bold text-text-primary">
+                          {formatCurrency(spent)}
+                        </span>
+                        <span className="text-text-muted font-normal">
+                          / {budgetAmount > 0 ? formatCurrency(budgetAmount) : '—'}
+                        </span>
+                      </div>
+                      <div className="w-28 sm:w-36 h-1.5 bg-surface-elevated rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-300 ${
+                            isOverbudget
+                              ? 'bg-semantic-rose'
+                              : percentage >= 80
+                              ? 'bg-semantic-amber'
+                              : 'bg-primary'
+                          }`}
+                          style={{ width: `${Math.min(percentage, 100)}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Edit Action Button */}
+                    <button
+                      type="button"
+                      onClick={() => handleStartEdit(cat.id, budgetAmount)}
+                      className="min-h-[44px] min-w-[44px] p-2.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-elevated flex items-center justify-center transition-colors shrink-0 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary"
+                      title={`Ubah anggaran ${cat.name}`}
+                      aria-label={`Ubah anggaran ${cat.name}`}
+                    >
+                      <Edit3 className="w-4 h-4" />
+                    </button>
                   </div>
-                  <div className="flex justify-between text-[11px] text-text-muted font-medium">
-                    <span>Terpakai: <strong className="text-text-secondary tabular-nums">{formatCurrency(spent)}</strong></span>
-                    <span>
-                      {budgetAmount > 0
-                        ? `Plafon: ${formatCurrency(budgetAmount)}`
-                        : 'Belum ada plafon'}
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </section>
   );
 };

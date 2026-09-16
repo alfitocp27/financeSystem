@@ -44,7 +44,7 @@ export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({ onOpenSimulato
     switch (safeToSpend.paceStatus) {
       case 'safe':
         return {
-          bg: 'bg-semantic-green-soft text-semantic-green border-semantic-green/20',
+          bg: 'bg-semantic-green-soft text-semantic-green-text border-semantic-green/20',
           dot: 'bg-semantic-green',
           icon: ShieldCheck,
           text: 'Status: Aman',
@@ -52,7 +52,7 @@ export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({ onOpenSimulato
         };
       case 'warning':
         return {
-          bg: 'bg-semantic-amber-soft text-semantic-amber border-semantic-amber/20',
+          bg: 'bg-semantic-amber-soft text-semantic-amber-text border-semantic-amber/20',
           dot: 'bg-semantic-amber',
           icon: AlertTriangle,
           text: 'Status: Waspada',
@@ -60,7 +60,7 @@ export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({ onOpenSimulato
         };
       case 'overpace':
         return {
-          bg: 'bg-semantic-rose-soft text-semantic-rose border-semantic-rose/20',
+          bg: 'bg-semantic-rose-soft text-semantic-rose-text border-semantic-rose/20',
           dot: 'bg-semantic-rose',
           icon: AlertCircle,
           text: 'Status: Overpace',
@@ -69,7 +69,7 @@ export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({ onOpenSimulato
       case 'no-budget':
       default:
         return {
-          bg: 'bg-semantic-blue-soft text-semantic-blue border-semantic-blue/20',
+          bg: 'bg-semantic-blue-soft text-semantic-blue-text border-semantic-blue/20',
           dot: 'bg-semantic-blue',
           icon: HelpCircle,
           text: 'Status: Estimasi',
@@ -84,7 +84,7 @@ export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({ onOpenSimulato
   return (
     <div className="space-y-4">
       {/* 1. Hero Safe to Spend Anchor */}
-      <div className="bg-surface rounded-2xl p-6 sm:p-7 border border-border-default shadow-xs relative overflow-hidden">
+      <div className="bg-surface rounded-2xl p-6 sm:p-7 border border-border-gold shadow-xs relative overflow-hidden">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           {/* Left: Prominent Daily Figure */}
           <div className="flex flex-col flex-1">
@@ -101,7 +101,7 @@ export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({ onOpenSimulato
                   onMouseLeave={() => setIsTooltipOpen(false)}
                   onFocus={() => setIsTooltipOpen(true)}
                   onBlur={() => setIsTooltipOpen(false)}
-                  className="p-1 text-text-muted hover:text-text-primary focus:outline-hidden focus-visible:ring-2 focus-visible:ring-primary-500 rounded-md transition-colors"
+                  className="p-1 text-text-muted hover:text-text-primary focus:outline-hidden focus-visible:ring-2 focus-visible:ring-primary rounded-md transition-colors"
                   aria-label="Penjelasan batas pengeluaran harian"
                   aria-expanded={isTooltipOpen}
                 >
@@ -110,7 +110,7 @@ export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({ onOpenSimulato
                 {isTooltipOpen && (
                   <div
                     role="tooltip"
-                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 flex flex-col w-64 bg-inverse-surface text-inverse-on-surface p-2.5 rounded-lg text-xs z-30 shadow-lg leading-relaxed animate-in fade-in zoom-in-95 duration-150"
+                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 flex flex-col w-64 bg-surface-modal border border-border-default text-text-primary p-2.5 rounded-lg text-xs z-30 shadow-lg leading-relaxed animate-in fade-in zoom-in-95 duration-150"
                   >
                     Batas pengeluaran harian aman agar uang sakumu tetap bertahan hingga akhir siklus kiriman.
                   </div>
@@ -127,7 +127,7 @@ export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({ onOpenSimulato
               {onOpenSimulator && (
                 <button
                   onClick={onOpenSimulator}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 min-h-[44px] sm:min-h-0 sm:py-1 rounded-lg text-xs font-semibold bg-primary-50 hover:bg-primary-100 text-primary-600 transition-colors ml-auto md:ml-2"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 min-h-[44px] sm:min-h-0 sm:py-1 rounded-lg text-xs font-semibold bg-primary-soft hover:bg-primary-soft/80 text-text-gold border border-border-gold transition-colors ml-auto md:ml-2"
                   title="Simulasi belanja ekstra"
                 >
                   <Calculator className="w-3.5 h-3.5" />
@@ -136,9 +136,9 @@ export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({ onOpenSimulato
               )}
             </div>
 
-            {/* Dominant Figure */}
+            {/* Dominant Figure in Champagne Gold */}
             <div className="flex items-baseline gap-2 mt-3">
-              <span className="text-4xl sm:text-5xl lg:text-[52px] font-extrabold text-text-primary tabular-nums tracking-tight leading-none">
+              <span className="text-4xl sm:text-5xl lg:text-[52px] font-extrabold text-text-gold tabular-nums tracking-tight leading-none">
                 {formatCurrency(safeToSpend.dailySafeToSpend)}
               </span>
               <span className="text-base sm:text-lg text-text-muted font-normal">/ hari</span>
@@ -159,17 +159,17 @@ export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({ onOpenSimulato
             </div>
           </div>
 
-          {/* Right: Integrated Pacing Indicator (No nested box) */}
+          {/* Right: Integrated Pacing Indicator */}
           <div className="w-full md:w-72 flex flex-col justify-end gap-2">
             <div className="flex items-center justify-between text-xs text-text-secondary">
               <span className="font-medium">Laju Pacing Periode</span>
               <span
                 className={`font-semibold tabular-nums ${
                   safeToSpend.paceStatus === 'overpace'
-                    ? 'text-semantic-rose'
+                    ? 'text-semantic-rose-text'
                     : safeToSpend.paceStatus === 'warning'
-                    ? 'text-semantic-amber'
-                    : 'text-semantic-green'
+                    ? 'text-semantic-amber-text'
+                    : 'text-semantic-green-text'
                 }`}
               >
                 {cycleInfo.progressPercentage}% Berlalu
@@ -177,14 +177,14 @@ export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({ onOpenSimulato
             </div>
 
             {/* Progress Bar */}
-            <div className="w-full bg-border-subtle h-2 rounded-full overflow-hidden">
+            <div className="w-full bg-surface-elevated h-2 rounded-full overflow-hidden border border-border-subtle">
               <div
                 className={`h-full rounded-full transition-all duration-500 ${
                   safeToSpend.paceStatus === 'overpace'
                     ? 'bg-semantic-rose'
                     : safeToSpend.paceStatus === 'warning'
                     ? 'bg-semantic-amber'
-                    : 'bg-primary-500'
+                    : 'bg-primary'
                 }`}
                 style={{ width: `${Math.min(cycleInfo.progressPercentage, 100)}%` }}
               />
@@ -211,7 +211,7 @@ export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({ onOpenSimulato
             <span className="text-text-muted">Sisa Kuota Hari Ini:</span>
             <span
               className={`font-bold tabular-nums text-sm ${
-                safeToSpend.remainingToday < 0 ? 'text-semantic-rose' : 'text-semantic-green'
+                safeToSpend.remainingToday < 0 ? 'text-semantic-rose-text' : 'text-semantic-green-text'
               }`}
             >
               {formatCurrency(safeToSpend.remainingToday)}
@@ -223,7 +223,7 @@ export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({ onOpenSimulato
         </div>
       </div>
 
-      {/* 2. Financial Summary Ribbon (Quiet 4-column metric bar, no confetti badges) */}
+      {/* 2. Financial Summary Ribbon */}
       <div className="bg-surface rounded-xl border border-border-default overflow-hidden">
         <div className="grid grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-border-default">
           {/* Metric 1: Total Saldo Kas */}
@@ -241,7 +241,7 @@ export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({ onOpenSimulato
           <div className="p-4 sm:p-5 flex flex-col justify-between">
             <span className="text-xs text-text-muted font-medium">Pemasukan Siklus</span>
             <div className="mt-2">
-              <div className="text-lg sm:text-xl font-bold text-semantic-green tracking-tight tabular-nums">
+              <div className="text-lg sm:text-xl font-bold text-text-primary tracking-tight tabular-nums">
                 {formatCurrency(totalIncomeInCycle)}
               </div>
               <p className="text-xs text-text-muted mt-0.5">Uang saku & pendapatan</p>
@@ -252,7 +252,7 @@ export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({ onOpenSimulato
           <div className="p-4 sm:p-5 flex flex-col justify-between">
             <span className="text-xs text-text-muted font-medium">Total Pengeluaran</span>
             <div className="mt-2">
-              <div className="text-lg sm:text-xl font-bold text-semantic-rose tracking-tight tabular-nums">
+              <div className="text-lg sm:text-xl font-bold text-text-primary tracking-tight tabular-nums">
                 {formatCurrency(totalExpenseInCycle)}
               </div>
               <p className="text-xs text-text-muted mt-0.5">Realisasi belanja</p>
@@ -265,7 +265,7 @@ export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({ onOpenSimulato
             <div className="mt-2">
               <div
                 className={`text-lg sm:text-xl font-bold tracking-tight tabular-nums ${
-                  netSavings >= 0 ? 'text-text-primary' : 'text-semantic-rose'
+                  netSavings >= 0 ? 'text-text-gold' : 'text-semantic-rose-text'
                 }`}
               >
                 {formatCurrency(netSavings)}

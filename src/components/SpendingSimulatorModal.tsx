@@ -43,21 +43,21 @@ export const SpendingSimulatorModal: React.FC<SpendingSimulatorModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
-      <div className="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs">
+      <div className="bg-surface-modal border border-border-default w-full max-w-md rounded-3xl p-6 shadow-2xl">
+        <div className="flex items-center justify-between pb-3 border-b border-border-subtle mb-4">
           <div className="flex items-center gap-2">
-            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
+            <div className="p-2 bg-primary-soft text-text-gold rounded-xl">
               <Calculator className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-800">Simulator Dampak Belanja</h2>
-              <p className="text-[11px] text-slate-500">Ketahui pengaruh rencana belanja terhadap jatah hari esok</p>
+              <h2 className="text-base font-bold text-text-primary">Simulator Dampak Belanja</h2>
+              <p className="text-xs text-text-secondary">Ketahui pengaruh rencana belanja terhadap jatah hari esok</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100"
+            className="p-1.5 text-text-muted hover:text-text-primary rounded-full hover:bg-surface-elevated transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -65,11 +65,11 @@ export const SpendingSimulatorModal: React.FC<SpendingSimulatorModalProps> = ({
 
         {/* Input planned amount */}
         <div className="space-y-3 mb-5">
-          <label className="text-xs font-semibold text-slate-600 block">
+          <label className="text-xs font-semibold text-text-secondary block">
             Berapa rencana belanja ekstra kamu?
           </label>
           <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-base font-bold text-slate-400">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-base font-bold text-text-muted">
               Rp
             </span>
             <input
@@ -78,7 +78,7 @@ export const SpendingSimulatorModal: React.FC<SpendingSimulatorModalProps> = ({
               onChange={(e) => setPlannedAmountStr(e.target.value)}
               placeholder="50000"
               autoFocus
-              className="w-full pl-12 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full pl-12 pr-4 py-2.5 bg-surface-elevated border border-border-default rounded-2xl text-xl font-bold text-text-primary focus:outline-none focus:border-border-gold-focus"
             />
           </div>
 
@@ -88,10 +88,10 @@ export const SpendingSimulatorModal: React.FC<SpendingSimulatorModalProps> = ({
                 key={val}
                 type="button"
                 onClick={() => handleQuickChip(val)}
-                className={`px-3 py-1 rounded-xl text-xs font-semibold transition-all shrink-0 ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 min-h-[36px] ${
                   plannedAmount === val
-                    ? 'bg-indigo-600 text-white shadow-xs'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    ? 'bg-primary text-slate-950 font-bold shadow-xs'
+                    : 'bg-surface-elevated text-text-secondary hover:text-text-primary border border-border-subtle'
                 }`}
               >
                 Rp {val >= 1000 ? `${val / 1000}rb` : val}
@@ -101,58 +101,58 @@ export const SpendingSimulatorModal: React.FC<SpendingSimulatorModalProps> = ({
         </div>
 
         {/* Comparison Result Cards */}
-        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-3 mb-5">
-          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+        <div className="p-4 bg-surface-elevated rounded-2xl border border-border-default space-y-3 mb-5">
+          <div className="text-xs font-bold text-text-muted uppercase tracking-wider">
             Perbandingan Safe to Spend Harian Mulai Besok:
           </div>
 
           <div className="flex items-center justify-between gap-3">
             {/* Current Safe */}
-            <div className="flex-1 p-3 bg-white rounded-xl border border-slate-100">
-              <div className="text-[10px] text-slate-500 font-medium">Sebelum Belanja</div>
-              <div className="text-base font-extrabold text-slate-800 mt-0.5">
+            <div className="flex-1 p-3 bg-surface rounded-xl border border-border-subtle">
+              <div className="text-xs text-text-muted font-medium">Sebelum Belanja</div>
+              <div className="text-base font-extrabold text-text-primary mt-0.5">
                 {formatCurrency(currentSafe)}
               </div>
-              <div className="text-[10px] text-slate-400">/ hari</div>
+              <div className="text-xs text-text-muted">/ hari</div>
             </div>
 
-            <ArrowRight className="w-4 h-4 text-slate-400 shrink-0" />
+            <ArrowRight className="w-4 h-4 text-text-muted shrink-0" />
 
             {/* New Safe */}
-            <div className="flex-1 p-3 bg-white rounded-xl border border-slate-100">
-              <div className="text-[10px] text-slate-500 font-medium">Sesudah Belanja</div>
+            <div className="flex-1 p-3 bg-surface rounded-xl border border-border-subtle">
+              <div className="text-xs text-text-muted font-medium">Sesudah Belanja</div>
               <div
                 className={`text-base font-extrabold mt-0.5 ${
-                  newDailySafe < currentSafe * 0.7 ? 'text-rose-600' : 'text-indigo-600'
+                  newDailySafe < currentSafe * 0.7 ? 'text-semantic-rose-text' : 'text-text-gold'
                 }`}
               >
                 {formatCurrency(newDailySafe)}
               </div>
-              <div className="text-[10px] text-slate-400">/ hari</div>
+              <div className="text-xs text-text-muted">/ hari</div>
             </div>
           </div>
 
           {/* Daily difference impact */}
-          <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 text-xs">
-            <span className="text-slate-600 flex items-center gap-1">
-              <TrendingDown className="w-3.5 h-3.5 text-amber-500" />
+          <div className="flex items-center justify-between pt-2 border-t border-border-subtle text-xs">
+            <span className="text-text-secondary flex items-center gap-1">
+              <TrendingDown className="w-3.5 h-3.5 text-semantic-amber" />
               Penurunan Jatah Harian:
             </span>
-            <span className="font-bold text-rose-600">
+            <span className="font-bold text-semantic-rose-text">
               -{formatCurrency(Math.max(0, differencePerDay))} / hari
             </span>
           </div>
         </div>
 
         {/* Insight & Recommendation */}
-        <div className="text-xs text-slate-600 mb-5 p-3 rounded-xl bg-indigo-50/70 border border-indigo-100/60 leading-relaxed">
+        <div className="text-xs text-text-primary mb-5 p-3 rounded-xl bg-surface border border-border-default leading-relaxed">
           {newDailySafe >= currentSafe * 0.8 ? (
-            <span className="flex items-start gap-1.5 text-indigo-900">
-              <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+            <span className="flex items-start gap-1.5 text-text-primary">
+              <Check className="w-4 h-4 text-semantic-green-text shrink-0 mt-0.5" />
               <span>Belanja ini aman dan tidak mengganggu kebutuhan harianmu hingga akhir siklus.</span>
             </span>
           ) : (
-            <span className="flex items-start gap-1.5 text-amber-900">
+            <span className="flex items-start gap-1.5 text-semantic-amber-text">
               <span>⚠️ Belanja ini akan memotong jatah harianmu cukup signifikan. Pastikan pengeluaran ini penting!</span>
             </span>
           )}
@@ -163,7 +163,7 @@ export const SpendingSimulatorModal: React.FC<SpendingSimulatorModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors"
+            className="flex-1 py-2.5 bg-surface-elevated hover:bg-surface-elevated/80 text-text-primary border border-border-default font-bold rounded-xl text-xs transition-colors min-h-[44px]"
           >
             Tutup
           </button>
@@ -171,7 +171,7 @@ export const SpendingSimulatorModal: React.FC<SpendingSimulatorModalProps> = ({
             <button
               type="button"
               onClick={handleRecord}
-              className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs shadow-md shadow-indigo-200 transition-colors flex items-center justify-center gap-1.5"
+              className="flex-1 py-2.5 bg-primary hover:bg-primary-hover text-slate-950 font-bold rounded-xl text-xs shadow-sm transition-colors flex items-center justify-center gap-1.5 min-h-[44px]"
             >
               <Plus className="w-4 h-4" />
               Lanjut Catat Transaksi

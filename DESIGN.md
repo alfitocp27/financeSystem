@@ -2,24 +2,40 @@
 name: SakuMahasiswa
 description: Mobile-first personal finance web app with dynamic Safe to Spend engine for Indonesian college students
 colors:
-  primary: "#4648d4"
-  primary-container: "#6063ee"
-  primary-focus: "#6366f1"
-  neutral-bg: "#f8fafc"
-  neutral-surface: "#ffffff"
-  neutral-text: "#0f172a"
-  neutral-secondary: "#475569"
-  neutral-muted: "#94a3b8"
-  border-default: "#e2e8f0"
-  safe-green: "#10b981"
-  safe-green-soft: "#ecfdf5"
-  alert-rose: "#f43f5e"
-  alert-rose-soft: "#fff1f2"
-  warning-amber: "#f59e0b"
-  warning-amber-soft: "#fffbeb"
-  info-blue: "#3b82f6"
-  info-blue-soft: "#eff6ff"
+  primary: "#b9924f"
+  primary-hover: "#c7a35f"
+  primary-focus: "#d6b875"
+  primary-soft: "rgba(185, 146, 79, 0.12)"
+  neutral-bg: "#0b0d11"
+  neutral-surface: "#14171f"
+  neutral-elevated: "#1c2029"
+  neutral-modal: "#222734"
+  neutral-text: "#f3f4f6"
+  neutral-secondary: "#9ca3af"
+  neutral-muted: "#8a93a0"
+  border-default: "rgba(255, 255, 255, 0.08)"
+  border-subtle: "rgba(255, 255, 255, 0.04)"
+  border-gold: "rgba(185, 146, 79, 0.18)"
+  safe-green: "#5f8a70"
+  safe-green-text: "#6f9e82"
+  safe-green-soft: "rgba(95, 138, 112, 0.14)"
+  alert-rose: "#a85f68"
+  alert-rose-text: "#b96e78"
+  alert-rose-soft: "rgba(168, 95, 104, 0.14)"
+  warning-amber: "#a98245"
+  warning-amber-text: "#be9553"
+  warning-amber-soft: "rgba(169, 130, 69, 0.14)"
+  info-blue: "#6683a3"
+  info-blue-text: "#7796b8"
+  info-blue-soft: "rgba(102, 131, 163, 0.14)"
+  neutral-charcoal: "#4f5765"
 typography:
+  hero-display:
+    fontFamily: "Inter, system-ui, -apple-system, sans-serif"
+    fontSize: "52px"
+    fontWeight: 800
+    lineHeight: 1
+    letterSpacing: "-0.03em"
   display:
     fontFamily: "Inter, system-ui, -apple-system, sans-serif"
     fontSize: "clamp(1.875rem, 4vw, 2.25rem)"
@@ -63,12 +79,12 @@ spacing:
   xl: "32px"
 components:
   button-primary:
-    backgroundColor: "{colors.primary-focus}"
-    textColor: "{colors.neutral-surface}"
+    backgroundColor: "{colors.primary}"
+    textColor: "#0b0d11"
     rounded: "{rounded.sm}"
     padding: "8px 16px"
   button-primary-hover:
-    backgroundColor: "{colors.primary}"
+    backgroundColor: "{colors.primary-hover}"
   card-base:
     backgroundColor: "{colors.neutral-surface}"
     textColor: "{colors.neutral-text}"
@@ -80,44 +96,48 @@ components:
 
 ## Overview
 
-**Creative North Star: "The Daylight Ledger"**
+**Creative North Star: "Obsidian & Muted Gold" (Luxury Dark Executive)**
 
-SakuMahasiswa is built around the feeling of opening a crisp, well-organized physical notebook on a clear morning. Instead of confronting students with spreadsheet clutter or dread-inducing debt trackers, it delivers instant financial calmness: an airy slate-and-indigo canvas that immediately answers the one question an Indonesian college student or perantau asks every day: *"Berapa yang aman saya belanjakan hari ini?"*
+SakuMahasiswa is built around the feeling of stepping into a calm, private study—an understated, obsidian-toned ledger with refined satin gold accents. Instead of confronting students with high-glare white spreadsheets, flashing neon crypto graphics, or anxiety-inducing debt alarms, it delivers quiet dignity and serene mastery: an acoustic baffle against financial noise that answers the daily question: *"Berapa yang aman saya belanjakan hari ini?"*
 
-The system rejects dark, overbearing fintech austerity and noisy gamification gimmicks. Instead, it pairs generous breathing room (`#f8fafc` background with `#ffffff` container cards) with decisive Ultramarine & Electric Indigo accents. Statuses do not shout in harsh solid reds or greens; they comfort and inform through soft pastel shield backgrounds with high-contrast text and crisp status pips.
+The system rejects pure pitch-black `#000000` (which causes OLED smearing and harsh contrast) in favor of deep, warm charcoal obsidian (`#0b0d11` root canvas, `#14171f` card surfaces, and `#1c2029` elevated rows). Muted champagne and satin gold (`#c5a059` / `#dfc184`) are used with surgical restraint—on <5% of total screen pixels—serving as hairline anchors for key interactive states and the hero Safe to Spend metric. Semantic alerts use desaturated, elegant sage, ochre, and coral tones with 12% translucent backdrops.
 
 **Key Characteristics:**
-- Crisp, airy daylight atmosphere with high glanceability on outdoor mobile screens.
-- Dominant hero card hierarchy centered on tabular daily figures.
-- Gentle, anxiety-free semantic signaling through soft-tinted surfaces.
-- Mobile-first ergonomic touch zones (minimum 44px) built for rapid, one-handed inputs.
+- Deep obsidian and warm charcoal surfaces that absorb cognitive glare.
+- Dominant Safe to Spend hero figure gleaming in Champagne Gold (`#dfc184`).
+- Monastic color discipline: no rainbow confetti or saturated neon clutter.
+- Mobile-first ergonomic touch zones (minimum 44px) built for rapid, discrete one-handed inputs.
 
 ## Colors
 
-The palette balances cool, calming daylight neutrals with an electric indigo anchor and reassuring, non-punitive semantic status tones.
+The palette balances warm obsidian darks with brushed satin gold accents and calm, desaturated semantic signals.
 
-### Primary
-- **Ultramarine Ink** (`#4648d4`): Brand foundation and deep interactive focal points.
-- **Electric Indigo** (`#6366f1`): Active highlights, primary CTA buttons, and interactive focus states.
-- **Indigo Lavender Tint** (`#eef2ff`): Subtle background highlights and active navigation pill fills.
+### Primary & Accent
+- **Satin Gold** (`#c5a059`): Primary brand anchor, active tab icons, and primary action buttons.
+- **Champagne Gold** (`#dfc184`): Display numbers and high-contrast monetary highlights.
+- **Classic Gold Hover** (`#d4af37`): Interactive hover feedback for primary triggers.
+- **Gold Mist Tint** (`rgba(197, 160, 89, 0.12)`): Translucent badge fills and active container glows.
 
-### Neutral
-- **Crisp Slate Canvas** (`#f8fafc`): Global viewport background providing clean separation from white cards.
-- **Pure Surface White** (`#ffffff`): Card containers, modal sheets, and floating elements.
-- **Midnight Slate** (`#0f172a`): High-contrast primary headings and financial numerical values.
-- **Muted Steel** (`#475569`): Descriptive text, secondary labels, and supportive captions.
-- **Subtle Outline Gray** (`#e2e8f0`): Structural 1px card boundaries and table dividers.
+### Neutral Surfaces
+- **Obsidian Canvas** (`#0b0d11`): Global viewport base background.
+- **Charcoal Card Surface** (`#14171f`): Standard cards, sidebar, and navbar containers.
+- **Elevated Surface** (`#1c2029`): Table rows, progress bar tracks, inputs, and hover states.
+- **Modal Surface** (`#222734`): Floating dialogs and bottom sheets.
+- **Off-White Text** (`#f3f4f6`): Crisp, glare-free primary text and tabular numerals.
+- **Muted Slate Gray** (`#9ca3af`): Supporting labels, cycle subtext, and metadata.
+- **Deep Steel Muted** (`#656e7b`): Hairline dividers, inactive icons, and timestamps.
+- **Hairline Border** (`rgba(255, 255, 255, 0.08)`): Subtle card edges and section lines.
 
 ### Status (Semantic)
-- **Botanical Safe** (`#10b981`, soft `#ecfdf5`): Spending is safely under the daily pace limit.
-- **Sunlit Amber** (`#f59e0b`, soft `#fffbeb`): Warning pace; daily allowance has reached ~80%.
-- **Signal Coral** (`#f43f5e`, soft `#fff1f2`): Overpace alert; compassionate advisory to compensate tomorrow.
-- **Atmospheric Blue** (`#3b82f6`, soft `#eff6ff`): Informational balances and non-budget estimates.
+- **Sage Emerald** (`#34d399`, soft `rgba(52, 211, 153, 0.12)`): Safe spending within pace.
+- **Muted Ochre** (`#fbbf24`, soft `rgba(245, 158, 11, 0.12)`): Warning pace; daily quota near limit.
+- **Terracotta Coral** (`#fb7185`, soft `rgba(251, 113, 133, 0.12)`): Overpace alert; compassionate advisory.
+- **Soft Sky** (`#60a5fa`, soft `rgba(96, 165, 250, 0.12)`): Informational items and transfers.
 
 ### Named Rules
-**The Soft-Shield Rule.** Semantic status alerts never use screaming saturated full-flood backgrounds. They must always use 10% soft-tint backgrounds (`bg-semantic-*-soft`) paired with crisp border accents and a saturated dot indicator, eliminating financial panic while maintaining clear hierarchy.
+**The Restrained Gold Rule.** Gold is a privilege, not wallpaper. It must never exceed 5% of viewport pixels. Gold belongs exclusively to the Safe to Spend hero number, active navigation triggers, and focused interactive states.
 
-**The One Voice Rule.** The primary electric indigo accent is reserved for actionable triggers (CTAs, FAB, active navigation). It occupies ≤10% of any given viewport surface to prevent visual fatigue.
+**The Soft-Shield Rule.** Semantic status alerts never use screaming saturated full-flood backgrounds. They must always use 12% translucent backgrounds paired with crisp text and subtle status pips, eliminating panic while preserving clarity.
 
 ## Typography
 

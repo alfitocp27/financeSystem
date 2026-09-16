@@ -162,13 +162,11 @@ function DashboardContent() {
           {/* Budget Tab */}
           {activeTab === 'budget' && (
             <div className="space-y-6">
-              <SafeToSpendCard onOpenSimulator={() => setIsSimulatorOpen(true)} />
               <BudgetManager
                 onShowToast={showToast}
                 onOpenAddCategory={() => setIsAddCategoryOpen(true)}
               />
               <RecurringBillsSection onShowToast={showToast} />
-              <FinancialForecastCard />
             </div>
           )}
 

@@ -2,13 +2,8 @@ import React, { useState, useRef, useEffect, useId } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatCurrency } from '../lib/formatters';
 
-export interface CategoryDonutItem {
-  id: string;
-  name: string;
-  value: number;
-  percentage: number;
-  color: string;
-}
+import { type CategoryDonutItem } from '../lib/analytics-utils';
+export type { CategoryDonutItem };
 
 interface CategoryDonutChartProps {
   data: CategoryDonutItem[];
@@ -26,6 +21,7 @@ export const CategoryDonutChart: React.FC<CategoryDonutChartProps> = ({
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const labelId = useId();
 
   // Active index prioritized by hover, then by persistent click/keyboard selection
@@ -185,6 +181,7 @@ export const CategoryDonutChart: React.FC<CategoryDonutChartProps> = ({
               height: size - strokeWidth * 2 - 12,
             }}
             aria-live="polite"
+            aria-atomic="true"
           >
             <AnimatePresence mode="wait">
               {activeItem ? (
@@ -245,19 +242,39 @@ export const CategoryDonutChart: React.FC<CategoryDonutChartProps> = ({
             return (
               <button
                 key={item.id || item.name}
+                ref={(el) => {
+                  buttonRefs.current[index] = el;
+                }}
                 type="button"
                 onClick={() => setSelectedIndex(selectedIndex === index ? null : index)}
                 onMouseEnter={() => setHoveredIndex(index)}
                 onMouseLeave={() => setHoveredIndex(null)}
-                className={`w-full flex items-center justify-between gap-3 py-2 px-2.5 rounded-lg text-left transition-all duration-150 min-h-[44px] ${
+                onFocus={() => setHoveredIndex(index)}
+                onBlur={() => setHoveredIndex(null)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') {
+                    e.preventDefault();
+                    setSelectedIndex(null);
+                    setHoveredIndex(null);
+                  } else if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    const nextIdx = (index + 1) % data.length;
+                    buttonRefs.current[nextIdx]?.focus();
+                  } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    const prevIdx = (index - 1 + data.length) % data.length;
+                    buttonRefs.current[prevIdx]?.focus();
+                  }
+                }}
+                className={`w-full flex items-center justify-between gap-3 py-2 px-2.5 rounded-lg text-left transition-all duration-150 min-h-[44px] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-surface ${
                   isItemActive
                     ? 'bg-surface-elevated font-semibold shadow-xs'
                     : hasActiveFocus
-                    ? 'opacity-40 hover:opacity-100 hover:bg-surface-elevated/50'
-                    : 'hover:bg-surface-elevated/50'
+                    ? 'opacity-40 hover:opacity-100 focus:opacity-100 hover:bg-surface-elevated/50 focus:bg-surface-elevated/50'
+                    : 'hover:bg-surface-elevated/50 focus:bg-surface-elevated/50'
                 }`}
                 aria-pressed={isItemActive}
-                aria-label={`Pilih kategori ${item.name}`}
+                aria-label={`${item.name}: ${formatCurrency(item.value)} (${item.percentage}%)`}
               >
                 {/* Left: Color Pip + Category Name */}
                 <div className="flex items-center gap-2.5 min-w-0">

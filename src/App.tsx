@@ -18,16 +18,15 @@ import { RecurringBillsSection } from './components/RecurringBillsSection';
 import { BudgetManager } from './components/BudgetManager';
 import { TransactionList } from './components/TransactionList';
 import { AnalyticsSection } from './components/AnalyticsSection';
-import { SettingsModal } from './components/SettingsModal';
-import { AuthModal } from './components/AuthModal';
+import { SettingsView } from './components/SettingsView';
 import { LoginPage } from './components/LoginPage';
 import { BottomNav } from './components/BottomNav';
 import { Toast } from './components/Toast';
 import type { Wallet } from './types/database.types';
 
 function DashboardContent() {
-  const { user, profile } = useAuth();
-  const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
+  const { user, profile, isRecoverySession } = useAuth();
+  const [activeTab, setActiveTab] = useState<ActiveTab>(isRecoverySession ? 'settings' : 'dashboard');
 
   // Modal States
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
@@ -37,12 +36,17 @@ function DashboardContent() {
   const [editingWallet, setEditingWallet] = useState<Wallet | null>(null);
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
   const [isSimulatorOpen, setIsSimulatorOpen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isAuthOpen, setIsAuthOpen] = useState(false);
 
   // Toast Notification State
   const [toastData, setToastData] = useState<string | import('./components/Toast').ToastData | null>(null);
   const showToast = (data: string | import('./components/Toast').ToastData) => setToastData(data);
+
+  useEffect(() => {
+    if (isRecoverySession) {
+      setActiveTab('settings');
+      showToast('Sesi pemulihan aktif. Silakan atur kata sandi baru Anda di tab Keamanan.');
+    }
+  }, [isRecoverySession]);
 
   // Student greeting name
   const studentName = profile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Mahasiswa';
@@ -59,8 +63,6 @@ function DashboardContent() {
           setEditingWallet(null);
           setIsAddCategoryOpen(false);
           setIsSimulatorOpen(false);
-          setIsSettingsOpen(false);
-          setIsAuthOpen(false);
         }
         return;
       }
@@ -76,8 +78,6 @@ function DashboardContent() {
         setEditingWallet(null);
         setIsAddCategoryOpen(false);
         setIsSimulatorOpen(false);
-        setIsSettingsOpen(false);
-        setIsAuthOpen(false);
       }
     };
 
@@ -94,7 +94,6 @@ function DashboardContent() {
       <Sidebar
         activeTab={activeTab}
         onSelectTab={setActiveTab}
-        onOpenAuth={() => setIsAuthOpen(true)}
       />
 
       {/* Main Content Area (offset by 240px on desktop) */}
@@ -102,8 +101,7 @@ function DashboardContent() {
         {/* Top Navbar */}
         <Navbar
           activeTab={activeTab}
-          onOpenSettings={() => setIsSettingsOpen(true)}
-          onOpenAuth={() => setIsAuthOpen(true)}
+          onOpenSettings={() => setActiveTab('settings')}
           onOpenQuickAdd={() => {
             setQuickAddInitialAmount(undefined);
             setIsQuickAddOpen(true);
@@ -166,7 +164,6 @@ function DashboardContent() {
           {activeTab === 'savings' && (
             <div className="space-y-6">
               <SavingsGoalSection onShowToast={showToast} />
-              <FinancialForecastCard />
             </div>
           )}
 
@@ -181,13 +178,7 @@ function DashboardContent() {
 
           {/* Settings Tab */}
           {activeTab === 'settings' && (
-            <div className="space-y-6 max-w-2xl mx-auto">
-              <SettingsModal
-                isOpen={true}
-                onClose={() => setActiveTab('dashboard')}
-                onShowToast={showToast}
-              />
-            </div>
+            <SettingsView onShowToast={showToast} />
           )}
         </main>
       </div>
@@ -243,19 +234,6 @@ function DashboardContent() {
           setIsQuickAddOpen(true);
         }}
       />
-
-      {activeTab !== 'settings' && (
-        <SettingsModal
-          isOpen={isSettingsOpen}
-          onClose={() => setIsSettingsOpen(false)}
-          onShowToast={showToast}
-        />
-      )}
-
-      <AuthModal
-        isOpen={isAuthOpen}
-        onClose={() => setIsAuthOpen(false)}
-      />
     </div>
   );
 }
@@ -265,8 +243,8 @@ function MainApp() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
-        <div className="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-bg-primary flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }

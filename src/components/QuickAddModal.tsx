@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { X, ArrowDownRight, ArrowUpRight, ArrowRightLeft, Check, Plus } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
-import type { TransactionType } from '../types/database.types';
+import type { TransactionType, Wallet } from '../types/database.types';
 
 interface QuickAddModalProps {
   isOpen: boolean;
@@ -27,6 +27,11 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  const activeWallets = useMemo(
+    () => wallets.filter((w) => w.is_active !== false),
+    [wallets]
+  );
+
   // Sync state whenever modal opens or wallet/categories are loaded
   useEffect(() => {
     if (isOpen) {
@@ -35,10 +40,10 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
       } else {
         setAmountStr('');
       }
-      if (wallets.length > 0) {
-        setWalletId(wallets[0].id);
-        if (wallets.length > 1) {
-          setDestinationWalletId(wallets[1].id);
+      if (activeWallets.length > 0) {
+        setWalletId(activeWallets[0].id);
+        if (activeWallets.length > 1) {
+          setDestinationWalletId(activeWallets[1].id);
         }
       }
       const initialCats = categories.filter((c) => c.type === type);
@@ -47,7 +52,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
       }
       setErrorMsg(null);
     }
-  }, [isOpen, initialAmount, wallets, categories, type]);
+  }, [isOpen, initialAmount, activeWallets, categories, type]);
 
   if (!isOpen) return null;
 
@@ -224,11 +229,11 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
                 {type === 'transfer' ? 'Dari Dompet' : 'Dompet / Akun'}
               </label>
               <select
-                value={walletId || wallets[0]?.id || ''}
+                value={walletId || activeWallets[0]?.id || ''}
                 onChange={(e) => setWalletId(e.target.value)}
                 className="w-full px-3.5 py-2.5 bg-surface-elevated border border-border-default rounded-xl text-sm font-semibold text-text-primary focus:outline-none focus:ring-2 focus:ring-border-gold-focus"
               >
-                {wallets.map((w) => (
+                {activeWallets.map((w: Wallet) => (
                   <option key={w.id} value={w.id} className="bg-surface-modal text-text-primary">
                     {w.name} (Rp {w.balance.toLocaleString('id-ID')})
                   </option>
@@ -242,13 +247,13 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
                   Ke Dompet Tujuan
                 </label>
                 <select
-                  value={destinationWalletId || wallets.find(w => w.id !== (walletId || wallets[0]?.id))?.id || ''}
+                  value={destinationWalletId || activeWallets.find((w: Wallet) => w.id !== (walletId || activeWallets[0]?.id))?.id || ''}
                   onChange={(e) => setDestinationWalletId(e.target.value)}
                   className="w-full px-3.5 py-2.5 bg-surface-elevated border border-border-default rounded-xl text-sm font-semibold text-text-primary focus:outline-none focus:ring-2 focus:ring-border-gold-focus"
                 >
-                  {wallets
-                    .filter((w) => w.id !== (walletId || wallets[0]?.id))
-                    .map((w) => (
+                  {activeWallets
+                    .filter((w: Wallet) => w.id !== (walletId || activeWallets[0]?.id))
+                    .map((w: Wallet) => (
                       <option key={w.id} value={w.id} className="bg-surface-modal text-text-primary">
                         {w.name} (Rp {w.balance.toLocaleString('id-ID')})
                       </option>

@@ -5,9 +5,7 @@ import {
   ReceiptText,
   Search,
   Download,
-  Filter,
   X,
-  Plus,
   Utensils,
   Home,
   Bus,
@@ -15,12 +13,24 @@ import {
   Coffee,
   ShoppingBag,
   Tag,
-  Wallet,
+  Wallet as WalletIcon,
   Briefcase,
   Award,
+  Edit2,
+  RotateCcw,
+  PiggyBank,
 } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
-import { formatCurrency, formatRelativeDate, formatDateIndo } from '../lib/formatters';
+import type { Transaction } from '../types/database.types';
+import { formatCurrency, formatDateIndo } from '../lib/formatters';
+import {
+  groupTransactionsByDate,
+  formatTransactionTime,
+  determineTransferDisplay,
+  generateTransactionCsvRows,
+} from '../lib/transaction-ledger-utils';
+import { DeleteTransactionModal } from './DeleteTransactionModal';
+import { EditTransactionModal } from './EditTransactionModal';
 
 interface TransactionListProps {
   onShowToast?: (msg: string) => void;
@@ -29,47 +39,89 @@ interface TransactionListProps {
 
 export const TransactionList: React.FC<TransactionListProps> = ({
   onShowToast,
-  onOpenQuickAdd,
 }) => {
-  const { transactions, wallets, categories, cycleInfo, deleteTransaction } = useFinance();
+  const {
+    transactions,
+    wallets,
+    categories,
+    savingsGoals,
+    cycleInfo,
+    deleteTransaction,
+    updateTransaction,
+  } = useFinance();
 
+  // Filters state
   const [filterType, setFilterType] = useState<string>('all');
   const [filterWallet, setFilterWallet] = useState<string>('all');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
   const [dateScope, setDateScope] = useState<'cycle' | 'month' | 'all'>('cycle');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [showFilters, setShowFilters] = useState<boolean>(false);
 
-  const getWalletName = useCallback((walletId: string) => {
-    return wallets.find((w) => w.id === walletId)?.name || 'Dompet';
-  }, [wallets]);
+  // Modals state
+  const [deletingTx, setDeletingTx] = useState<Transaction | null>(null);
+  const [editingTx, setEditingTx] = useState<Transaction | null>(null);
 
-  const getCategory = useCallback((catId?: string | null) => {
-    return categories.find((c) => c.id === catId);
-  }, [categories]);
+  const getWalletName = useCallback(
+    (walletId: string) => {
+      return wallets.find((w) => w.id === walletId)?.name || 'Dompet';
+    },
+    [wallets]
+  );
+
+  const getGoalName = useCallback(
+    (goalId?: string | null) => {
+      if (!goalId) return null;
+      return savingsGoals.find((g) => g.id === goalId)?.name || 'Target Tabungan';
+    },
+    [savingsGoals]
+  );
+
+  const getCategory = useCallback(
+    (catId?: string | null) => {
+      return categories.find((c) => c.id === catId);
+    },
+    [categories]
+  );
 
   const getCategoryIcon = (iconName?: string) => {
     switch (iconName) {
       case 'utensils':
-        return <Utensils className="w-4 h-4" />;
+        return <Utensils className="w-3.5 h-3.5" />;
       case 'home':
-        return <Home className="w-4 h-4" />;
+        return <Home className="w-3.5 h-3.5" />;
       case 'bus':
-        return <Bus className="w-4 h-4" />;
+        return <Bus className="w-3.5 h-3.5" />;
       case 'book-open':
-        return <BookOpen className="w-4 h-4" />;
+        return <BookOpen className="w-3.5 h-3.5" />;
       case 'coffee':
-        return <Coffee className="w-4 h-4" />;
+        return <Coffee className="w-3.5 h-3.5" />;
       case 'shopping-bag':
-        return <ShoppingBag className="w-4 h-4" />;
+        return <ShoppingBag className="w-3.5 h-3.5" />;
       case 'briefcase':
-        return <Briefcase className="w-4 h-4" />;
+        return <Briefcase className="w-3.5 h-3.5" />;
       case 'award':
-        return <Award className="w-4 h-4" />;
+        return <Award className="w-3.5 h-3.5" />;
       case 'wallet':
-        return <Wallet className="w-4 h-4" />;
+        return <WalletIcon className="w-3.5 h-3.5" />;
       default:
-        return <Tag className="w-4 h-4" />;
+        return <Tag className="w-3.5 h-3.5" />;
     }
+  };
+
+  // Check if any filter is active
+  const isFilterActive =
+    filterType !== 'all' ||
+    filterWallet !== 'all' ||
+    filterCategory !== 'all' ||
+    dateScope !== 'cycle' ||
+    Boolean(searchQuery.trim());
+
+  const handleResetFilters = () => {
+    setFilterType('all');
+    setFilterWallet('all');
+    setFilterCategory('all');
+    setDateScope('cycle');
+    setSearchQuery('');
   };
 
   // Filtered transactions calculation
@@ -85,8 +137,17 @@ export const TransactionList: React.FC<TransactionListProps> = ({
       // Type filter
       if (filterType !== 'all' && tx.type !== filterType) return false;
 
-      // Wallet filter
-      if (filterWallet !== 'all' && tx.wallet_id !== filterWallet && tx.destination_wallet_id !== filterWallet) {
+      // Wallet filter (matches either source or destination wallet for transfers)
+      if (
+        filterWallet !== 'all' &&
+        tx.wallet_id !== filterWallet &&
+        tx.destination_wallet_id !== filterWallet
+      ) {
+        return false;
+      }
+
+      // Category filter
+      if (filterCategory !== 'all' && tx.category_id !== filterCategory) {
         return false;
       }
 
@@ -108,268 +169,534 @@ export const TransactionList: React.FC<TransactionListProps> = ({
 
       return true;
     });
-  }, [transactions, filterType, filterWallet, dateScope, searchQuery, cycleInfo, getCategory, getWalletName]);
+  }, [
+    transactions,
+    filterType,
+    filterWallet,
+    filterCategory,
+    dateScope,
+    searchQuery,
+    cycleInfo,
+    getCategory,
+    getWalletName,
+  ]);
 
-  // Export CSV
+  // Date grouping calculation
+  const dateGroups = useMemo(() => {
+    return groupTransactionsByDate(filteredTransactions);
+  }, [filteredTransactions]);
+
+  // Export CSV strictly follows active filters with UTF-8 BOM (\uFEFF)
   const handleExportCSV = () => {
     if (filteredTransactions.length === 0) {
-      if (onShowToast) onShowToast('Tidak ada transaksi untuk diekspor');
+      if (onShowToast) onShowToast('Tidak ada transaksi untuk diekspor.');
       return;
     }
 
-    const headers = ['Tanggal', 'Tipe', 'Kategori', 'Dompet Asal', 'Dompet Tujuan', 'Nominal (IDR)', 'Catatan'];
-    const rows = filteredTransactions.map((tx) => {
-      const cat = getCategory(tx.category_id)?.name || (tx.type === 'transfer' ? 'Transfer' : '-');
-      const wOrigin = getWalletName(tx.wallet_id);
-      const wDest = tx.destination_wallet_id ? getWalletName(tx.destination_wallet_id) : '-';
-      const cleanNote = (tx.note || '').replace(/"/g, '""');
+    const { csvContent } = generateTransactionCsvRows(
+      filteredTransactions,
+      (catId) => getCategory(catId)?.name || '',
+      getWalletName
+    );
 
-      return [
-        tx.transaction_date,
-        tx.type,
-        `"${cat}"`,
-        `"${wOrigin}"`,
-        `"${wDest}"`,
-        tx.amount,
-        `"${cleanNote}"`,
-      ].join(',');
-    });
-
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows].join('\n');
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `transaksi_sakumhs_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute(
+      'download',
+      `transaksi_sakumhs_${new Date().toISOString().split('T')[0]}.csv`
+    );
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
 
-    if (onShowToast) onShowToast('Laporan transaksi berhasil diunduh (CSV)');
+    if (onShowToast) onShowToast('Laporan transaksi terfilter berhasil diunduh (CSV).');
   };
 
-  const handleDelete = async (id: string) => {
-    await deleteTransaction(id);
-    if (onShowToast) onShowToast('Transaksi berhasil dihapus');
+  // Safe delete handler via modal
+  const handleConfirmDelete = async (id: string) => {
+    const { error } = await deleteTransaction(id);
+    if (error) {
+      throw error;
+    }
+    if (onShowToast) onShowToast('Transaksi berhasil dihapus.');
   };
 
   return (
-    <section className="bg-surface rounded-2xl sm:rounded-[14px] p-5 sm:p-6 border border-border-default shadow-sm">
-      {/* Header & Main Action Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-border-default">
-        <div className="flex items-center gap-2">
-          <ReceiptText className="w-4 h-4 text-primary-600" />
-          <h2 className="text-base font-bold text-text-primary tracking-tight">
-            Riwayat Transaksi
-          </h2>
-          <span className="text-xs text-text-muted font-normal">
-            ({filteredTransactions.length})
-          </span>
-        </div>
+    <div className="space-y-4">
+      {/* 1. MASTER LEDGER CONTAINER */}
+      <section
+        aria-label="Buku Kas Riwayat Transaksi"
+        className="bg-surface border border-border-default rounded-xl sm:rounded-2xl overflow-hidden"
+      >
+        {/* Header & Utility Actions */}
+        <div className="px-5 sm:px-6 py-4 border-b border-border-subtle flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface">
+          <div>
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-surface-elevated border border-border-subtle flex items-center justify-center text-text-gold">
+                <ReceiptText className="w-4 h-4" />
+              </div>
+              <h2 className="text-sm sm:text-base font-bold text-text-primary tracking-tight">
+                Riwayat Transaksi
+              </h2>
+              <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-surface-elevated text-text-muted border border-border-subtle tabular-nums">
+                {filteredTransactions.length}
+              </span>
+            </div>
+            <p className="text-xs text-text-muted mt-1">
+              Catatan mutasi pemasukan, pengeluaran, dan transfer saldo antar-rekening.
+            </p>
+          </div>
 
-        <div className="flex items-center gap-2">
-          {onOpenQuickAdd && (
+          {/* Secondary Utility: Export CSV (Filtered dataset) */}
+          <div className="flex items-center gap-2 self-end sm:self-auto">
             <button
-              onClick={onOpenQuickAdd}
-              className="inline-flex sm:hidden items-center gap-1 text-xs font-semibold text-primary-600 bg-primary-50 px-2.5 py-1.5 rounded-lg"
+              type="button"
+              onClick={handleExportCSV}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-elevated hover:bg-surface-elevated/80 border border-border-subtle text-text-secondary hover:text-text-primary text-xs font-semibold transition-colors min-h-[44px]"
+              title="Unduh laporan transaksi terfilter dalam format CSV untuk Excel"
+              aria-label="Unduh laporan transaksi CSV"
             >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Catat</span>
+              <Download className="w-3.5 h-3.5 text-text-gold" />
+              <span>Ekspor CSV</span>
             </button>
-          )}
-
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`p-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition-colors ${
-              showFilters || filterWallet !== 'all' || dateScope !== 'cycle'
-                ? 'bg-primary-50 border-primary-200 text-primary-700'
-                : 'bg-surface border-border-default text-text-secondary hover:bg-bg-secondary'
-            }`}
-            title="Filter Lanjutan"
-          >
-            <Filter className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Filter</span>
-          </button>
-
-          <button
-            onClick={handleExportCSV}
-            className="p-1.5 bg-surface border border-border-default hover:bg-bg-secondary text-text-secondary rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors"
-            title="Download CSV"
-          >
-            <Download className="w-3.5 h-3.5 text-primary-600" />
-            <span className="hidden sm:inline">Export CSV</span>
-          </button>
+          </div>
         </div>
-      </div>
 
-      {/* Search Input & Quick Type Tabs */}
-      <div className="space-y-3 mb-4">
-        <div className="flex flex-col sm:flex-row gap-2.5">
-          {/* Search Input */}
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
-            <input
-              type="text"
-              placeholder="Cari transaksi, makanan, rekening..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-8 py-2 bg-surface border border-border-default rounded-xl text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-primary-500 shadow-2xs"
-            />
-            {searchQuery && (
+        {/* Integrated Filter Toolbar (Flat, No Popup Box) */}
+        <div className="p-4 sm:p-5 border-b border-border-subtle space-y-3 bg-surface">
+          {/* Row 1: Search & Type Tabs */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+            {/* Search Input */}
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
+              <input
+                type="text"
+                placeholder="Cari catatan, makanan, toko, rekening..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-9 py-2.5 bg-surface-elevated border border-border-default rounded-xl text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-primary min-h-[44px]"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center text-text-muted hover:text-text-primary rounded-lg transition-colors"
+                  title="Hapus pencarian"
+                  aria-label="Hapus pencarian"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Type Segmented Tabs */}
+            <div className="flex items-center gap-1 p-1 bg-surface-elevated border border-border-subtle rounded-xl text-xs shrink-0">
+              {[
+                { id: 'all', label: 'Semua' },
+                { id: 'expense', label: 'Keluar' },
+                { id: 'income', label: 'Masuk' },
+                { id: 'transfer', label: 'Transfer' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setFilterType(tab.id)}
+                  className={`px-3 py-2 rounded-lg font-semibold transition-colors min-h-[36px] ${
+                    filterType === tab.id
+                      ? 'bg-primary-soft text-text-gold border border-border-gold shadow-xs'
+                      : 'text-text-muted hover:text-text-primary'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Row 2: Scope Selectors (Periode, Dompet, Kategori, Reset) */}
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            {/* Periode */}
+            <select
+              value={dateScope}
+              onChange={(e) => setDateScope(e.target.value as any)}
+              aria-label="Filter Periode"
+              className="px-3 py-2 bg-surface-elevated border border-border-default rounded-xl text-xs text-text-secondary font-medium focus:outline-none focus:ring-1 focus:ring-primary min-h-[44px]"
+            >
+              <option value="cycle">
+                Siklus Aktif ({formatDateIndo(cycleInfo.startDate)} – {formatDateIndo(cycleInfo.endDate)})
+              </option>
+              <option value="month">Bulan Kalender Ini</option>
+              <option value="all">Semua Riwayat</option>
+            </select>
+
+            {/* Dompet (Includes archived wallets with label) */}
+            <select
+              value={filterWallet}
+              onChange={(e) => setFilterWallet(e.target.value)}
+              aria-label="Filter Dompet"
+              className="px-3 py-2 bg-surface-elevated border border-border-default rounded-xl text-xs text-text-secondary font-medium focus:outline-none focus:ring-1 focus:ring-primary min-h-[44px]"
+            >
+              <option value="all">Semua Dompet</option>
+              {wallets.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name}
+                  {w.is_active === false ? ' (Diarsipkan)' : ''}
+                </option>
+              ))}
+            </select>
+
+            {/* Kategori */}
+            <select
+              value={filterCategory}
+              onChange={(e) => setFilterCategory(e.target.value)}
+              aria-label="Filter Kategori"
+              className="px-3 py-2 bg-surface-elevated border border-border-default rounded-xl text-xs text-text-secondary font-medium focus:outline-none focus:ring-1 focus:ring-primary min-h-[44px]"
+            >
+              <option value="all">Semua Kategori</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name} ({c.type === 'income' ? 'Masuk' : 'Keluar'})
+                </option>
+              ))}
+            </select>
+
+            {/* Reset Button */}
+            {isFilterActive && (
               <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary"
+                type="button"
+                onClick={handleResetFilters}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-text-gold hover:underline transition-colors min-h-[44px]"
               >
-                <X className="w-3.5 h-3.5" />
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Reset Filter</span>
               </button>
             )}
           </div>
-
-          {/* Type Filter Tabs */}
-          <div className="flex gap-1 bg-bg-secondary p-1 rounded-xl text-xs shrink-0 self-start sm:self-auto">
-            {[
-              { id: 'all', label: 'Semua' },
-              { id: 'expense', label: 'Keluar' },
-              { id: 'income', label: 'Masuk' },
-              { id: 'transfer', label: 'Transfer' },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setFilterType(tab.id)}
-                className={`px-3 py-1 rounded-lg font-semibold transition-all ${
-                  filterType === tab.id
-                    ? 'bg-surface text-text-primary shadow-2xs'
-                    : 'text-text-muted hover:text-text-secondary'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
         </div>
 
-        {/* Advanced Filters Drawer */}
-        {showFilters && (
-          <div className="p-3 bg-bg-secondary rounded-xl flex flex-wrap items-center gap-3 text-xs border border-border-subtle animate-in fade-in duration-150">
-            <div className="flex items-center gap-1.5">
-              <span className="text-text-muted font-medium">Periode:</span>
-              <select
-                value={dateScope}
-                onChange={(e) => setDateScope(e.target.value as any)}
-                className="px-2.5 py-1 bg-surface border border-border-default rounded-lg text-text-primary font-semibold focus:outline-none"
-              >
-                <option value="cycle">
-                  Siklus Aktif ({formatDateIndo(cycleInfo.startDate)} – {formatDateIndo(cycleInfo.endDate)})
-                </option>
-                <option value="month">Bulan Kalender Ini</option>
-                <option value="all">Semua Riwayat</option>
-              </select>
+        {/* 2. TRANSACTION ROWS / EMPTY STATES */}
+        {filteredTransactions.length === 0 ? (
+          <div className="p-10 text-center space-y-3">
+            <div className="w-12 h-12 rounded-full bg-surface-elevated border border-border-subtle flex items-center justify-center mx-auto text-text-muted">
+              <ReceiptText className="w-6 h-6" />
             </div>
 
-            <div className="flex items-center gap-1.5">
-              <span className="text-text-muted font-medium">Dompet:</span>
-              <select
-                value={filterWallet}
-                onChange={(e) => setFilterWallet(e.target.value)}
-                className="px-2.5 py-1 bg-surface border border-border-default rounded-lg text-text-primary font-semibold focus:outline-none"
-              >
-                <option value="all">Semua Dompet</option>
-                {wallets.map((w) => (
-                  <option key={w.id} value={w.id}>
-                    {w.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {transactions.length === 0 ? (
+              <>
+                <h3 className="text-sm font-semibold text-text-primary">
+                  Belum Ada Transaksi
+                </h3>
+                <p className="text-xs text-text-muted max-w-sm mx-auto">
+                  Mulai catat pengeluaran atau pemasukan pertamamu melalui tombol Catat Transaksi.
+                </p>
+              </>
+            ) : (
+              <>
+                <h3 className="text-sm font-semibold text-text-primary">
+                  Tidak ada transaksi yang cocok dengan filter ini.
+                </h3>
+                <p className="text-xs text-text-muted max-w-sm mx-auto">
+                  Coba ubah kata kunci pencarian atau sesuaikan opsi filter di atas.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="mt-2 inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-surface-elevated hover:bg-surface-elevated/80 border border-border-subtle text-xs font-semibold text-text-primary min-h-[44px]"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 text-text-gold" />
+                  <span>Reset Filter</span>
+                </button>
+              </>
+            )}
           </div>
-        )}
-      </div>
+        ) : (
+          <div className="divide-y divide-border-subtle">
+            {dateGroups.map((group) => (
+              <div key={group.date} className="bg-surface">
+                {/* Date Group Header */}
+                <div className="px-5 sm:px-6 py-2.5 bg-surface-elevated/50 border-y border-border-subtle flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-text-primary">{group.label}</span>
+                    <span className="text-text-muted hidden sm:inline">
+                      · {formatDateIndo(group.date)}
+                    </span>
+                  </div>
 
-      {/* Transaction Rows List */}
-      {filteredTransactions.length === 0 ? (
-        <div className="p-8 text-center text-xs text-text-muted">
-          Tidak ada transaksi yang cocok dengan filter.
-        </div>
-      ) : (
-        <div className="divide-y divide-border-subtle">
-          {filteredTransactions.map((tx) => {
-            const category = getCategory(tx.category_id);
-            const sourceWalletName = getWalletName(tx.wallet_id);
-            const destWalletName = tx.destination_wallet_id ? getWalletName(tx.destination_wallet_id) : null;
-
-            return (
-              <div
-                key={tx.id}
-                className="py-3 sm:py-3.5 flex items-center justify-between hover:bg-surface-container-low px-2 rounded-xl transition-colors group"
-              >
-                {/* Left: Category Icon & Details */}
-                <div className="flex items-center gap-3 min-w-0">
-                  <div
-                    className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
-                      tx.type === 'income'
-                        ? 'bg-semantic-green-soft text-semantic-green'
-                        : tx.type === 'expense'
-                        ? 'bg-semantic-rose-soft text-semantic-rose'
-                        : 'bg-primary-50 text-primary-600'
-                    }`}
-                  >
-                    {tx.type === 'transfer' ? (
-                      <ArrowRightLeft className="w-4 h-4" />
-                    ) : (
-                      getCategoryIcon(category?.icon)
+                  {/* Daily Subtotal (Excludes transfers) */}
+                  <div className="flex items-center gap-3 font-semibold tabular-nums">
+                    {group.dailyExpenseTotal > 0 && (
+                      <span className="text-semantic-rose-text">
+                        Belanja: -{formatCurrency(group.dailyExpenseTotal)}
+                      </span>
+                    )}
+                    {group.dailyIncomeTotal > 0 && (
+                      <span className="text-semantic-green-text">
+                        Masuk: +{formatCurrency(group.dailyIncomeTotal)}
+                      </span>
+                    )}
+                    {group.dailyExpenseTotal === 0 && group.dailyIncomeTotal === 0 && group.hasTransfers && (
+                      <span className="text-text-muted">Mutasi Antar-Dompet</span>
                     )}
                   </div>
-
-                  <div className="min-w-0">
-                    <div className="text-xs sm:text-sm font-semibold text-text-primary truncate">
-                      {tx.note || category?.name || (tx.type === 'transfer' ? 'Transfer Saldo' : 'Lainnya')}
-                    </div>
-                    <div className="text-[11px] text-text-muted mt-0.5 flex items-center gap-1.5 flex-wrap truncate">
-                      <span>
-                        {tx.type === 'transfer'
-                          ? `${sourceWalletName} ➔ ${destWalletName}`
-                          : sourceWalletName}
-                      </span>
-                      <span>•</span>
-                      <span>{formatRelativeDate(tx.transaction_date)}</span>
-                      {category && tx.note && (
-                        <>
-                          <span>•</span>
-                          <span className="text-text-secondary">{category.name}</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
                 </div>
 
-                {/* Right: Amount & Delete Button */}
-                <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-3">
-                  <div
-                    className={`text-xs sm:text-sm font-bold text-right tabular-nums ${
-                      tx.type === 'income'
-                        ? 'text-semantic-green'
-                        : tx.type === 'expense'
-                        ? 'text-semantic-rose'
-                        : 'text-text-primary'
-                    }`}
-                  >
-                    {tx.type === 'income' ? '+ ' : tx.type === 'expense' ? '- ' : ''}
-                    {formatCurrency(tx.amount)}
-                  </div>
+                {/* Group Items */}
+                <div className="divide-y divide-border-subtle">
+                  {group.transactions.map((tx) => {
+                    const category = getCategory(tx.category_id);
+                    const sourceWalletName = getWalletName(tx.wallet_id);
+                    const destWalletName = tx.destination_wallet_id
+                      ? getWalletName(tx.destination_wallet_id)
+                      : null;
+                    const timeFormatted = formatTransactionTime(tx.created_at);
+                    const formattedAmount = formatCurrency(tx.amount);
 
-                  <button
-                    onClick={() => handleDelete(tx.id)}
-                    className="opacity-70 sm:opacity-0 sm:group-hover:opacity-100 p-1.5 text-text-muted hover:text-semantic-rose rounded-lg transition-all active:scale-95"
-                    title="Hapus transaksi"
-                    aria-label="Hapus transaksi"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                    // Directional transfer calculations
+                    const transferInfo =
+                      tx.type === 'transfer'
+                        ? determineTransferDisplay(
+                            tx,
+                            filterWallet,
+                            sourceWalletName,
+                            destWalletName || 'Tujuan',
+                            formattedAmount
+                          )
+                        : null;
+
+                    // Goal details if linked to savings goal
+                    const goalName = getGoalName(tx.goal_id);
+                    const isGoalTx = Boolean(tx.goal_id);
+
+                    // Display description
+                    let displayDescription = tx.note;
+                    if (!displayDescription) {
+                      if (tx.type === 'transfer') {
+                        displayDescription = transferInfo?.description || 'Transfer Saldo';
+                      } else if (isGoalTx) {
+                        displayDescription = tx.type === 'expense' ? `Alokasi: ${goalName}` : `Pencairan: ${goalName}`;
+                      } else {
+                        displayDescription = category?.name || 'Transaksi';
+                      }
+                    }
+
+                    // Display wallet channel
+                    let displayWalletChannel = sourceWalletName;
+                    if (tx.type === 'transfer') {
+                      if (filterWallet === 'all') {
+                        displayWalletChannel = `${sourceWalletName} ➔ ${destWalletName || 'Tujuan'}`;
+                      } else if (filterWallet === tx.wallet_id) {
+                        displayWalletChannel = `Ke ${destWalletName || 'Tujuan'}`;
+                      } else if (filterWallet === tx.destination_wallet_id) {
+                        displayWalletChannel = `Dari ${sourceWalletName}`;
+                      }
+                    } else if (isGoalTx) {
+                      displayWalletChannel = tx.type === 'expense' ? `${sourceWalletName} ➔ ${goalName}` : `${goalName} ➔ ${sourceWalletName}`;
+                    }
+
+                    // Display amount sign and color
+                    let amountSign = '';
+                    let amountColorClass = 'text-text-primary';
+                    if (isGoalTx) {
+                      // Tabungan menggunakan aksen Satin Gold netral (bukan merah konsumtif / hijau income baru)
+                      amountSign = tx.type === 'expense' ? '- ' : '+ ';
+                      amountColorClass = 'text-text-gold font-semibold';
+                    } else if (tx.type === 'income') {
+                      amountSign = '+ ';
+                      amountColorClass = 'text-semantic-green-text';
+                    } else if (tx.type === 'expense') {
+                      amountSign = '- ';
+                      amountColorClass = 'text-semantic-rose-text';
+                    } else if (transferInfo) {
+                      amountSign = transferInfo.sign;
+                      amountColorClass = transferInfo.colorClass;
+                    }
+
+                    // Screen reader accessible announcement
+                    let accessibleAnnouncement: string;
+                    if (tx.type === 'transfer') {
+                      accessibleAnnouncement = `${transferInfo?.accessibleText || 'Transfer'}, tanggal ${formatDateIndo(tx.transaction_date)}${timeFormatted ? ` jam ${timeFormatted}` : ''}`;
+                    } else if (isGoalTx) {
+                      accessibleAnnouncement = `${tx.type === 'expense' ? 'Alokasi ke target tabungan' : 'Pencairan dana dari target tabungan'} ${goalName}, nominal ${formattedAmount}, dompet ${sourceWalletName}, tanggal ${formatDateIndo(tx.transaction_date)}${timeFormatted ? ` jam ${timeFormatted}` : ''}`;
+                    } else {
+                      accessibleAnnouncement = `${tx.type === 'income' ? 'Pemasukan' : 'Pengeluaran'} ${displayDescription}, ${tx.type === 'income' ? 'bertambah' : 'berkurang'} ${formattedAmount}, dompet ${sourceWalletName}, tanggal ${formatDateIndo(tx.transaction_date)}${timeFormatted ? ` jam ${timeFormatted}` : ''}`;
+                    }
+
+                    return (
+                      <div
+                        key={tx.id}
+                        aria-label={accessibleAnnouncement}
+                        className="px-5 sm:px-6 py-3.5 hover:bg-surface-elevated/30 transition-colors"
+                      >
+                        {/* Accessible screen reader summary */}
+                        <span className="sr-only">{accessibleAnnouncement}</span>
+
+                        {/* A. DESKTOP VIEW (Tabular Aligned Columns) */}
+                        <div className="hidden sm:grid grid-cols-[70px_1fr_170px_170px_150px_90px] items-center gap-4 text-xs">
+                          {/* Col 1: Time */}
+                          <div className="text-text-muted tabular-nums">
+                            {timeFormatted || '—'}
+                          </div>
+
+                          {/* Col 2: Description & Note */}
+                          <div className="min-w-0 pr-2">
+                            <div className="font-semibold text-text-primary truncate" title={displayDescription}>
+                              {displayDescription}
+                            </div>
+                          </div>
+
+                          {/* Col 3: Category */}
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div
+                              className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${
+                                isGoalTx
+                                  ? 'bg-primary-soft text-text-gold'
+                                  : tx.type === 'income'
+                                  ? 'bg-semantic-green-soft text-semantic-green'
+                                  : tx.type === 'expense'
+                                  ? 'bg-semantic-rose-soft text-semantic-rose'
+                                  : 'bg-primary-soft text-text-gold'
+                              }`}
+                            >
+                              {tx.type === 'transfer' ? (
+                                <ArrowRightLeft className="w-3.5 h-3.5" />
+                              ) : isGoalTx ? (
+                                <PiggyBank className="w-3.5 h-3.5" />
+                              ) : (
+                                getCategoryIcon(category?.icon)
+                              )}
+                            </div>
+                            <span className="text-text-secondary truncate">
+                              {isGoalTx ? (tx.type === 'expense' ? 'Alokasi Tabungan' : 'Pencairan Tabungan') : category?.name || (tx.type === 'transfer' ? 'Transfer' : 'Umum')}
+                            </span>
+                          </div>
+
+                          {/* Col 4: Wallet Channel */}
+                          <div className="text-text-muted truncate" title={displayWalletChannel}>
+                            {displayWalletChannel}
+                          </div>
+
+                          {/* Col 5: Amount */}
+                          <div
+                            className={`font-bold text-right tabular-nums ${amountColorClass}`}
+                            aria-label={`${amountSign ? (amountSign.trim() === '+' ? 'plus' : 'minus') : 'nominal'} ${formattedAmount}`}
+                          >
+                            {amountSign}
+                            {formattedAmount}
+                          </div>
+
+                          {/* Col 6: Actions (Always discoverable) */}
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              type="button"
+                              onClick={() => setEditingTx(tx)}
+                              className="w-8 h-8 flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-elevated transition-colors min-h-[44px] min-w-[44px]"
+                              title="Edit catatan atau kategori"
+                              aria-label={`Edit transaksi ${displayDescription}`}
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setDeletingTx(tx)}
+                              className="w-8 h-8 flex items-center justify-center rounded-lg text-text-muted hover:text-semantic-rose-text hover:bg-semantic-rose-soft transition-colors min-h-[44px] min-w-[44px]"
+                              title="Hapus transaksi"
+                              aria-label={`Hapus transaksi ${displayDescription}`}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* B. MOBILE VIEW (2-Tier Compact Ledger Row) */}
+                        <div className="sm:hidden space-y-1.5">
+                          {/* Row 1: Description & Amount */}
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="font-semibold text-xs text-text-primary truncate">
+                              {displayDescription}
+                            </div>
+                            <div
+                              className={`font-bold text-xs tabular-nums shrink-0 ${amountColorClass}`}
+                            >
+                              {amountSign}
+                              {formattedAmount}
+                            </div>
+                          </div>
+
+                          {/* Row 2: Category · Wallet & Actions */}
+                          <div className="flex items-center justify-between gap-2 text-xs text-text-muted">
+                            <div className="truncate flex items-center gap-1.5 min-w-0">
+                              <span>
+                                {isGoalTx
+                                  ? tx.type === 'expense'
+                                    ? 'Alokasi Tabungan'
+                                    : 'Pencairan Tabungan'
+                                  : category?.name || (tx.type === 'transfer' ? 'Transfer' : 'Umum')}
+                              </span>
+                              <span>·</span>
+                              <span className="truncate">{displayWalletChannel}</span>
+                              {timeFormatted && (
+                                <>
+                                  <span>·</span>
+                                  <span className="tabular-nums">{timeFormatted}</span>
+                                </>
+                              )}
+                            </div>
+
+                            {/* Mobile Actions */}
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => setEditingTx(tx)}
+                                className="p-2 text-text-muted hover:text-text-primary rounded-lg min-h-[44px] min-w-[44px] flex items-center justify-center"
+                                title="Edit"
+                                aria-label={`Edit transaksi ${displayDescription}`}
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => setDeletingTx(tx)}
+                                className="p-2 text-text-muted hover:text-semantic-rose-text rounded-lg min-h-[44px] min-w-[44px] flex items-center justify-center"
+                                title="Hapus"
+                                aria-label={`Hapus transaksi ${displayDescription}`}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-            );
-          })}
-        </div>
-      )}
-    </section>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* 3. CONFIRMATION & EDIT MODALS */}
+      <DeleteTransactionModal
+        isOpen={Boolean(deletingTx)}
+        transaction={deletingTx}
+        wallets={wallets}
+        categories={categories}
+        onClose={() => setDeletingTx(null)}
+        onConfirm={handleConfirmDelete}
+      />
+
+      <EditTransactionModal
+        isOpen={Boolean(editingTx)}
+        transaction={editingTx}
+        wallets={wallets}
+        categories={categories}
+        onClose={() => setEditingTx(null)}
+        onSave={updateTransaction}
+        onShowToast={onShowToast}
+      />
+    </div>
   );
 };

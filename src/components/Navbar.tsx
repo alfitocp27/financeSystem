@@ -1,5 +1,5 @@
 import React from 'react';
-import { CreditCard, Calendar, Settings, LogIn, LogOut, Plus } from 'lucide-react';
+import { CreditCard, Calendar, Settings, LogOut, Plus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useFinance } from '../context/FinanceContext';
 import { formatDateIndo } from '../lib/formatters';
@@ -8,14 +8,12 @@ import type { ActiveTab } from './Sidebar';
 interface NavbarProps {
   activeTab: ActiveTab;
   onOpenSettings: () => void;
-  onOpenAuth: () => void;
   onOpenQuickAdd: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   activeTab,
   onOpenSettings,
-  onOpenAuth,
   onOpenQuickAdd,
 }) => {
   const { user, signOut } = useAuth();
@@ -36,7 +34,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       case 'analytics':
         return 'Laporan & Analisis';
       case 'settings':
-        return 'Pengaturan Sistem';
+        return 'Pengaturan';
       default:
         return 'SakuMhs';
     }
@@ -104,9 +102,9 @@ export const Navbar: React.FC<NavbarProps> = ({
             <Settings className="w-4 h-4" />
           </button>
 
-          {/* Mobile Auth Button */}
-          <div className="flex lg:hidden">
-            {user ? (
+          {/* Mobile Logout Button */}
+          {user && (
+            <div className="flex lg:hidden">
               <button
                 onClick={signOut}
                 className="p-2 text-semantic-rose-text hover:bg-semantic-rose-soft rounded-lg transition-colors"
@@ -115,17 +113,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               >
                 <LogOut className="w-4 h-4" />
               </button>
-            ) : (
-              <button
-                onClick={onOpenAuth}
-                className="p-2 text-primary hover:bg-primary-soft rounded-lg transition-colors"
-                title="Masuk"
-                aria-label="Masuk"
-              >
-                <LogIn className="w-4 h-4" />
-              </button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </header>

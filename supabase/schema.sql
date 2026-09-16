@@ -65,6 +65,7 @@ create table if not exists public.savings_goals (
   target_date date,
   icon text default 'target' not null,
   color text default '#10b981' not null,
+  is_active boolean default true not null,
   created_at timestamptz default now() not null,
   updated_at timestamptz default now() not null
 );

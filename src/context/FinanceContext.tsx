@@ -484,6 +484,22 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
   };
 
   const deleteWallet = async (id: string) => {
+    if (user && isConfigured) {
+      const isValidUuid = (str?: string | null) => str && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+      if (isValidUuid(id)) {
+        try {
+          const { error: delError } = await supabase.from('wallets').delete().eq('id', id);
+          if (delError) {
+            console.error('Delete wallet Supabase error:', delError);
+            return { error: delError };
+          }
+        } catch (err: any) {
+          console.error('Delete wallet exception:', err);
+          return { error: err };
+        }
+      }
+    }
+
     const updated = wallets.filter((w) => w.id !== id);
     setWallets(updated);
     try {
@@ -492,19 +508,9 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       // ignore
     }
 
-    if (user && isConfigured) {
-      const isValidUuid = (str?: string | null) => str && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
-      if (isValidUuid(id)) {
-        try {
-          await supabase.from('wallets').delete().eq('id', id);
-        } catch {
-          // ignore
-        }
-      }
-    }
-
     return { error: null };
   };
+
 
   const addCategory = async (params: { name: string; type: CategoryType; color?: string; icon?: string }) => {
     const newCatId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'cat-' + Date.now();

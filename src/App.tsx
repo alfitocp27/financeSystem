@@ -6,7 +6,7 @@ import { Navbar } from './components/Navbar';
 import { DashboardView } from './components/DashboardView';
 import { SafeToSpendCard } from './components/SafeToSpendCard';
 import { FinancialForecastCard } from './components/FinancialForecastCard';
-import { WalletCarousel } from './components/WalletCarousel';
+import { WalletLedger } from './components/WalletLedger';
 import { QuickAddModal } from './components/QuickAddModal';
 import { TransferModal } from './components/TransferModal';
 import { AddWalletModal } from './components/AddWalletModal';
@@ -143,20 +143,12 @@ function DashboardContent() {
 
           {/* Wallets Tab */}
           {activeTab === 'wallets' && (
-            <div className="space-y-6">
-              <WalletCarousel
-                onOpenTransfer={() => setIsTransferOpen(true)}
-                onOpenAddWallet={() => setIsAddWalletOpen(true)}
-                onEditWallet={(w) => setEditingWallet(w)}
-              />
-              <TransactionList
-                onShowToast={showToast}
-                onOpenQuickAdd={() => {
-                  setQuickAddInitialAmount(undefined);
-                  setIsQuickAddOpen(true);
-                }}
-              />
-            </div>
+            <WalletLedger
+              onOpenTransfer={() => setIsTransferOpen(true)}
+              onOpenAddWallet={() => setIsAddWalletOpen(true)}
+              onEditWallet={(w) => setEditingWallet(w)}
+              onSelectTab={setActiveTab}
+            />
           )}
 
           {/* Budget Tab */}

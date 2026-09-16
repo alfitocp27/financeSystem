@@ -14,7 +14,7 @@ export const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ isOpen, onCl
 
   const [name, setName] = useState('');
   const [type, setType] = useState<CategoryType>('expense');
-  const [color, setColor] = useState('#6366f1');
+  const [color, setColor] = useState('#B9924F');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
@@ -36,23 +36,22 @@ export const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ isOpen, onCl
   };
 
   const colors = [
-    '#6366f1', '#ec4899', '#f59e0b', '#10b981',
-    '#3b82f6', '#8b5cf6', '#ef4444', '#14b8a6', '#f97316'
+    '#B9924F', '#D6B875', '#6683A3', '#5F8A70', '#A85F68', '#A98245', '#7C8491', '#8b5cf6', '#ec4899'
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
-      <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs">
+      <div className="bg-surface-modal border border-border-default w-full max-w-sm rounded-3xl p-6 shadow-2xl">
+        <div className="flex items-center justify-between pb-3 border-b border-border-subtle mb-4">
           <div className="flex items-center gap-2">
-            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
+            <div className="p-2 bg-primary-soft text-text-gold rounded-xl">
               <Tag className="w-4 h-4" />
             </div>
-            <h2 className="text-base font-bold text-slate-800">Tambah Kategori Baru</h2>
+            <h2 className="text-base font-bold text-text-primary">Tambah Kategori Baru</h2>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100"
+            className="p-1.5 text-text-muted hover:text-text-primary rounded-full hover:bg-surface-elevated transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -61,15 +60,15 @@ export const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ isOpen, onCl
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Category Type */}
           <div>
-            <label className="text-xs font-semibold text-slate-500 block mb-1">Tipe Kategori</label>
+            <label className="text-xs font-semibold text-text-secondary block mb-1">Tipe Kategori</label>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => setType('expense')}
-                className={`py-2 text-xs font-bold rounded-xl border transition-all ${
+                className={`py-2 text-xs font-bold rounded-xl border transition-all min-h-[40px] ${
                   type === 'expense'
-                    ? 'bg-rose-50 border-rose-200 text-rose-700'
-                    : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                    ? 'bg-semantic-rose-soft border-semantic-rose/25 text-semantic-rose-text'
+                    : 'bg-surface-elevated border-border-default text-text-secondary hover:text-text-primary'
                 }`}
               >
                 Pengeluaran
@@ -77,10 +76,10 @@ export const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ isOpen, onCl
               <button
                 type="button"
                 onClick={() => setType('income')}
-                className={`py-2 text-xs font-bold rounded-xl border transition-all ${
+                className={`py-2 text-xs font-bold rounded-xl border transition-all min-h-[40px] ${
                   type === 'income'
-                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                    : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                    ? 'bg-semantic-green-soft border-semantic-green/25 text-semantic-green-text'
+                    : 'bg-surface-elevated border-border-default text-text-secondary hover:text-text-primary'
                 }`}
               >
                 Pemasukan
@@ -89,19 +88,19 @@ export const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ isOpen, onCl
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-slate-500 block mb-1">Nama Kategori</label>
+            <label className="text-xs font-semibold text-text-secondary block mb-1">Nama Kategori</label>
             <input
               type="text"
               placeholder="Misal: Skripsi, Kopi & Cafe, Beasiswa"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-3.5 py-2.5 bg-surface-elevated border border-border-default rounded-xl text-sm font-semibold text-text-primary focus:outline-none focus:border-border-gold-focus placeholder:text-text-muted"
             />
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-slate-500 block mb-1.5">Warna Aksen</label>
+            <label className="text-xs font-semibold text-text-secondary block mb-1.5">Warna Aksen</label>
             <div className="flex flex-wrap gap-2">
               {colors.map((c) => (
                 <button
@@ -109,7 +108,7 @@ export const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ isOpen, onCl
                   type="button"
                   onClick={() => setColor(c)}
                   className={`w-7 h-7 rounded-full transition-transform ${
-                    color === c ? 'scale-110 ring-2 ring-offset-2 ring-slate-400' : ''
+                    color === c ? 'scale-110 ring-2 ring-offset-2 ring-primary ring-offset-surface-modal' : ''
                   }`}
                   style={{ backgroundColor: c }}
                 />
@@ -120,7 +119,7 @@ export const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ isOpen, onCl
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md shadow-indigo-200 transition-all disabled:opacity-50"
+            className="w-full py-3 bg-primary hover:bg-primary-hover text-slate-950 rounded-xl font-bold text-sm shadow-sm transition-all disabled:opacity-50 min-h-[44px]"
           >
             {isSubmitting ? 'Menyimpan...' : 'Simpan Kategori'}
           </button>

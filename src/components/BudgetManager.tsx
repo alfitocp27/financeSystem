@@ -226,12 +226,12 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({ onShowToast, onOpe
                     value={editAmountStr}
                     onChange={(e) => setEditAmountStr(e.target.value)}
                     autoFocus
-                    className="flex-1 px-2.5 py-1 text-xs font-bold bg-white border border-border-default rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    className="flex-1 px-2.5 py-1 text-xs font-bold bg-surface-elevated text-text-primary border border-border-default rounded-lg focus:outline-none focus:border-border-gold-focus"
                   />
                   <button
                     onClick={() => handleSaveBudget(cat.id)}
                     disabled={isSaving}
-                    className="p-1.5 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
+                    className="p-1.5 bg-primary text-slate-950 rounded-lg hover:bg-primary-hover transition-colors font-bold"
                     title="Simpan"
                   >
                     <Check className="w-3.5 h-3.5" />

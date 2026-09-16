@@ -31,7 +31,7 @@ function SuccessParticles({
       {particles.map((p) => (
         <motion.div
           key={p.id}
-          className="fixed w-1.5 h-1.5 bg-indigo-600 rounded-full pointer-events-none z-50"
+          className="fixed w-1.5 h-1.5 bg-primary rounded-full pointer-events-none z-50"
           style={{ left: origin.x, top: origin.y }}
           initial={{
             scale: 0,

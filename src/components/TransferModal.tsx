@@ -80,18 +80,18 @@ export const TransferModal: React.FC<TransferModalProps> = ({ isOpen, onClose, o
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
-      <div className="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs">
+      <div className="bg-surface-modal border border-border-default w-full max-w-md rounded-3xl p-6 shadow-2xl">
+        <div className="flex items-center justify-between pb-3 border-b border-border-subtle mb-4">
           <div className="flex items-center gap-2">
-            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
+            <div className="p-2 bg-primary-soft text-text-gold rounded-xl">
               <ArrowRightLeft className="w-4 h-4" />
             </div>
-            <h2 className="text-base font-bold text-slate-800">Transfer Antar Dompet</h2>
+            <h2 className="text-base font-bold text-text-primary">Transfer Antar Dompet</h2>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors"
+            className="p-1.5 text-text-muted hover:text-text-primary rounded-full hover:bg-surface-elevated transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -99,14 +99,14 @@ export const TransferModal: React.FC<TransferModalProps> = ({ isOpen, onClose, o
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-xs font-semibold text-slate-500 block mb-1">Dari Dompet</label>
+            <label className="text-xs font-semibold text-text-secondary block mb-1">Dari Dompet</label>
             <select
               value={effectiveFromId}
               onChange={(e) => setFromWalletId(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-3.5 py-2.5 bg-surface-elevated border border-border-default rounded-xl text-sm font-semibold text-text-primary focus:outline-none focus:border-border-gold-focus"
             >
               {wallets.map((w) => (
-                <option key={w.id} value={w.id}>
+                <option key={w.id} value={w.id} className="bg-surface-elevated text-text-primary">
                   {w.name} ({formatCurrency(w.balance)})
                 </option>
               ))}
@@ -114,16 +114,16 @@ export const TransferModal: React.FC<TransferModalProps> = ({ isOpen, onClose, o
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-slate-500 block mb-1">Ke Dompet Tujuan</label>
+            <label className="text-xs font-semibold text-text-secondary block mb-1">Ke Dompet Tujuan</label>
             <select
               value={effectiveToId}
               onChange={(e) => setToWalletId(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-3.5 py-2.5 bg-surface-elevated border border-border-default rounded-xl text-sm font-semibold text-text-primary focus:outline-none focus:border-border-gold-focus"
             >
               {wallets
                 .filter((w) => w.id !== effectiveFromId)
                 .map((w) => (
-                  <option key={w.id} value={w.id}>
+                  <option key={w.id} value={w.id} className="bg-surface-elevated text-text-primary">
                     {w.name} ({formatCurrency(w.balance)})
                   </option>
                 ))}
@@ -131,30 +131,30 @@ export const TransferModal: React.FC<TransferModalProps> = ({ isOpen, onClose, o
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-slate-500 block mb-1">Nominal Transfer (Rp)</label>
+            <label className="text-xs font-semibold text-text-secondary block mb-1">Nominal Transfer (Rp)</label>
             <input
               type="number"
               inputMode="numeric"
               placeholder="0"
               value={amountStr}
               onChange={(e) => setAmountStr(e.target.value)}
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-4 py-3 bg-surface-elevated border border-border-default rounded-xl text-xl font-bold text-text-primary focus:outline-none focus:border-border-gold-focus"
             />
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-slate-500 block mb-1">Catatan (Opsional)</label>
+            <label className="text-xs font-semibold text-text-secondary block mb-1">Catatan (Opsional)</label>
             <input
               type="text"
               placeholder="Misal: Tarik tunai dari ATM, Top up e-wallet"
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-3.5 py-2 bg-surface-elevated border border-border-default rounded-xl text-sm text-text-primary focus:outline-none focus:border-border-gold-focus placeholder:text-text-muted"
             />
           </div>
 
           {errorMsg && (
-            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 font-medium">
+            <div className="p-3 bg-semantic-rose-soft border border-semantic-rose/20 rounded-xl text-xs text-semantic-rose-text font-medium">
               {errorMsg}
             </div>
           )}
@@ -162,7 +162,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({ isOpen, onClose, o
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md shadow-indigo-200 transition-all disabled:opacity-50"
+            className="w-full py-3 bg-primary hover:bg-primary-hover text-slate-950 rounded-xl font-bold text-sm shadow-sm transition-all disabled:opacity-50 min-h-[44px]"
           >
             {isSubmitting ? 'Memproses...' : 'Kirim Saldo'}
           </button>

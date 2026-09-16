@@ -59,14 +59,14 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#F8FAFC] flex items-center justify-center p-4 sm:p-6 selection:bg-indigo-100 selection:text-indigo-900">
-      {/* Minimalist Centered Card matching Stitch Reference 01_login_desktop */}
-      <div className="w-full max-w-[420px] bg-white rounded-[20px] border border-[#E2E8F0] shadow-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <div className="min-h-screen w-full bg-bg-primary flex items-center justify-center p-4 sm:p-6 text-text-primary selection:bg-primary-soft selection:text-text-gold">
+      {/* Minimalist Centered Card matching Obsidian & Muted Gold theme */}
+      <div className="w-full max-w-[420px] bg-surface rounded-2xl border border-border-default shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         <div className="pt-10 pb-8 px-7 sm:px-8">
-          {/* Central Geometric Burst Icon from Stitch */}
+          {/* Central Geometric Burst Icon */}
           <div className="flex justify-center mb-5">
             <svg
-              className="w-10 h-10 text-[#18181B]"
+              className="w-10 h-10 text-text-gold"
               fill="none"
               stroke="currentColor"
               strokeLinecap="round"
@@ -86,10 +86,10 @@ export const LoginPage: React.FC = () => {
 
           {/* Title & Subtitle */}
           <div className="text-center mb-7">
-            <h1 className="text-[22px] font-bold text-[#111827] tracking-tight">
+            <h1 className="text-xl font-bold text-text-primary tracking-tight">
               {mode === 'login' ? 'Masuk ke SakuMhs' : 'Daftar Akun SakuMhs'}
             </h1>
-            <p className="text-[13px] text-[#6B7280] mt-1.5 leading-snug">
+            <p className="text-xs text-text-secondary mt-1.5 leading-snug">
               {mode === 'login'
                 ? 'Selamat datang kembali! Masukkan detail akunmu.'
                 : 'Mulai kelola uang saku dan target tabunganmu.'}
@@ -97,8 +97,8 @@ export const LoginPage: React.FC = () => {
           </div>
 
           {!isConfigured && (
-            <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 flex items-start gap-2">
-              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <div className="mb-4 p-3 bg-semantic-amber-soft border border-semantic-amber/20 rounded-xl text-xs text-semantic-amber-text flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 text-semantic-amber shrink-0 mt-0.5" />
               <span>
                 Supabase belum dikonfigurasi di <code>.env</code>.
               </span>
@@ -109,7 +109,7 @@ export const LoginPage: React.FC = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'register' && (
               <div>
-                <label className="block text-[13px] font-semibold text-[#1F2937] mb-1.5" htmlFor="fullName">
+                <label className="block text-xs font-semibold text-text-secondary mb-1.5" htmlFor="fullName">
                   Nama Lengkap Mahasiswa
                 </label>
                 <div className="relative">
@@ -120,16 +120,16 @@ export const LoginPage: React.FC = () => {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     required
-                    className="w-full h-10 pl-3.5 pr-10 rounded-xl border border-[#E5E7EB] text-[13px] text-[#111827] placeholder-[#9CA3AF] focus:outline-none focus:border-[#6366F1] focus:ring-1 focus:ring-[#6366F1] transition-all"
+                    className="w-full h-11 pl-3.5 pr-10 rounded-xl bg-surface-elevated border border-border-default text-xs font-medium text-text-primary placeholder:text-text-muted focus:outline-none focus:border-border-gold-focus transition-all"
                   />
-                  <UserIcon className="w-4 h-4 text-[#9CA3AF] absolute right-3.5 top-1/2 -translate-y-1/2" />
+                  <UserIcon className="w-4 h-4 text-text-muted absolute right-3.5 top-1/2 -translate-y-1/2" />
                 </div>
               </div>
             )}
 
             {/* Email Input */}
             <div>
-              <label className="block text-[13px] font-semibold text-[#1F2937] mb-1.5" htmlFor="email">
+              <label className="block text-xs font-semibold text-text-secondary mb-1.5" htmlFor="email">
                 Email Mahasiswa
               </label>
               <div className="relative">
@@ -140,23 +140,23 @@ export const LoginPage: React.FC = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="w-full h-10 pl-3.5 pr-10 rounded-xl border border-[#E5E7EB] text-[13px] text-[#111827] placeholder-[#9CA3AF] focus:outline-none focus:border-[#6366F1] focus:ring-1 focus:ring-[#6366F1] transition-all"
+                  className="w-full h-11 pl-3.5 pr-10 rounded-xl bg-surface-elevated border border-border-default text-xs font-medium text-text-primary placeholder:text-text-muted focus:outline-none focus:border-border-gold-focus transition-all"
                 />
-                <Mail className="w-4 h-4 text-[#9CA3AF] absolute right-3.5 top-1/2 -translate-y-1/2" />
+                <Mail className="w-4 h-4 text-text-muted absolute right-3.5 top-1/2 -translate-y-1/2" />
               </div>
             </div>
 
             {/* Password Input */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-[13px] font-semibold text-[#1F2937]" htmlFor="password">
+                <label className="block text-xs font-semibold text-text-secondary" htmlFor="password">
                   Password
                 </label>
                 {mode === 'login' && (
                   <button
                     type="button"
                     onClick={() => alert('Silakan hubungi administrator atau buat akun baru.')}
-                    className="text-[13px] text-[#4B5563] hover:text-[#111827] transition-colors"
+                    className="text-xs text-text-muted hover:text-text-gold transition-colors"
                   >
                     Lupa password?
                   </button>
@@ -170,12 +170,12 @@ export const LoginPage: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="w-full h-10 pl-3.5 pr-10 rounded-xl border border-[#E5E7EB] text-[13px] text-[#111827] placeholder-[#9CA3AF] focus:outline-none focus:border-[#6366F1] focus:ring-1 focus:ring-[#6366F1] transition-all"
+                  className="w-full h-11 pl-3.5 pr-10 rounded-xl bg-surface-elevated border border-border-default text-xs font-medium text-text-primary placeholder:text-text-muted focus:outline-none focus:border-border-gold-focus transition-all"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#9CA3AF] hover:text-[#4B5563] transition-colors focus:outline-none"
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-text-muted hover:text-text-primary transition-colors focus:outline-none"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -190,21 +190,21 @@ export const LoginPage: React.FC = () => {
                     type="checkbox"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-4 h-4 rounded border-[#CBD5E1] text-[#6366F1] focus:ring-0 focus:outline-none cursor-pointer"
+                    className="w-4 h-4 rounded bg-surface-elevated border-border-default text-primary focus:ring-0 focus:outline-none cursor-pointer"
                   />
-                  <span className="text-[13px] text-[#374151]">Ingat saya</span>
+                  <span className="text-xs text-text-secondary">Ingat saya</span>
                 </label>
               </div>
             )}
 
             {errorMsg && (
-              <div className="p-2.5 bg-[#FFF1F2] border border-[#FECDD3] rounded-xl text-xs text-[#E11D48] font-medium animate-in fade-in">
+              <div className="p-2.5 bg-semantic-rose-soft border border-semantic-rose/20 rounded-xl text-xs text-semantic-rose-text font-medium animate-in fade-in">
                 {errorMsg}
               </div>
             )}
 
             {successMsg && (
-              <div className="p-2.5 bg-[#ECFDF5] border border-[#A7F3D0] rounded-xl text-xs text-[#059669] font-medium animate-in fade-in">
+              <div className="p-2.5 bg-semantic-green-soft border border-semantic-green/20 rounded-xl text-xs text-semantic-green-text font-medium animate-in fade-in">
                 {successMsg}
               </div>
             )}
@@ -214,7 +214,7 @@ export const LoginPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full h-10 rounded-xl bg-[#6366F1] hover:bg-[#4F46E5] active:scale-[0.99] text-white text-[13px] font-medium transition-all shadow-sm flex items-center justify-center cursor-pointer disabled:opacity-50"
+                className="w-full h-11 rounded-xl bg-primary hover:bg-primary-hover active:scale-[0.99] text-slate-950 text-xs font-bold transition-all shadow-sm flex items-center justify-center cursor-pointer disabled:opacity-50 min-h-[44px]"
               >
                 {isSubmitting
                   ? 'Memproses...'
@@ -227,8 +227,8 @@ export const LoginPage: React.FC = () => {
         </div>
 
         {/* Bottom Footer Strip */}
-        <div className="py-4 px-7 border-t border-[#F1F3F5] text-center bg-white space-y-2">
-          <p className="text-[13px] text-[#4B5563]">
+        <div className="py-4 px-7 border-t border-border-subtle text-center bg-surface-elevated space-y-2">
+          <p className="text-xs text-text-secondary">
             {mode === 'login' ? 'Belum punya akun? ' : 'Sudah memiliki akun? '}
             <button
               type="button"
@@ -237,7 +237,7 @@ export const LoginPage: React.FC = () => {
                 setErrorMsg(null);
                 setSuccessMsg(null);
               }}
-              className="text-[#6366F1] hover:text-[#4F46E5] font-semibold transition-colors"
+              className="text-text-gold hover:text-primary-focus font-semibold transition-colors"
             >
               {mode === 'login' ? 'Daftar gratis' : 'Masuk di sini'}
             </button>

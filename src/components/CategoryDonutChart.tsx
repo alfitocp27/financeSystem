@@ -132,7 +132,7 @@ export const CategoryDonutChart: React.FC<CategoryDonutChartProps> = ({
               cy={size / 2}
               r={radius}
               fill="none"
-              stroke="var(--color-border-subtle, #f1f5f9)"
+              stroke="rgba(255, 255, 255, 0.05)"
               strokeWidth={strokeWidth}
             />
 
@@ -251,10 +251,10 @@ export const CategoryDonutChart: React.FC<CategoryDonutChartProps> = ({
                 onMouseLeave={() => setHoveredIndex(null)}
                 className={`w-full flex items-center justify-between gap-3 py-2 px-2.5 rounded-lg text-left transition-all duration-150 min-h-[44px] ${
                   isItemActive
-                    ? 'bg-surface-container-low font-semibold shadow-xs'
+                    ? 'bg-surface-elevated font-semibold shadow-xs'
                     : hasActiveFocus
-                    ? 'opacity-45 hover:opacity-100 hover:bg-surface-container-lowest'
-                    : 'hover:bg-surface-container-lowest'
+                    ? 'opacity-40 hover:opacity-100 hover:bg-surface-elevated/50'
+                    : 'hover:bg-surface-elevated/50'
                 }`}
                 aria-pressed={isItemActive}
                 aria-label={`Pilih kategori ${item.name}`}

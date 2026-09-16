@@ -5,15 +5,15 @@ import { useFinance } from '../context/FinanceContext';
 import { formatCurrency, formatCompactCurrency, getLocalDateString } from '../lib/formatters';
 import { CategoryDonutChart, type CategoryDonutItem } from './CategoryDonutChart';
 
-// Disciplined palette for "The Daylight Ledger" (Max 5 categories + 1 neutral for "Lainnya")
+// Muted luxury palette for "Obsidian & Muted Gold" (Max 5 categories + 1 neutral for "Lainnya")
 const DISCIPLINED_CATEGORY_COLORS = [
-  '#4648d4', // Ultramarine Ink
-  '#3b82f6', // Ocean Blue
-  '#10b981', // Safe Emerald
-  '#f59e0b', // Warm Amber
-  '#8b5cf6', // Soft Violet
+  '#D6B875', // Champagne Gold Highlight
+  '#B9924F', // Primary Muted Gold
+  '#6683A3', // Muted Denim Blue
+  '#5F8A70', // Sage Green
+  '#A85F68', // Muted Dusty Rose
 ];
-const OTHER_CATEGORY_COLOR = '#94a3b8'; // Slate Neutral
+const OTHER_CATEGORY_COLOR = '#4F5765'; // Charcoal Slate Neutral
 
 export const AnalyticsSection: React.FC = () => {
   const { transactions, categories, totalExpenseInCycle, totalIncomeInCycle, safeToSpend, cycleInfo } = useFinance();
@@ -120,7 +120,7 @@ export const AnalyticsSection: React.FC = () => {
       <div className="bg-surface p-5 sm:p-6 rounded-xl border border-border-default shadow-xs">
         <div className="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-border-subtle mb-5">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary-50 text-primary-600 flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-primary-soft text-text-gold flex items-center justify-center shrink-0">
               <ChartIcon className="w-4 h-4" />
             </div>
             <div>
@@ -132,7 +132,7 @@ export const AnalyticsSection: React.FC = () => {
               </p>
             </div>
           </div>
-          <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-surface-container-low text-text-secondary border border-border-subtle">
+          <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-surface-elevated text-text-secondary border border-border-subtle">
             {donutCategoryData.length} Pos Pengeluaran
           </span>
         </div>
@@ -153,7 +153,7 @@ export const AnalyticsSection: React.FC = () => {
             <div className="flex flex-wrap items-center justify-between gap-2 mb-4 pb-3 border-b border-border-subtle">
               <div>
                 <h3 className="text-sm font-bold text-text-primary tracking-tight flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-primary-600" />
+                  <TrendingUp className="w-4 h-4 text-text-gold" />
                   <span>Tren Belanja 7 Hari Terakhir</span>
                 </h3>
                 <p className="text-xs text-text-muted mt-0.5">
@@ -162,11 +162,11 @@ export const AnalyticsSection: React.FC = () => {
               </div>
               <div className="flex items-center gap-3 text-xs font-medium">
                 <span className="flex items-center gap-1.5 text-text-secondary">
-                  <span className="w-2.5 h-2.5 rounded-xs bg-primary-500" />
+                  <span className="w-2.5 h-2.5 rounded-xs bg-primary" />
                   <span>Harian</span>
                 </span>
-                <span className="flex items-center gap-1.5 text-semantic-rose">
-                  <span className="w-3.5 h-0.5 border-t-2 border-dashed border-semantic-rose" />
+                <span className="flex items-center gap-1.5 text-semantic-amber-text">
+                  <span className="w-3.5 h-0.5 border-t-2 border-dashed border-semantic-amber" />
                   <span>Batas Aman</span>
                 </span>
               </div>
@@ -175,29 +175,36 @@ export const AnalyticsSection: React.FC = () => {
             <div className="h-52 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={last7DaysData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <XAxis dataKey="label" tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 12, fill: '#8A93A0' }} axisLine={false} tickLine={false} />
                   <YAxis
-                    tick={{ fontSize: 12, fill: '#64748b' }}
+                    tick={{ fontSize: 12, fill: '#8A93A0' }}
                     axisLine={false}
                     tickLine={false}
                     tickFormatter={(val) => formatCompactCurrency(val)}
                   />
                   <Tooltip
                     formatter={(val: any) => [formatCurrency(Number(val)), 'Pengeluaran']}
-                    labelStyle={{ fontSize: '12px', fontWeight: 'bold' }}
-                    contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', backgroundColor: '#ffffff', fontSize: '12px' }}
+                    labelStyle={{ fontSize: '12px', fontWeight: 'bold', color: '#F3F4F6' }}
+                    contentStyle={{
+                      borderRadius: '12px',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      backgroundColor: '#222734',
+                      color: '#F3F4F6',
+                      fontSize: '12px',
+                    }}
+                    itemStyle={{ color: '#D6B875' }}
                   />
                   {safeToSpend.dailySafeToSpend > 0 && (
                     <ReferenceLine
                       y={safeToSpend.dailySafeToSpend}
-                      stroke="#f43f5e"
+                      stroke="#A98245"
                       strokeDasharray="4 4"
                       strokeWidth={1.5}
                     />
                   )}
                   <Bar
                     dataKey="expense"
-                    fill="#6366f1"
+                    fill="#B9924F"
                     radius={[6, 6, 0, 0]}
                   />
                 </BarChart>
@@ -211,7 +218,7 @@ export const AnalyticsSection: React.FC = () => {
           <div>
             <div className="flex items-center justify-between pb-3 border-b border-border-subtle mb-4">
               <h3 className="text-sm font-bold text-text-primary tracking-tight flex items-center gap-2">
-                <Wallet className="w-4 h-4 text-primary-600" />
+                <Wallet className="w-4 h-4 text-text-gold" />
                 <span>Arus Kas Siklus Berjalan</span>
               </h3>
               <span className="text-xs text-text-muted font-normal">
@@ -220,23 +227,23 @@ export const AnalyticsSection: React.FC = () => {
             </div>
 
             <div className="space-y-2 mb-5">
-              <div className="flex items-center justify-between text-xs p-3 rounded-lg bg-surface-container-low border border-border-subtle">
+              <div className="flex items-center justify-between text-xs p-3 rounded-lg bg-surface-elevated border border-border-subtle">
                 <span className="text-text-secondary font-medium">Total Pemasukan</span>
-                <span className="font-bold text-semantic-green tabular-nums">
+                <span className="font-bold text-semantic-green-text tabular-nums">
                   +{formatCurrency(totalIncomeInCycle)}
                 </span>
               </div>
-              <div className="flex items-center justify-between text-xs p-3 rounded-lg bg-surface-container-low border border-border-subtle">
+              <div className="flex items-center justify-between text-xs p-3 rounded-lg bg-surface-elevated border border-border-subtle">
                 <span className="text-text-secondary font-medium">Total Pengeluaran</span>
-                <span className="font-bold text-semantic-rose tabular-nums">
+                <span className="font-bold text-semantic-rose-text tabular-nums">
                   -{formatCurrency(totalExpenseInCycle)}
                 </span>
               </div>
-              <div className="flex items-center justify-between text-xs p-3 rounded-lg bg-primary-50 border border-primary-100">
-                <span className="text-primary-900 font-bold">Surplus Bersih Siklus</span>
+              <div className="flex items-center justify-between text-xs p-3 rounded-lg bg-primary-soft border border-border-gold">
+                <span className="text-text-primary font-bold">Surplus Bersih Siklus</span>
                 <span
                   className={`font-extrabold tabular-nums ${
-                    netSavings >= 0 ? 'text-primary-700' : 'text-semantic-rose'
+                    netSavings >= 0 ? 'text-text-gold' : 'text-semantic-rose-text'
                   }`}
                 >
                   {formatCurrency(netSavings)}
@@ -246,10 +253,10 @@ export const AnalyticsSection: React.FC = () => {
           </div>
 
           {/* Smart Tip for Students */}
-          <div className="p-3.5 bg-primary-50/70 rounded-lg border border-primary-100 flex items-start gap-2.5">
-            <Sparkles className="w-4 h-4 text-primary-600 shrink-0 mt-0.5" />
-            <div className="text-xs text-primary-950 leading-relaxed">
-              <strong>Tips Finansial Mahasiswa:</strong> Komposisi pengeluaran terbesar idealnya tidak melebihi 50% dari total uang saku bulanan. Evaluasi pos non-esensial jika surplus menipis.
+          <div className="p-3.5 bg-surface-elevated rounded-lg border border-border-gold flex items-start gap-2.5">
+            <Sparkles className="w-4 h-4 text-text-gold shrink-0 mt-0.5" />
+            <div className="text-xs text-text-secondary leading-relaxed">
+              <strong className="text-text-primary">Tips Finansial Mahasiswa:</strong> Komposisi pengeluaran terbesar idealnya tidak melebihi 50% dari total uang saku bulanan. Evaluasi pos non-esensial jika surplus menipis.
             </div>
           </div>
         </div>

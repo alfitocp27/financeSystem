@@ -249,11 +249,11 @@ export const TransactionList: React.FC<TransactionListProps> = ({
           </div>
 
           {/* Secondary Utility: Export CSV (Filtered dataset) */}
-          <div className="flex items-center gap-2 self-end sm:self-auto">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <button
               type="button"
               onClick={handleExportCSV}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-elevated hover:bg-surface-elevated/80 border border-border-subtle text-text-secondary hover:text-text-primary text-xs font-semibold transition-colors min-h-[44px]"
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-surface-elevated hover:bg-surface-elevated/80 border border-border-subtle text-text-secondary hover:text-text-primary text-xs font-semibold transition-colors min-h-[44px] w-full sm:w-auto"
               title="Unduh laporan transaksi terfilter dalam format CSV untuk Excel"
               aria-label="Unduh laporan transaksi CSV"
             >

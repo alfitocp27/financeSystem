@@ -17,11 +17,15 @@ interface SafeToSpendCardProps {
 export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({ onOpenSimulator }) => {
   const { safeToSpend, cycleInfo, totalBalance, totalIncomeInCycle, totalExpenseInCycle } = useFinance();
   const [isTooltipOpen, setIsTooltipOpen] = useState(false);
-  const tooltipRef = useRef<HTMLDivElement | null>(null);
+  const mobileTooltipRef = useRef<HTMLDivElement | null>(null);
+  const desktopTooltipRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const handlePointerDown = (e: MouseEvent | TouchEvent) => {
-      if (tooltipRef.current && !tooltipRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      const clickedMobile = mobileTooltipRef.current?.contains(target);
+      const clickedDesktop = desktopTooltipRef.current?.contains(target);
+      if (!clickedMobile && !clickedDesktop) {
         setIsTooltipOpen(false);
       }
     };
@@ -48,6 +52,7 @@ export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({ onOpenSimulato
           dot: 'bg-semantic-green',
           icon: ShieldCheck,
           text: 'Status: Aman',
+          shortText: 'Aman',
           desc: 'Pengeluaran harianmu masih di bawah batas aman.',
         };
       case 'warning':
@@ -56,6 +61,7 @@ export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({ onOpenSimulato
           dot: 'bg-semantic-amber',
           icon: AlertTriangle,
           text: 'Status: Waspada',
+          shortText: 'Waspada',
           desc: 'Jatah belanja hari ini hampir habis (mencapai 80%).',
         };
       case 'overpace':
@@ -64,6 +70,7 @@ export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({ onOpenSimulato
           dot: 'bg-semantic-rose',
           icon: AlertCircle,
           text: 'Status: Overpace',
+          shortText: 'Overpace',
           desc: 'Pengeluaran hari ini melebihi jatah harian. Disarankan berhemat esok hari.',
         };
       case 'no-budget':
@@ -73,6 +80,7 @@ export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({ onOpenSimulato
           dot: 'bg-semantic-blue',
           icon: HelpCircle,
           text: 'Status: Estimasi',
+          shortText: 'Estimasi',
           desc: 'Berdasarkan sisa saldo riil di seluruh rekening dompetmu.',
         };
     }
@@ -88,12 +96,68 @@ export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({ onOpenSimulato
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           {/* Left: Prominent Daily Figure */}
           <div className="flex flex-col flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
+            {/* Mobile Top Row (< md): perfectly centered single row [Title + ?] [Aman] [Calculator] */}
+            <div className="flex md:hidden items-center justify-between gap-3">
+              {/* Left: Title + Help icon */}
+              <div className="flex min-w-0 items-center gap-1.5">
+                <span className="text-xs font-semibold text-text-secondary leading-normal">
+                  Aman dibelanjakan hari ini
+                </span>
+
+                <div ref={mobileTooltipRef} className="relative flex items-center shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setIsTooltipOpen((prev) => !prev)}
+                    onMouseEnter={() => setIsTooltipOpen(true)}
+                    onMouseLeave={() => setIsTooltipOpen(false)}
+                    onFocus={() => setIsTooltipOpen(true)}
+                    onBlur={() => setIsTooltipOpen(false)}
+                    className="p-1 text-text-muted hover:text-text-primary focus:outline-hidden focus-visible:ring-2 focus-visible:ring-primary rounded-md transition-colors"
+                    aria-label="Penjelasan batas pengeluaran harian"
+                    aria-expanded={isTooltipOpen}
+                  >
+                    <HelpCircle className="w-3.5 h-3.5" />
+                  </button>
+                  {isTooltipOpen && (
+                    <div
+                      role="tooltip"
+                      className="absolute bottom-full left-0 mb-2 flex flex-col w-56 bg-surface-modal border border-border-default text-text-primary p-2.5 rounded-lg text-xs z-30 shadow-lg leading-relaxed animate-in fade-in zoom-in-95 duration-150"
+                    >
+                      Batas pengeluaran harian aman agar uang sakumu tetap bertahan hingga akhir siklus kiriman.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Right: Compact Status Badge + Icon-only Simulation Button */}
+              <div className="flex shrink-0 items-center gap-2">
+                <span
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border whitespace-nowrap leading-none ${badge.bg}`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${badge.dot}`} />
+                  <span>{badge.shortText}</span>
+                </span>
+
+                {onOpenSimulator && (
+                  <button
+                    onClick={onOpenSimulator}
+                    className="flex items-center justify-center w-11 h-11 min-w-[44px] min-h-[44px] rounded-lg bg-primary-soft hover:bg-primary-soft/80 text-text-gold border border-border-gold transition-colors shrink-0"
+                    title="Simulasi Jajan"
+                    aria-label="Simulasi Jajan"
+                  >
+                    <Calculator className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Desktop Header (>= md): restored exactly from original layout */}
+            <div className="hidden md:flex items-center gap-2 flex-wrap">
               <span className="text-xs font-semibold text-text-secondary">
                 Aman dibelanjakan hari ini
               </span>
 
-              <div ref={tooltipRef} className="relative flex items-center">
+              <div ref={desktopTooltipRef} className="relative flex items-center">
                 <button
                   type="button"
                   onClick={() => setIsTooltipOpen((prev) => !prev)}

@@ -166,7 +166,6 @@ function DashboardContent() {
           {activeTab === 'savings' && (
             <div className="space-y-6">
               <SavingsGoalSection onShowToast={showToast} />
-              <FinancialForecastCard />
             </div>
           )}
 

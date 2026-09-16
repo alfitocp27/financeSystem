@@ -4,6 +4,7 @@ import { useAuth } from './AuthContext';
 import type { Wallet, Category, Transaction, Budget, SavingsGoal, TransactionType, WalletType, CategoryType, RecurringCommitment } from '../types/database.types';
 import { getCycleInfo, calculateSafeToSpend, type SafeToSpendCalculation, type CycleInfo } from '../lib/budget-cycle';
 import { getLocalDateString } from '../lib/formatters';
+import { calculateNetSavingsAllocationInCycle } from '../lib/savings-goal-utils';
 
 interface FinanceContextType {
   wallets: Wallet[];
@@ -39,6 +40,10 @@ interface FinanceContextType {
   deleteCategory: (id: string) => Promise<{ error: Error | null }>;
   setCategoryBudget: (categoryId: string, amount: number) => Promise<{ error: Error | null }>;
   addSavingsGoal: (params: { name: string; target_amount: number; target_date?: string; color?: string }) => Promise<{ error: Error | null }>;
+  updateSavingsGoal: (id: string, updates: Partial<SavingsGoal>) => Promise<{ error: Error | null }>;
+  deleteSavingsGoal: (id: string) => Promise<{ error: Error | null }>;
+  archiveSavingsGoal: (id: string) => Promise<{ error: Error | null }>;
+  restoreSavingsGoal: (id: string) => Promise<{ error: Error | null }>;
   allocateToGoal: (goalId: string, walletId: string, amount: number) => Promise<{ error: Error | null }>;
   withdrawFromGoal: (goalId: string, walletId: string, amount: number) => Promise<{ error: Error | null }>;
   addCommitment: (params: { name: string; amount: number; due_day: number; category_id?: string }) => Promise<{ error: Error | null }>;
@@ -177,8 +182,9 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
     transactions.forEach((tx) => {
       const isDateInCycle = tx.transaction_date >= startStr && tx.transaction_date <= endStr;
       if (isDateInCycle) {
-        if (tx.type === 'income') income += Number(tx.amount);
-        if (tx.type === 'expense') {
+        // Tabungan (tx.goal_id) bukan pengeluaran konsumtif dan bukan pemasukan baru!
+        if (tx.type === 'income' && !tx.goal_id) income += Number(tx.amount);
+        if (tx.type === 'expense' && !tx.goal_id) {
           expense += Number(tx.amount);
           if (tx.transaction_date === todayStr) {
             todayExp += Number(tx.amount);
@@ -209,19 +215,27 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
     return commitments.filter((c) => !c.is_paid).reduce((acc, c) => acc + Number(c.amount), 0);
   }, [commitments]);
 
-  // Safe to Spend calculation
+  // Net savings allocation in current active cycle
+  const netSavingsAllocationInCycle = useMemo(() => {
+    return calculateNetSavingsAllocationInCycle(transactions, cycleInfo);
+  }, [transactions, cycleInfo]);
+
+  // Safe to Spend calculation - Dual-Mode Semantics
   const safeToSpend = useMemo(() => {
     const effectiveBudget = totalBudget > 0 ? totalBudget : totalBalance + totalExpenseInCycle;
+    // Jika totalBudget > 0: kurangi kapasitas belanja sesuai net alokasi tabungan siklus berjalan.
+    // Jika totalBudget === 0: totalSavingsAllocated = 0 karena wallet.balance sudah berkurang (cegah double deduction).
+    const effectiveSavingsAllocated = totalBudget > 0 ? netSavingsAllocationInCycle : 0;
 
     return calculateSafeToSpend({
       totalBudget: effectiveBudget,
       totalExpenses: totalExpenseInCycle,
-      totalSavingsAllocated: 0,
+      totalSavingsAllocated: effectiveSavingsAllocated,
       totalUnpaidCommitments,
       todayExpenses,
       cycleStartDay,
     });
-  }, [totalBudget, totalBalance, totalExpenseInCycle, totalUnpaidCommitments, todayExpenses, cycleStartDay]);
+  }, [totalBudget, totalBalance, totalExpenseInCycle, netSavingsAllocationInCycle, totalUnpaidCommitments, todayExpenses, cycleStartDay]);
 
   // Actions - Enhanced with Direct Supabase Persistence & State Sync
   const addTransaction = async (params: {
@@ -707,16 +721,25 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addSavingsGoal = async (params: { name: string; target_amount: number; target_date?: string; color?: string }) => {
+    if (!params.name.trim()) {
+      return { error: new Error('Nama target tabungan tidak boleh kosong.') };
+    }
+    const targetAmt = Number(params.target_amount);
+    if (!targetAmt || targetAmt <= 0) {
+      return { error: new Error('Target nominal harus lebih besar dari Rp 0.') };
+    }
+
     const newGoalId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'goal-' + Date.now();
     const newGoal: SavingsGoal = {
       id: newGoalId,
       user_id: user?.id || 'demo',
-      name: params.name,
-      target_amount: params.target_amount,
+      name: params.name.trim(),
+      target_amount: targetAmt,
       current_amount: 0,
       target_date: params.target_date || null,
       icon: 'target',
-      color: params.color || '#10b981',
+      color: params.color || '#B9924F',
+      is_active: true,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -732,13 +755,120 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       try {
         await supabase.from('savings_goals').insert({
           user_id: user.id,
-          name: params.name,
-          target_amount: params.target_amount,
+          name: params.name.trim(),
+          target_amount: targetAmt,
           target_date: params.target_date || null,
-          color: params.color || '#10b981',
+          color: params.color || '#B9924F',
+          is_active: true,
         });
       } catch {
         // ignore
+      }
+    }
+
+    return { error: null };
+  };
+
+  const updateSavingsGoal = async (id: string, updates: Partial<SavingsGoal>) => {
+    if (updates.name !== undefined && !updates.name.trim()) {
+      return { error: new Error('Nama target tabungan tidak boleh kosong.') };
+    }
+    if (updates.target_amount !== undefined && Number(updates.target_amount) <= 0) {
+      return { error: new Error('Target nominal harus lebih besar dari Rp 0.') };
+    }
+
+    const targetGoal = savingsGoals.find((g) => g.id === id);
+    if (!targetGoal) {
+      return { error: new Error('Target tabungan tidak ditemukan.') };
+    }
+
+    const sanitizedUpdates: Partial<SavingsGoal> = {
+      ...updates,
+      updated_at: new Date().toISOString(),
+    };
+    if (updates.name !== undefined) sanitizedUpdates.name = updates.name.trim();
+    if (updates.target_amount !== undefined) sanitizedUpdates.target_amount = Number(updates.target_amount);
+
+    const updated = savingsGoals.map((g) => (g.id === id ? { ...g, ...sanitizedUpdates } : g));
+    setSavingsGoals(updated);
+    try {
+      localStorage.setItem('demo_goals', JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+
+    if (user && isConfigured) {
+      const isValidUuid = (str?: string | null) => str && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+      if (isValidUuid(id)) {
+        try {
+          await supabase.from('savings_goals').update(sanitizedUpdates).eq('id', id);
+        } catch (err: any) {
+          console.error('Update savings goal error:', err);
+          return { error: err };
+        }
+      }
+    }
+
+    return { error: null };
+  };
+
+  const archiveSavingsGoal = async (id: string) => {
+    const targetGoal = savingsGoals.find((g) => g.id === id);
+    if (!targetGoal) {
+      return { error: new Error('Target tabungan tidak ditemukan.') };
+    }
+    if (targetGoal.current_amount > 0) {
+      return { error: new Error('Target masih memiliki saldo. Cairkan seluruh saldo ke dompet sebelum mengarsipkan target.') };
+    }
+
+    return updateSavingsGoal(id, { is_active: false });
+  };
+
+  const restoreSavingsGoal = async (id: string) => {
+    return updateSavingsGoal(id, { is_active: true });
+  };
+
+  const deleteSavingsGoal = async (id: string) => {
+    const targetGoal = savingsGoals.find((g) => g.id === id);
+    if (!targetGoal) {
+      return { error: new Error('Target tabungan tidak ditemukan.') };
+    }
+    if (targetGoal.current_amount > 0) {
+      return { error: new Error('Target masih memiliki saldo. Cairkan seluruh saldo ke dompet aktif terlebih dahulu sebelum menghapus target ini.') };
+    }
+
+    // Cek apakah ada riwayat transaksi yang terhubung dengan goal ini
+    const hasTransactions = transactions.some((t) => t.goal_id === id);
+    if (hasTransactions) {
+      // Prioritaskan archive agar audit trail tidak putus
+      return archiveSavingsGoal(id);
+    }
+
+    // Jika tanpa riwayat transaksi dan saldo 0: hard delete aman
+    const previousGoals = savingsGoals;
+    const updated = savingsGoals.filter((g) => g.id !== id);
+    setSavingsGoals(updated);
+    try {
+      localStorage.setItem('demo_goals', JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+
+    if (user && isConfigured) {
+      const isValidUuid = (str?: string | null) => str && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+      if (isValidUuid(id)) {
+        try {
+          const { error: delError } = await supabase.from('savings_goals').delete().eq('id', id);
+          if (delError) {
+            console.error('Delete savings goal Supabase error:', delError);
+            setSavingsGoals(previousGoals);
+            return { error: delError };
+          }
+        } catch (err: any) {
+          console.error('Delete savings goal exception:', err);
+          setSavingsGoals(previousGoals);
+          return { error: err };
+        }
       }
     }
 
@@ -945,6 +1075,10 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       deleteCategory,
       setCategoryBudget,
       addSavingsGoal,
+      updateSavingsGoal,
+      deleteSavingsGoal,
+      archiveSavingsGoal,
+      restoreSavingsGoal,
       allocateToGoal,
       withdrawFromGoal,
       addCommitment,

@@ -18,6 +18,7 @@ import {
   Award,
   Edit2,
   RotateCcw,
+  PiggyBank,
 } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import type { Transaction } from '../types/database.types';
@@ -43,6 +44,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
     transactions,
     wallets,
     categories,
+    savingsGoals,
     cycleInfo,
     deleteTransaction,
     updateTransaction,
@@ -64,6 +66,14 @@ export const TransactionList: React.FC<TransactionListProps> = ({
       return wallets.find((w) => w.id === walletId)?.name || 'Dompet';
     },
     [wallets]
+  );
+
+  const getGoalName = useCallback(
+    (goalId?: string | null) => {
+      if (!goalId) return null;
+      return savingsGoals.find((g) => g.id === goalId)?.name || 'Target Tabungan';
+    },
+    [savingsGoals]
   );
 
   const getCategory = useCallback(
@@ -454,12 +464,21 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                           )
                         : null;
 
+                    // Goal details if linked to savings goal
+                    const goalName = getGoalName(tx.goal_id);
+                    const isGoalTx = Boolean(tx.goal_id);
+
                     // Display description
-                    const displayDescription =
-                      tx.note ||
-                      (tx.type === 'transfer'
-                        ? transferInfo?.description || 'Transfer Saldo'
-                        : category?.name || 'Transaksi');
+                    let displayDescription = tx.note;
+                    if (!displayDescription) {
+                      if (tx.type === 'transfer') {
+                        displayDescription = transferInfo?.description || 'Transfer Saldo';
+                      } else if (isGoalTx) {
+                        displayDescription = tx.type === 'expense' ? `Alokasi: ${goalName}` : `Pencairan: ${goalName}`;
+                      } else {
+                        displayDescription = category?.name || 'Transaksi';
+                      }
+                    }
 
                     // Display wallet channel
                     let displayWalletChannel = sourceWalletName;
@@ -471,12 +490,18 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                       } else if (filterWallet === tx.destination_wallet_id) {
                         displayWalletChannel = `Dari ${sourceWalletName}`;
                       }
+                    } else if (isGoalTx) {
+                      displayWalletChannel = tx.type === 'expense' ? `${sourceWalletName} ➔ ${goalName}` : `${goalName} ➔ ${sourceWalletName}`;
                     }
 
                     // Display amount sign and color
                     let amountSign = '';
                     let amountColorClass = 'text-text-primary';
-                    if (tx.type === 'income') {
+                    if (isGoalTx) {
+                      // Tabungan menggunakan aksen Satin Gold netral (bukan merah konsumtif / hijau income baru)
+                      amountSign = tx.type === 'expense' ? '- ' : '+ ';
+                      amountColorClass = 'text-text-gold font-semibold';
+                    } else if (tx.type === 'income') {
                       amountSign = '+ ';
                       amountColorClass = 'text-semantic-green-text';
                     } else if (tx.type === 'expense') {
@@ -488,10 +513,14 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                     }
 
                     // Screen reader accessible announcement
-                    const accessibleAnnouncement =
-                      tx.type === 'transfer'
-                        ? `${transferInfo?.accessibleText || 'Transfer'}, tanggal ${formatDateIndo(tx.transaction_date)}${timeFormatted ? ` jam ${timeFormatted}` : ''}`
-                        : `${tx.type === 'income' ? 'Pemasukan' : 'Pengeluaran'} ${displayDescription}, ${tx.type === 'income' ? 'bertambah' : 'berkurang'} ${formattedAmount}, dompet ${sourceWalletName}, tanggal ${formatDateIndo(tx.transaction_date)}${timeFormatted ? ` jam ${timeFormatted}` : ''}`;
+                    let accessibleAnnouncement: string;
+                    if (tx.type === 'transfer') {
+                      accessibleAnnouncement = `${transferInfo?.accessibleText || 'Transfer'}, tanggal ${formatDateIndo(tx.transaction_date)}${timeFormatted ? ` jam ${timeFormatted}` : ''}`;
+                    } else if (isGoalTx) {
+                      accessibleAnnouncement = `${tx.type === 'expense' ? 'Alokasi ke target tabungan' : 'Pencairan dana dari target tabungan'} ${goalName}, nominal ${formattedAmount}, dompet ${sourceWalletName}, tanggal ${formatDateIndo(tx.transaction_date)}${timeFormatted ? ` jam ${timeFormatted}` : ''}`;
+                    } else {
+                      accessibleAnnouncement = `${tx.type === 'income' ? 'Pemasukan' : 'Pengeluaran'} ${displayDescription}, ${tx.type === 'income' ? 'bertambah' : 'berkurang'} ${formattedAmount}, dompet ${sourceWalletName}, tanggal ${formatDateIndo(tx.transaction_date)}${timeFormatted ? ` jam ${timeFormatted}` : ''}`;
+                    }
 
                     return (
                       <div
@@ -520,7 +549,9 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                           <div className="flex items-center gap-2 min-w-0">
                             <div
                               className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${
-                                tx.type === 'income'
+                                isGoalTx
+                                  ? 'bg-primary-soft text-text-gold'
+                                  : tx.type === 'income'
                                   ? 'bg-semantic-green-soft text-semantic-green'
                                   : tx.type === 'expense'
                                   ? 'bg-semantic-rose-soft text-semantic-rose'
@@ -529,12 +560,14 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                             >
                               {tx.type === 'transfer' ? (
                                 <ArrowRightLeft className="w-3.5 h-3.5" />
+                              ) : isGoalTx ? (
+                                <PiggyBank className="w-3.5 h-3.5" />
                               ) : (
                                 getCategoryIcon(category?.icon)
                               )}
                             </div>
                             <span className="text-text-secondary truncate">
-                              {category?.name || (tx.type === 'transfer' ? 'Transfer' : 'Umum')}
+                              {isGoalTx ? (tx.type === 'expense' ? 'Alokasi Tabungan' : 'Pencairan Tabungan') : category?.name || (tx.type === 'transfer' ? 'Transfer' : 'Umum')}
                             </span>
                           </div>
 
@@ -595,7 +628,11 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                           <div className="flex items-center justify-between gap-2 text-xs text-text-muted">
                             <div className="truncate flex items-center gap-1.5 min-w-0">
                               <span>
-                                {category?.name || (tx.type === 'transfer' ? 'Transfer' : 'Umum')}
+                                {isGoalTx
+                                  ? tx.type === 'expense'
+                                    ? 'Alokasi Tabungan'
+                                    : 'Pencairan Tabungan'
+                                  : category?.name || (tx.type === 'transfer' ? 'Transfer' : 'Umum')}
                               </span>
                               <span>·</span>
                               <span className="truncate">{displayWalletChannel}</span>

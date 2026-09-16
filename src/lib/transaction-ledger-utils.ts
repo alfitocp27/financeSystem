@@ -79,9 +79,10 @@ export function groupTransactionsByDate(
     let hasTransfers = false;
 
     txs.forEach((t) => {
-      if (t.type === 'expense') {
+      // Subtotal harian hanya menjumlahkan belanja konsumtif murni dan pemasukan riil (tabungan & transfer dikecualikan)
+      if (t.type === 'expense' && !t.goal_id) {
         expenseTotal += Number(t.amount) || 0;
-      } else if (t.type === 'income') {
+      } else if (t.type === 'income' && !t.goal_id) {
         incomeTotal += Number(t.amount) || 0;
       } else if (t.type === 'transfer') {
         hasTransfers = true;
@@ -189,14 +190,20 @@ export function generateTransactionCsvRows(
     'Catatan',
   ];
   const rows = transactions.map((tx) => {
-    const cat = getCategoryName(tx.category_id) || (tx.type === 'transfer' ? 'Transfer' : '-');
+    let typeLabel = tx.type as string;
+    if (tx.goal_id) {
+      if (tx.type === 'expense') typeLabel = 'Alokasi Tabungan';
+      else if (tx.type === 'income') typeLabel = 'Pencairan Tabungan';
+    }
+
+    const cat = getCategoryName(tx.category_id) || (tx.type === 'transfer' ? 'Transfer' : tx.goal_id ? 'Target Tabungan' : '-');
     const wOrigin = getWalletName(tx.wallet_id);
     const wDest = tx.destination_wallet_id ? getWalletName(tx.destination_wallet_id) : '-';
     const cleanNote = (tx.note || '').replace(/"/g, '""');
 
     return [
       tx.transaction_date,
-      tx.type,
+      `"${typeLabel}"`,
       `"${cat}"`,
       `"${wOrigin}"`,
       `"${wDest}"`,

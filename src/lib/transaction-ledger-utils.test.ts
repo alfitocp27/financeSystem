@@ -277,7 +277,7 @@ describe('transaction-ledger-utils', () => {
       expect(rows[0]).toContain('"BCA"');
 
       // Verify row 2 (transfer origin & destination)
-      expect(rows[1]).toContain('transfer');
+      expect(rows[1]).toContain('"transfer"');
       expect(rows[1]).toContain('"BCA"');
       expect(rows[1]).toContain('"GoPay"');
 

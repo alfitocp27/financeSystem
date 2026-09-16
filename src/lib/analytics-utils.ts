@@ -48,7 +48,8 @@ export function filterCycleExpenses(
   const endStr = getLocalDateString(endDate);
 
   return transactions.filter((t) => {
-    if (t.type !== 'expense') return false;
+    // Pengeluaran belanja konsumtif murni (tabungan / goal_id dikecualikan)
+    if (t.type !== 'expense' || t.goal_id) return false;
     const dateStr = t.transaction_date ? t.transaction_date.slice(0, 10) : '';
     return dateStr >= startStr && dateStr <= endStr;
   });

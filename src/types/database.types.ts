@@ -62,6 +62,7 @@ export interface SavingsGoal {
   target_date: string | null;
   icon: string;
   color: string;
+  is_active?: boolean;
   created_at: string;
   updated_at: string;
 }

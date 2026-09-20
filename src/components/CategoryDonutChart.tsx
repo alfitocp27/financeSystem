@@ -164,7 +164,7 @@ export const CategoryDonutChart: React.FC<CategoryDonutChartProps> = ({
               cy={size / 2}
               r={radius}
               fill="none"
-              stroke="rgba(255, 255, 255, 0.05)"
+              stroke="var(--border-subtle)"
               strokeWidth={strokeWidth}
             />
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { FinanceProvider } from './context/FinanceContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { Sidebar, type ActiveTab } from './components/Sidebar';
 import { Navbar } from './components/Navbar';
 import { DashboardView } from './components/DashboardView';
@@ -259,10 +260,12 @@ function MainApp() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <FinanceProvider>
-        <MainApp />
-      </FinanceProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <FinanceProvider>
+          <MainApp />
+        </FinanceProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

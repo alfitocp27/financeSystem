@@ -13,8 +13,12 @@ import {
   Coins,
   AlertTriangle,
   X,
+  Sun,
+  Moon,
+  Monitor,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme, type ThemePreference } from '../context/ThemeContext';
 import { getCycleInfo } from '../lib/budget-cycle';
 import { formatDateIndo } from '../lib/formatters';
 import { getInitials, isValidCycleDay } from '../lib/settings-utils';
@@ -33,6 +37,38 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onShowToast }) => {
     updatePassword,
     signOut,
   } = useAuth();
+  const { theme, setTheme } = useTheme();
+
+  const themeOptions = useMemo<
+    Array<{
+      id: ThemePreference;
+      label: string;
+      desc: string;
+      icon: React.ComponentType<{ className?: string }>;
+    }>
+  >(
+    () => [
+      {
+        id: 'system',
+        label: 'Sistem',
+        desc: 'Otomatis mengikuti perangkat',
+        icon: Monitor,
+      },
+      {
+        id: 'light',
+        label: 'Terang',
+        desc: 'Alabaster & Antique Gold',
+        icon: Sun,
+      },
+      {
+        id: 'dark',
+        label: 'Gelap',
+        desc: 'Obsidian & Muted Gold',
+        icon: Moon,
+      },
+    ],
+    []
+  );
 
   // Unique IDs for accessibility
   const fullNameId = useId();
@@ -418,7 +454,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onShowToast }) => {
               </span>
             </div>
             {candidateCycleDay !== currentSavedCycleDay && (
-              <div className="flex items-center justify-between text-text-gold pt-1 border-t border-border-subtle/50">
+              <div className="flex items-center justify-between text-text-gold pt-1 border-t border-border-subtle">
                 <span className="flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-primary" />
                   <span>Siklus Baru Setelah Disimpan:</span>
@@ -460,6 +496,69 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onShowToast }) => {
             </button>
           </div>
         </form>
+      </section>
+
+      <hr className="border-border-subtle" />
+
+      {/* SECTION: Tampilan & Tema */}
+      <section aria-labelledby="section-theme" className="space-y-4">
+        <div>
+          <h2 id="section-theme" className="text-base font-bold text-text-primary tracking-tight">
+            Tampilan & Tema
+          </h2>
+          <p className="text-xs text-text-muted mt-0.5">
+            Pilih preferensi tema antarmuka: Obsidian (gelap) atau Alabaster (terang).
+          </p>
+        </div>
+
+        <div
+          role="radiogroup"
+          aria-label="Pilihan Tema Aplikasi"
+          className="grid grid-cols-1 sm:grid-cols-3 gap-3"
+        >
+          {themeOptions.map((opt) => {
+            const isSelected = theme === opt.id;
+            const Icon = opt.icon;
+            return (
+              <button
+                key={opt.id}
+                type="button"
+                role="radio"
+                aria-checked={isSelected}
+                onClick={() => {
+                  setTheme(opt.id);
+                  if (onShowToast) {
+                    onShowToast(`Tema diubah ke ${opt.label}`);
+                  }
+                }}
+                className={`p-3.5 rounded-xl border text-left transition-all min-h-[44px] flex flex-col justify-between gap-3 ${
+                  isSelected
+                    ? 'bg-primary-soft border-border-gold text-text-primary shadow-xs'
+                    : 'bg-surface hover:bg-surface-elevated border-border-default text-text-secondary hover:text-text-primary'
+                }`}
+              >
+                <div className="flex items-center justify-between w-full">
+                  <div
+                    className={`w-9 h-9 rounded-lg flex items-center justify-center ${
+                      isSelected
+                        ? 'bg-primary text-slate-950 shadow-xs'
+                        : 'bg-surface-elevated border border-border-subtle text-text-muted'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  {isSelected && (
+                    <span className="w-2 h-2 rounded-full bg-primary" aria-hidden="true" />
+                  )}
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-text-primary">{opt.label}</div>
+                  <div className="text-xs text-text-muted mt-0.5">{opt.desc}</div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </section>
 
       <hr className="border-border-subtle" />

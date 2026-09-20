@@ -176,7 +176,7 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({ onShowToast, onOpe
             {overallPercentage}% {overallPercentage >= 100 ? '(Melampaui Plafon)' : 'teralokasi'}
           </span>
         </div>
-        <div className="h-2 w-full bg-surface-elevated rounded-full overflow-hidden border border-border-subtle/50">
+        <div className="h-2 w-full bg-surface-elevated rounded-full overflow-hidden border border-border-subtle">
           <div
             className={`h-full rounded-full transition-all duration-500 ${
               overallPercentage >= 100
@@ -318,7 +318,7 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({ onShowToast, onOpe
                           / {budgetAmount > 0 ? formatCurrency(budgetAmount) : '—'}
                         </span>
                       </div>
-                      <div className="w-28 sm:w-36 h-1.5 bg-surface-elevated rounded-full overflow-hidden border border-border-subtle/40">
+                      <div className="w-28 sm:w-36 h-1.5 bg-surface-elevated rounded-full overflow-hidden border border-border-subtle">
                         <div
                           className={`h-full rounded-full transition-all duration-300 ${
                             isOverbudget ? 'bg-semantic-rose' : ''

@@ -191,7 +191,7 @@ export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({ onOpenSimulato
               {onOpenSimulator && (
                 <button
                   onClick={onOpenSimulator}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 min-h-[44px] sm:min-h-0 sm:py-1 rounded-lg text-xs font-semibold bg-primary-soft hover:bg-primary-soft/80 text-text-gold border border-border-gold transition-colors ml-auto md:ml-2"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 min-h-[44px] sm:min-h-0 sm:py-1 rounded-lg text-xs font-semibold bg-primary-soft hover:bg-primary-100 text-text-gold border border-border-gold transition-colors ml-auto md:ml-2"
                   title="Simulasi belanja ekstra"
                 >
                   <Calculator className="w-3.5 h-3.5" />

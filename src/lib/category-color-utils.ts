@@ -1,13 +1,11 @@
 /**
- * Category Color Utilities for SakuMahasiswa (Obsidian & Muted Gold Design System)
+ * Category Color Utilities for SakuMahasiswa
+ * Supports both:
+ * - DARK:  Obsidian & Muted Gold (calibrated for deep obsidian surfaces)
+ * - LIGHT: Warm Ivory & Muted Gold (calibrated for warm paper-like surfaces)
  *
  * Preserves authentic category identity from `category.color` while muting
- * saturation and calibrating contrast for executive dark surfaces:
- * - Foreground: Muted tone preserving original hue (saturation ~40-52%, lightness ~64-72%)
- * - Background: Subtle translucent wash (8-12% opacity)
- * - Border: Hairline boundary (12-18% opacity)
- *
- * Eliminates aggressive neon/clashing glare while keeping each category's distinct identity.
+ * saturation and calibrating contrast for high readability.
  */
 
 export interface MutedCategoryStyle {
@@ -17,14 +15,31 @@ export interface MutedCategoryStyle {
   borderColor: string;
 }
 
-export function getMutedCategoryStyle(rawColor?: string | null): MutedCategoryStyle {
+export function getMutedCategoryStyle(
+  rawColor?: string | null,
+  isDark?: boolean
+): MutedCategoryStyle {
+  const activeDark =
+    typeof isDark === 'boolean'
+      ? isDark
+      : typeof document !== 'undefined'
+      ? document.documentElement.getAttribute('data-theme') !== 'light'
+      : true;
+
   if (!rawColor || typeof rawColor !== 'string') {
-    return {
-      color: '#D6B875', // Fallback Champagne Gold
-      chartColor: '#D6B875',
-      backgroundColor: 'rgba(214, 184, 117, 0.10)',
-      borderColor: 'rgba(214, 184, 117, 0.16)',
-    };
+    return activeDark
+      ? {
+          color: '#D6B875', // Champagne Gold
+          chartColor: '#D6B875',
+          backgroundColor: 'rgba(214, 184, 117, 0.10)',
+          borderColor: 'rgba(214, 184, 117, 0.16)',
+        }
+      : {
+          color: '#936B1E', // Antique Bronze-Gold
+          chartColor: '#B0893E',
+          backgroundColor: 'rgba(176, 137, 62, 0.10)',
+          borderColor: 'rgba(176, 137, 62, 0.20)',
+        };
   }
 
   // Parse Hex
@@ -38,12 +53,19 @@ export function getMutedCategoryStyle(rawColor?: string | null): MutedCategorySt
   const b = parseInt(hex.substring(4, 6), 16);
 
   if (isNaN(r) || isNaN(g) || isNaN(b)) {
-    return {
-      color: '#D6B875',
-      chartColor: '#D6B875',
-      backgroundColor: 'rgba(214, 184, 117, 0.10)',
-      borderColor: 'rgba(214, 184, 117, 0.16)',
-    };
+    return activeDark
+      ? {
+          color: '#D6B875',
+          chartColor: '#D6B875',
+          backgroundColor: 'rgba(214, 184, 117, 0.10)',
+          borderColor: 'rgba(214, 184, 117, 0.16)',
+        }
+      : {
+          color: '#936B1E',
+          chartColor: '#B0893E',
+          backgroundColor: 'rgba(176, 137, 62, 0.10)',
+          borderColor: 'rgba(176, 137, 62, 0.20)',
+        };
   }
 
   // Convert RGB to HSL
@@ -73,20 +95,44 @@ export function getMutedCategoryStyle(rawColor?: string | null): MutedCategorySt
     h = Math.round(h * 60);
   }
 
-  // Calibrate for Obsidian Dark Mode:
-  // - Saturation: desaturated down to 42-52% to eliminate harsh glare while preserving clear hue
-  // - Lightness: calibrated to 65-72% so icons are crisp and readable against dark obsidian backgrounds
-  const targetS = Math.round(Math.min(Math.max(s * 100 * 0.7, 36), 52));
-  const targetL = Math.round(Math.min(Math.max(l * 100, 64), 72));
+  if (activeDark) {
+    // Calibrate for Obsidian Dark Mode:
+    // - Saturation: desaturated down to 36-52% to eliminate harsh glare while preserving clear hue
+    // - Lightness: calibrated to 64-72% so icons are crisp and readable against dark obsidian backgrounds
+    const targetS = Math.round(Math.min(Math.max(s * 100 * 0.7, 36), 52));
+    const targetL = Math.round(Math.min(Math.max(l * 100, 64), 72));
 
-  const mutedForeground = `hsl(${h}, ${targetS}%, ${targetL}%)`;
-  const mutedBg = `hsla(${h}, ${targetS}%, ${targetL}%, 0.10)`;
-  const mutedBorder = `hsla(${h}, ${targetS}%, ${targetL}%, 0.16)`;
+    const mutedForeground = `hsl(${h}, ${targetS}%, ${targetL}%)`;
+    const mutedBg = `hsla(${h}, ${targetS}%, ${targetL}%, 0.10)`;
+    const mutedBorder = `hsla(${h}, ${targetS}%, ${targetL}%, 0.16)`;
 
-  return {
-    color: mutedForeground,
-    chartColor: mutedForeground,
-    backgroundColor: mutedBg,
-    borderColor: mutedBorder,
-  };
+    return {
+      color: mutedForeground,
+      chartColor: mutedForeground,
+      backgroundColor: mutedBg,
+      borderColor: mutedBorder,
+    };
+  } else {
+    // Calibrate for Warm Ivory Light Mode:
+    // - Preserves authentic category hue
+    // - Foreground text/icon: deeper tone with enough contrast (lightness 34-40%) to pass WCAG AA/AAA on warm ivory
+    // - Chart color: balanced lightness (44-50%) for crisp visibility on light charts
+    // - Background: subtle 10% wash
+    // - Border: 18% subtle boundary
+    const targetS = Math.round(Math.min(Math.max(s * 100 * 0.7, 38), 55));
+    const targetLText = Math.round(Math.min(Math.max(l * 100 * 0.6, 34), 40));
+    const targetLChart = Math.round(Math.min(Math.max(l * 100 * 0.8, 44), 50));
+
+    const mutedForeground = `hsl(${h}, ${targetS}%, ${targetLText}%)`;
+    const chartColor = `hsl(${h}, ${targetS}%, ${targetLChart}%)`;
+    const mutedBg = `hsla(${h}, ${targetS}%, ${targetLText}%, 0.10)`;
+    const mutedBorder = `hsla(${h}, ${targetS}%, ${targetLText}%, 0.18)`;
+
+    return {
+      color: mutedForeground,
+      chartColor: chartColor,
+      backgroundColor: mutedBg,
+      borderColor: mutedBorder,
+    };
+  }
 }

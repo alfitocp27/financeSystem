@@ -317,15 +317,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   {/* Subtle Area Gradient definition - Muted Gold depth cue (12-14% near line, fading to 0) */}
                   <defs>
                     <linearGradient id="expenseTrendGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#B9924F" stopOpacity={0.14} />
-                      <stop offset="95%" stopColor="#B9924F" stopOpacity={0.0} />
+                      <stop offset="0%" stopColor="var(--primary, #B9924F)" stopOpacity={0.14} />
+                      <stop offset="95%" stopColor="var(--primary, #B9924F)" stopOpacity={0.0} />
                     </linearGradient>
                   </defs>
 
-                  {/* Subtle horizontal CartesianGrid lines matching Obsidian theme */}
+                  {/* Subtle horizontal CartesianGrid lines matching active theme */}
                   <CartesianGrid
                     strokeDasharray="4 8"
-                    stroke="var(--color-border-subtle, rgba(255,255,255,0.04))"
+                    stroke="var(--chart-grid, rgba(255,255,255,0.04))"
                     horizontal={true}
                     vertical={false}
                   />
@@ -335,7 +335,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     dataKey="dayLabel"
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fontSize: 12, fill: '#8A93A0' }}
+                    tick={{ fontSize: 12, fill: 'var(--chart-tick, #8A93A0)' }}
                     tickMargin={12}
                     interval="preserveStartEnd"
                     minTickGap={24}
@@ -345,7 +345,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   <YAxis
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fontSize: 12, fill: '#8A93A0' }}
+                    tick={{ fontSize: 12, fill: 'var(--chart-tick, #8A93A0)' }}
                     tickFormatter={(val) => (val > 0 ? formatCompactCurrency(val).replace('Rp ', '') : '0')}
                     tickMargin={8}
                     domain={[0, cashFlowChartData.yDomainMax]}
@@ -355,14 +355,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   {safeToSpend.dailySafeToSpend > 0 && (
                     <ReferenceLine
                       y={safeToSpend.dailySafeToSpend}
-                      stroke="#A98245"
+                      stroke="var(--chart-benchmark, #A98245)"
                       strokeDasharray="4 4"
                       strokeWidth={1.5}
                       strokeOpacity={0.8}
                       label={{
                         value: `Batas ${formatCompactCurrency(safeToSpend.dailySafeToSpend).replace('Rp ', '')}`,
                         position: 'insideTopRight',
-                        fill: '#BE9553',
+                        fill: 'var(--chart-benchmark-text, #BE9553)',
                         fontSize: 12,
                         fontWeight: 500,
                         offset: 6,
@@ -370,11 +370,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     />
                   )}
 
-                  {/* Custom Tooltip adapted for Obsidian Dark Theme */}
+                  {/* Custom Tooltip adapted for active theme */}
                   <RechartsTooltip
                     isAnimationActive={false}
                     cursor={{
-                      stroke: '#B9924F',
+                      stroke: 'var(--primary, #B9924F)',
                       strokeWidth: 1.5,
                       strokeDasharray: '4 4',
                       strokeOpacity: 0.6,
@@ -453,7 +453,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   <Line
                     type="monotone"
                     dataKey="expense"
-                    stroke="#B9924F"
+                    stroke="var(--primary, #B9924F)"
                     strokeWidth={2.5}
                     connectNulls={false}
                     isAnimationActive={true}
@@ -471,8 +471,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                             cx={cx}
                             cy={cy}
                             r={3.5}
-                            fill="#A85F68"
-                            stroke="#14171F"
+                            fill="var(--semantic-rose, #A85F68)"
+                            stroke="var(--surface, #14171F)"
                             strokeWidth={1.5}
                           />
                         );
@@ -485,8 +485,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                           cx={cx}
                           cy={cy}
                           r={2}
-                          fill="#B9924F"
-                          stroke="#14171F"
+                          fill="var(--primary, #B9924F)"
+                          stroke="var(--surface, #14171F)"
                           strokeWidth={1}
                           opacity={0.8}
                         />
@@ -500,8 +500,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                           cx={cx}
                           cy={cy}
                           r={5}
-                          fill={isOver ? '#A85F68' : '#B9924F'}
-                          stroke="#D6B875"
+                          fill={isOver ? 'var(--semantic-rose, #A85F68)' : 'var(--primary, #B9924F)'}
+                          stroke="var(--primary-focus, #D6B875)"
                           strokeWidth={2}
                         />
                       );
@@ -642,7 +642,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       </div>
                     </div>
 
-                    <div className="w-full bg-surface-elevated h-1.5 rounded-full overflow-hidden mb-1.5 border border-border-subtle/40">
+                    <div className="w-full bg-surface-elevated h-1.5 rounded-full overflow-hidden mb-1.5 border border-border-subtle">
                       <div
                         className={`h-full rounded-full transition-all duration-500 ${
                           isOver ? 'bg-semantic-rose' : ''

@@ -2,21 +2,236 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --color-border-subtle: rgba(255, 255, 255, 0.04);
-  --color-border-default: rgba(255, 255, 255, 0.08);
-  --color-surface: #14171f;
-  --color-bg-primary: #0b0d11;
-  --color-primary: #b9924f;
+/* ===================================================================
+   SAKUMHS DUAL-THEME TOKENS
+   - DARK:  Obsidian & Muted Gold (Calm, disciplined executive ledger)
+   - LIGHT: Warm Ivory & Muted Gold (Warm, paper-like financial journal)
+   =================================================================== */
+
+:root,
+[data-theme="dark"],
+.dark {
   color-scheme: dark;
+
+  /* --- RGB Channels for dynamic opacity modifier support --- */
+  --primary-rgb: 185 146 79;
+  --semantic-green-rgb: 95 138 112;
+  --semantic-rose-rgb: 168 95 104;
+  --semantic-amber-rgb: 169 130 69;
+  --semantic-blue-rgb: 102 131 163;
+  --bg-primary-rgb: 11 13 17;
+  --bg-secondary-rgb: 17 20 26;
+  --surface-rgb: 20 23 31;
+  --surface-dim-rgb: 14 17 23;
+  --surface-bright-rgb: 26 30 39;
+  --surface-container-lowest-rgb: 11 13 17;
+  --surface-container-low-rgb: 24 28 37;
+  --surface-container-rgb: 28 32 41;
+  --surface-container-high-rgb: 34 39 52;
+  --surface-container-highest-rgb: 40 46 61;
+  --surface-elevated-rgb: 28 32 41;
+  --surface-modal-rgb: 34 39 52;
+  --text-primary-rgb: 243 244 246;
+  --text-secondary-rgb: 156 163 175;
+  --text-muted-rgb: 138 147 160;
+  --text-gold-rgb: 214 184 117;
+  --border-gold-rgb: 185 146 79;
+
+  /* --- Root & Surface Scale (Obsidian Depths) --- */
+  --bg-primary: #0B0D11;
+  --bg-secondary: #11141A;
+  --surface: #14171F;
+  --surface-dim: #0E1117;
+  --surface-bright: #1A1E27;
+  --surface-container-lowest: #0B0D11;
+  --surface-container-low: #181C25;
+  --surface-container: #1C2029;
+  --surface-container-high: #222734;
+  --surface-container-highest: #282E3D;
+  --surface-elevated: #1C2029;
+  --surface-modal: #222734;
+  --on-surface: #F3F4F6;
+  --on-surface-variant: #9CA3AF;
+  --inverse-surface: #F3F4F6;
+  --inverse-on-surface: #14171F;
+  --outline: rgba(255, 255, 255, 0.12);
+  --outline-variant: rgba(255, 255, 255, 0.06);
+  --surface-tint: #B9924F;
+
+  /* --- Brand & Interactive Gold Scale --- */
+  --primary: #B9924F;
+  --on-primary: #0B0D11;
+  --primary-container: #2A2416;
+  --on-primary-container: #D6B875;
+  --primary-hover: #C7A35F;
+  --primary-focus: #D6B875;
+  --primary-soft: rgba(185, 146, 79, 0.12);
+  --primary-50: rgba(185, 146, 79, 0.10);
+  --primary-100: rgba(185, 146, 79, 0.18);
+  --primary-500: #B9924F;
+  --primary-600: #C7A35F;
+  --primary-700: #A4803F;
+  --primary-900: #D6B875;
+  --primary-950: #E2CA94;
+
+  /* --- Typography Scale --- */
+  --text-primary: #F3F4F6;
+  --text-secondary: #9CA3AF;
+  --text-muted: #8A93A0;
+  --text-disabled: #4B5563;
+  --text-gold: #D6B875;
+
+  /* --- Borders & Dividers --- */
+  --border-default: rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(255, 255, 255, 0.04);
+  --border-strong: rgba(255, 255, 255, 0.15);
+  --border-gold: rgba(185, 146, 79, 0.18);
+  --border-gold-focus: rgba(185, 146, 79, 0.40);
+
+  /* --- Muted Semantic Scale --- */
+  --semantic-green: #5F8A70;
+  --semantic-green-text: #6F9E82;
+  --semantic-green-soft: rgba(95, 138, 112, 0.14);
+  --semantic-rose: #A85F68;
+  --semantic-rose-text: #B96E78;
+  --semantic-rose-soft: rgba(168, 95, 104, 0.14);
+  --semantic-amber: #A98245;
+  --semantic-amber-text: #BE9553;
+  --semantic-amber-soft: rgba(169, 130, 69, 0.14);
+  --semantic-blue: #6683A3;
+  --semantic-blue-text: #7796B8;
+  --semantic-blue-soft: rgba(102, 131, 163, 0.14);
+
+  /* --- Charts & Custom Shadows --- */
+  --chart-grid: rgba(255, 255, 255, 0.04);
+  --chart-tick: #8A93A0;
+  --chart-benchmark: #A98245;
+  --chart-benchmark-text: #BE9553;
+  --nav-shadow: 0 -4px 20px rgba(0, 0, 0, 0.40);
+
+  /* Deprecated backwards-compatible aliases */
+  --color-border-subtle: var(--border-subtle);
+  --color-border-default: var(--border-default);
+  --color-surface: var(--surface);
+  --color-bg-primary: var(--bg-primary);
+  --color-primary: var(--primary);
+}
+
+[data-theme="light"],
+.light {
+  color-scheme: light;
+
+  /* --- RGB Channels for dynamic opacity modifier support --- */
+  --primary-rgb: 176 137 62;
+  --semantic-green-rgb: 61 110 82;
+  --semantic-rose-rgb: 158 66 79;
+  --semantic-amber-rgb: 140 101 30;
+  --semantic-blue-rgb: 59 98 138;
+  --bg-primary-rgb: 247 245 240;
+  --bg-secondary-rgb: 239 236 228;
+  --surface-rgb: 252 250 247;
+  --surface-dim-rgb: 239 236 228;
+  --surface-bright-rgb: 255 255 255;
+  --surface-container-lowest-rgb: 255 255 255;
+  --surface-container-low-rgb: 249 247 243;
+  --surface-container-rgb: 245 242 236;
+  --surface-container-high-rgb: 239 236 228;
+  --surface-container-highest-rgb: 231 227 218;
+  --surface-elevated-rgb: 242 239 233;
+  --surface-modal-rgb: 255 255 255;
+  --text-primary-rgb: 34 38 44;
+  --text-secondary-rgb: 82 88 102;
+  --text-muted-rgb: 126 134 149;
+  --text-gold-rgb: 147 107 30;
+  --border-gold-rgb: 176 137 62;
+
+  /* --- Root & Surface Scale (Alabaster Ledger & Warm Stone) --- */
+  --bg-primary: #F7F5F0;
+  --bg-secondary: #EFECE4;
+  --surface: #FCFAF7;
+  --surface-dim: #EFECE4;
+  --surface-bright: #FFFFFF;
+  --surface-container-lowest: #FFFFFF;
+  --surface-container-low: #F9F7F3;
+  --surface-container: #F5F2EC;
+  --surface-container-high: #EFECE4;
+  --surface-container-highest: #E7E3DA;
+  --surface-elevated: #F2EFE9;
+  --surface-modal: #FFFFFF;
+  --on-surface: #22262C;
+  --on-surface-variant: #525866;
+  --inverse-surface: #14171F;
+  --inverse-on-surface: #F3F4F6;
+  --outline: rgba(140, 125, 105, 0.20);
+  --outline-variant: rgba(140, 125, 105, 0.10);
+  --surface-tint: #B0893E;
+
+  /* --- Brand & Interactive Gold Scale (Antique Satin Bronze-Gold) --- */
+  --primary: #B0893E;
+  --on-primary: #FFFFFF;
+  --primary-container: #F8F3EA;
+  --on-primary-container: #765415;
+  --primary-hover: #9C772F;
+  --primary-focus: #8E6B24;
+  --primary-soft: rgba(176, 137, 62, 0.10);
+  --primary-50: rgba(176, 137, 62, 0.08);
+  --primary-100: rgba(176, 137, 62, 0.15);
+  --primary-500: #B0893E;
+  --primary-600: #9C772F;
+  --primary-700: #86631F;
+  --primary-900: #745214;
+  --primary-950: #583C0A;
+
+  /* --- Typography Scale (Warm Soft Charcoal & Taupe Grays) --- */
+  --text-primary: #22262C;
+  --text-secondary: #525866;
+  --text-muted: #7E8695;
+  --text-disabled: #A6ADB9;
+  --text-gold: #936B1E;
+
+  /* --- Borders & Dividers (Warm Mineral Hairlines) --- */
+  --border-default: rgba(140, 125, 105, 0.18);
+  --border-subtle: rgba(140, 125, 105, 0.09);
+  --border-strong: rgba(140, 125, 105, 0.32);
+  --border-gold: rgba(176, 137, 62, 0.28);
+  --border-gold-focus: rgba(176, 137, 62, 0.65);
+
+  /* --- Muted Semantic Scale (Muted Sage, Bordeaux Rose, Burnished Ochre) --- */
+  --semantic-green: #3D6E52;
+  --semantic-green-text: #265239;
+  --semantic-green-soft: rgba(61, 110, 82, 0.10);
+  --semantic-rose: #9E424F;
+  --semantic-rose-text: #832634;
+  --semantic-rose-soft: rgba(158, 66, 79, 0.10);
+  --semantic-amber: #8C651E;
+  --semantic-amber-text: #6E4D0C;
+  --semantic-amber-soft: rgba(140, 101, 30, 0.10);
+  --semantic-blue: #3B628A;
+  --semantic-blue-text: #27486B;
+  --semantic-blue-soft: rgba(59, 98, 138, 0.10);
+
+  /* --- Charts & Custom Shadows --- */
+  --chart-grid: rgba(140, 125, 105, 0.12);
+  --chart-tick: #7E8695;
+  --chart-benchmark: #B0893E;
+  --chart-benchmark-text: #936B1E;
+  --nav-shadow: 0 -4px 20px rgba(50, 42, 30, 0.06);
+
+  /* Deprecated backwards-compatible aliases */
+  --color-border-subtle: var(--border-subtle);
+  --color-border-default: var(--border-default);
+  --color-surface: var(--surface);
+  --color-bg-primary: var(--bg-primary);
+  --color-primary: var(--primary);
 }
 
 @layer base {
   body {
-    background-color: #0b0d11;
-    color: #f3f4f6;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
     -webkit-tap-highlight-color: transparent;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
   .tabular-nums {

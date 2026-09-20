@@ -125,7 +125,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onSelectTab, on
       {/* Bottom Navigation Bar */}
       <nav
         aria-label="Navigasi Bawah Mobile"
-        className="fixed bottom-0 left-0 right-0 z-40 bg-surface/95 backdrop-blur-md border-t border-border-default pb-[env(safe-area-inset-bottom)] lg:hidden shadow-[0_-4px_20px_rgba(0,0,0,0.4)]"
+        className="fixed bottom-0 left-0 right-0 z-40 bg-surface/95 backdrop-blur-md border-t border-border-default pb-[env(safe-area-inset-bottom)] lg:hidden shadow-[var(--nav-shadow)]"
       >
         <div className="flex items-center justify-between h-16 px-2 max-w-md mx-auto relative">
           {/* Beranda (Dashboard) */}

@@ -127,17 +127,17 @@
   --semantic-rose-rgb: 158 66 79;
   --semantic-amber-rgb: 140 101 30;
   --semantic-blue-rgb: 59 98 138;
-  --bg-primary-rgb: 247 245 240;
-  --bg-secondary-rgb: 239 236 228;
-  --surface-rgb: 252 250 247;
-  --surface-dim-rgb: 239 236 228;
+  --bg-primary-rgb: 246 241 230;
+  --bg-secondary-rgb: 239 232 218;
+  --surface-rgb: 252 248 240;
+  --surface-dim-rgb: 239 232 218;
   --surface-bright-rgb: 255 255 255;
   --surface-container-lowest-rgb: 255 255 255;
-  --surface-container-low-rgb: 249 247 243;
-  --surface-container-rgb: 245 242 236;
-  --surface-container-high-rgb: 239 236 228;
-  --surface-container-highest-rgb: 231 227 218;
-  --surface-elevated-rgb: 242 239 233;
+  --surface-container-low-rgb: 249 244 234;
+  --surface-container-rgb: 245 239 227;
+  --surface-container-high-rgb: 239 232 218;
+  --surface-container-highest-rgb: 231 224 210;
+  --surface-elevated-rgb: 242 236 223;
   --surface-modal-rgb: 255 255 255;
   --text-primary-rgb: 34 38 44;
   --text-secondary-rgb: 82 88 102;
@@ -145,18 +145,18 @@
   --text-gold-rgb: 147 107 30;
   --border-gold-rgb: 176 137 62;
 
-  /* --- Root & Surface Scale (Alabaster Ledger & Warm Stone) --- */
-  --bg-primary: #F7F5F0;
-  --bg-secondary: #EFECE4;
-  --surface: #FCFAF7;
-  --surface-dim: #EFECE4;
+  /* --- Root & Surface Scale (Warm Gold-Tinted Ivory & Warm Stone) --- */
+  --bg-primary: #F6F1E6;
+  --bg-secondary: #EFE8DA;
+  --surface: #FCF8F0;
+  --surface-dim: #EFE8DA;
   --surface-bright: #FFFFFF;
   --surface-container-lowest: #FFFFFF;
-  --surface-container-low: #F9F7F3;
-  --surface-container: #F5F2EC;
-  --surface-container-high: #EFECE4;
-  --surface-container-highest: #E7E3DA;
-  --surface-elevated: #F2EFE9;
+  --surface-container-low: #F9F4EA;
+  --surface-container: #F5EFE3;
+  --surface-container-high: #EFE8DA;
+  --surface-container-highest: #E7E0D2;
+  --surface-elevated: #F2ECDF;
   --surface-modal: #FFFFFF;
   --on-surface: #22262C;
   --on-surface-variant: #525866;
@@ -223,6 +223,21 @@
   --color-surface: var(--surface);
   --color-bg-primary: var(--bg-primary);
   --color-primary: var(--primary);
+}
+
+/* ===================================================================
+   LIGHT-THEME GOLD ACTION BUTTONS
+   Primary action buttons (bg-primary) carry dark slate text, so they can
+   afford a brighter, warmer gold than the base --primary (which also
+   powers text-primary links that need to stay dark for contrast). This
+   brightens the action buttons in light mode without touching links,
+   charts, or the dark theme at all.
+   =================================================================== */
+[data-theme="light"] .bg-primary {
+  background-color: #C9962E;
+}
+[data-theme="light"] .hover\:bg-primary-hover:hover {
+  background-color: #D4A435;
 }
 
 @layer base {

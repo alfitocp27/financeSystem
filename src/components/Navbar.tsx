@@ -82,12 +82,12 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Desktop Quick Add Action Button */}
           <button
             onClick={onOpenQuickAdd}
-            className="hidden sm:inline-flex items-center gap-1.5 bg-primary hover:bg-primary-hover active:scale-95 text-slate-950 text-xs font-semibold px-3.5 py-2 rounded-lg transition-all shadow-xs"
+            className="hidden sm:inline-flex items-center gap-1.5 bg-primary hover:bg-primary-hover active:scale-95 text-white text-xs font-semibold px-3.5 py-2 rounded-lg transition-all shadow-xs"
             title="Tekan 'N' atau '+' di keyboard"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
             <span>Tambah Transaksi</span>
-            <span className="hidden md:inline-block ml-1 px-1.5 py-0.5 bg-slate-950/20 text-slate-950 rounded text-xs font-mono">
+            <span className="hidden md:inline-block ml-1 px-1.5 py-0.5 bg-white/20 text-white rounded text-xs font-mono">
               N
             </span>
           </button>

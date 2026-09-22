@@ -92,7 +92,7 @@ export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({ onOpenSimulato
   return (
     <div className="space-y-4">
       {/* 1. Hero Safe to Spend Anchor */}
-      <div className="bg-surface rounded-2xl p-6 sm:p-7 border border-border-gold shadow-xs relative overflow-hidden">
+      <div className="bg-surface rounded-2xl p-6 sm:p-7 border border-border-default shadow-xs relative overflow-hidden">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           {/* Left: Prominent Daily Figure */}
           <div className="flex flex-col flex-1">
